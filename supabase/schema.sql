@@ -17,6 +17,7 @@
 create table if not exists public.profiles (
   id              uuid primary key references auth.users(id) on delete cascade,
   nome_completo   text,
+  categoria       text check (categoria in ('enfermeira', 'tecnica', 'auxiliar', 'estudante')),
   coren           text,
   telefone        text,
   foto_url        text,
@@ -28,7 +29,13 @@ create table if not exists public.profiles (
   updated_at      timestamptz not null default now()
 );
 
+-- Migração para bancos que já existem sem a coluna categoria
+alter table public.profiles
+  add column if not exists categoria text
+  check (categoria in ('enfermeira', 'tecnica', 'auxiliar', 'estudante'));
+
 comment on table public.profiles is 'Perfil estendido das usuárias autenticadas (associadas).';
+comment on column public.profiles.categoria is 'enfermeira | tecnica | auxiliar | estudante. Estudantes não têm Coren.';
 comment on column public.profiles.status is 'pendente = aguardando aprovação | ativo = liberada | inativo = revogada';
 comment on column public.profiles.is_admin is 'Diretoras que podem aprovar associadas e gerenciar conteúdo.';
 
@@ -43,12 +50,13 @@ language plpgsql
 security definer set search_path = public
 as $$
 begin
-  insert into public.profiles (id, nome_completo, coren, telefone)
+  insert into public.profiles (id, nome_completo, coren, telefone, categoria)
   values (
     new.id,
     new.raw_user_meta_data->>'nome_completo',
     new.raw_user_meta_data->>'coren',
-    new.raw_user_meta_data->>'telefone'
+    new.raw_user_meta_data->>'telefone',
+    new.raw_user_meta_data->>'categoria'
   )
   on conflict (id) do nothing;
   return new;

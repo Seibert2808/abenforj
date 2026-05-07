@@ -78,8 +78,19 @@
             <small style="color:var(--texto-suave);font-size:0.85rem;">O e-mail é seu identificador de acesso e não pode ser alterado aqui.</small>
           </div>
           <div class="campo">
+            <label for="categoria">Categoria profissional</label>
+            <select id="categoria" name="categoria">
+              <option value="">Selecione...</option>
+              <option value="enfermeira">Enfermeira / Enfermeiro</option>
+              <option value="tecnica">Técnica / Técnico de Enfermagem</option>
+              <option value="auxiliar">Auxiliar de Enfermagem</option>
+              <option value="estudante">Estudante de Enfermagem ou Obstetrícia</option>
+            </select>
+          </div>
+          <div class="campo" id="campo-coren">
             <label for="coren">Inscrição no Coren-RJ</label>
             <input type="text" id="coren" name="coren" placeholder="Ex.: 123456-ENF">
+            <small style="color:var(--texto-suave);font-size:0.85rem;">Não se aplica a estudantes.</small>
           </div>
           <div class="campo">
             <label for="telefone">Telefone / WhatsApp</label>
@@ -136,12 +147,27 @@
         }
       }
 
+      // Esconde Coren para estudante
+      var selCat = document.getElementById('categoria');
+      var campoCoren = document.getElementById('campo-coren');
+      function ajustarCoren() {
+        if (selCat.value === 'estudante') {
+          campoCoren.style.display = 'none';
+          document.getElementById('coren').value = '';
+        } else {
+          campoCoren.style.display = '';
+        }
+      }
+      selCat.addEventListener('change', ajustarCoren);
+
       document.addEventListener('perfil-pronto', function (e) {
         perfil = e.detail;
         document.getElementById('nome').value = perfil.nome_completo || '';
+        selCat.value = perfil.categoria || '';
         document.getElementById('coren').value = perfil.coren || '';
         document.getElementById('telefone').value = perfil.telefone || '';
         setPreview(perfil.foto_url);
+        ajustarCoren();
 
         // Email vem do auth, não do profile
         window.abenfo.auth.usuario().then(function (u) {
@@ -199,9 +225,12 @@
         btn.disabled = true;
         btn.textContent = 'Salvando…';
         try {
+          var categoria = selCat.value || null;
+          var corenValor = document.getElementById('coren').value.trim();
           var dados = {
             nome_completo: document.getElementById('nome').value.trim(),
-            coren: document.getElementById('coren').value.trim() || null,
+            categoria: categoria,
+            coren: categoria === 'estudante' ? null : (corenValor || null),
             telefone: document.getElementById('telefone').value.trim() || null,
             updated_at: new Date().toISOString()
           };

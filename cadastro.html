@@ -69,8 +69,19 @@
               <input type="email" id="email" name="email" autocomplete="email" required>
             </div>
             <div class="campo">
-              <label for="coren">Inscrição no Coren-RJ</label>
+              <label for="categoria">Categoria profissional *</label>
+              <select id="categoria" name="categoria" required>
+                <option value="">Selecione...</option>
+                <option value="enfermeira">Enfermeira / Enfermeiro</option>
+                <option value="tecnica">Técnica / Técnico de Enfermagem</option>
+                <option value="auxiliar">Auxiliar de Enfermagem</option>
+                <option value="estudante">Estudante de Enfermagem ou Obstetrícia</option>
+              </select>
+            </div>
+            <div class="campo" id="campo-coren">
+              <label for="coren">Inscrição no Coren-RJ *</label>
               <input type="text" id="coren" name="coren" placeholder="Ex.: 123456-ENF">
+              <small style="color:var(--texto-suave);font-size:0.85rem;">Não se aplica a estudantes.</small>
             </div>
             <div class="campo">
               <label for="telefone">Telefone / WhatsApp</label>
@@ -125,6 +136,22 @@
         aviso.innerHTML = texto;
       }
 
+      // Esconde/mostra Coren conforme categoria
+      var selCat = document.getElementById('categoria');
+      var campoCoren = document.getElementById('campo-coren');
+      var inpCoren = document.getElementById('coren');
+      function ajustarCoren() {
+        if (selCat.value === 'estudante') {
+          campoCoren.style.display = 'none';
+          inpCoren.required = false;
+          inpCoren.value = '';
+        } else {
+          campoCoren.style.display = '';
+          inpCoren.required = !!selCat.value;
+        }
+      }
+      selCat.addEventListener('change', ajustarCoren);
+
       if (!window.SUPABASE_PRONTO) {
         mostrarAviso('A criação de contas ainda está em configuração. Em breve estará disponível.', 'info');
         btn.disabled = true;
@@ -137,13 +164,22 @@
 
         var nome = document.getElementById('nome').value.trim();
         var email = document.getElementById('email').value.trim();
+        var categoria = selCat.value;
         var senha = document.getElementById('senha').value;
         var senha2 = document.getElementById('senha2').value;
         var coren = document.getElementById('coren').value.trim();
         var telefone = document.getElementById('telefone').value.trim();
 
+        if (!categoria) {
+          mostrarAviso('Escolha sua categoria profissional.', 'erro');
+          return;
+        }
         if (senha !== senha2) {
           mostrarAviso('As senhas não conferem. Verifique e tente novamente.', 'erro');
+          return;
+        }
+        if (categoria !== 'estudante' && !coren) {
+          mostrarAviso('Para profissionais, o número do Coren-RJ é obrigatório.', 'erro');
           return;
         }
 
@@ -155,7 +191,8 @@
             nome_completo: nome,
             email: email,
             senha: senha,
-            coren: coren,
+            categoria: categoria,
+            coren: categoria === 'estudante' ? null : coren,
             telefone: telefone
           });
 

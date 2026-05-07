@@ -68,7 +68,8 @@
           <div class="cart-info">
             <div class="label">Nome</div>
             <div class="nome" id="cart-nome">—</div>
-            <div class="dado"><strong>Coren:</strong> <span id="cart-coren">—</span></div>
+            <div class="dado" id="cart-categoria-linha"><strong>Categoria:</strong> <span id="cart-categoria">—</span></div>
+            <div class="dado" id="cart-coren-linha"><strong>Coren:</strong> <span id="cart-coren">—</span></div>
             <div class="dado"><strong>Vigência:</strong> <span id="cart-ano">—</span></div>
           </div>
         </div>
@@ -99,11 +100,27 @@
   <script src="../js/supabase-client.js"></script>
   <script src="../js/area-comum.js"></script>
   <script>
+    var ROTULOS_CATEGORIA = {
+      enfermeira: 'Enfermeira / Enfermeiro',
+      tecnica: 'Técnica / Técnico de Enfermagem',
+      auxiliar: 'Auxiliar de Enfermagem',
+      estudante: 'Estudante de Enfermagem ou Obstetrícia'
+    };
+
     document.addEventListener('perfil-pronto', function (e) {
       var p = e.detail;
       document.getElementById('cart-nome').textContent = p.nome_completo || '—';
-      document.getElementById('cart-coren').textContent = p.coren || '—';
+      document.getElementById('cart-categoria').textContent = ROTULOS_CATEGORIA[p.categoria] || '—';
       document.getElementById('cart-ano').textContent = p.ano_vigencia || new Date().getFullYear();
+
+      // Coren só aparece se a associada tiver
+      var corenLinha = document.getElementById('cart-coren-linha');
+      if (p.coren) {
+        document.getElementById('cart-coren').textContent = p.coren;
+      } else {
+        corenLinha.style.display = 'none';
+      }
+
       var fotoEl = document.getElementById('cart-foto');
       if (p.foto_url) {
         fotoEl.innerHTML = '<img src="' + p.foto_url + '" alt="Foto da associada">';

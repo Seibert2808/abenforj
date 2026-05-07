@@ -49,6 +49,7 @@
       var senha = dados.senha;
       var meta = {
         nome_completo: dados.nome_completo,
+        categoria: dados.categoria || null,
         coren: dados.coren || null,
         telefone: dados.telefone || null
       };
