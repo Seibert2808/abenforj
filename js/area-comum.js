@@ -59,6 +59,21 @@
       }
     }
 
+    // Injeta link "Admin" no nav pra diretoras
+    if (perfil.is_admin) {
+      var ul = document.querySelector('.main-nav ul');
+      if (ul && !ul.querySelector('a[href="admin.html"]')) {
+        var li = document.createElement('li');
+        li.innerHTML = '<a href="admin.html">Admin</a>';
+        var chipLi = ul.querySelector('.user-chip');
+        if (chipLi) {
+          ul.insertBefore(li, chipLi.parentElement);
+        } else {
+          ul.appendChild(li);
+        }
+      }
+    }
+
     // Marca link ativo
     var path = window.location.pathname.split('/').pop() || 'index.html';
     document.querySelectorAll('.main-nav a').forEach(function (link) {

@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — Abenfo RJ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/area.css">
+  <link rel="icon" type="image/png" href="../assets/logo-abenforj.png">
+  <style>
+    .assoc-card {
+      background: var(--branco);
+      border: 1px solid var(--borda);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+      align-items: start;
+    }
+    @media (min-width: 720px) {
+      .assoc-card { grid-template-columns: 1fr auto; align-items: center; }
+    }
+    .assoc-info strong { color: var(--texto); font-size: 1.05rem; }
+    .assoc-meta {
+      display: flex;
+      gap: 0.5rem 1rem;
+      flex-wrap: wrap;
+      color: var(--texto-suave);
+      font-size: 0.9rem;
+      margin-top: 0.25rem;
+    }
+    .assoc-acoes {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .assoc-acoes input[type="number"] {
+      width: 90px;
+      padding: 0.5rem;
+      min-height: 0;
+      font-size: 0.95rem;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    .badge-pendente { background: #fff8e1; color: #856404; }
+    .badge-ativo    { background: #e6f4ea; color: #1f5d3a; }
+    .badge-inativo  { background: #f1f1f1; color: #666; }
+
+    .lista-vazia {
+      padding: 1.5rem;
+      text-align: center;
+      color: var(--texto-suave);
+      background: var(--areia);
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <a href="#conteudo" class="skip-link">Pular para o conteúdo</a>
+
+  <header class="site-header area-header">
+    <div class="header-inner">
+      <a href="index.html" class="logo-link" aria-label="Área da associada — Início">
+        <img src="../assets/logo-abenforj.png" alt="Logo Abenfo RJ">
+        <div class="logo-text">Abenfo RJ<span>Área da associada</span></div>
+      </a>
+      <button class="nav-toggle" aria-expanded="false" aria-label="Abrir menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+      <nav class="main-nav" aria-label="Principal">
+        <ul>
+          <li><a href="index.html">Início</a></li>
+          <li><a href="carteirinha.html">Carteirinha</a></li>
+          <li><a href="biblioteca.html">Biblioteca</a></li>
+          <li><a href="cursos.html">Cursos</a></li>
+          <li><a href="lai.html">Transparência</a></li>
+          <li><a href="perfil.html">Perfil</a></li>
+          <li><span class="user-chip"><span class="mini-foto">A</span><span class="nome">Associada</span></span></li>
+          <li><button type="button" class="btn-sair">Sair</button></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="conteudo">
+    <section class="area-saudacao">
+      <div class="container">
+        <h1>Painel administrativo</h1>
+        <p>Aprove novas associadas, atualize vigências e gerencie o quadro associativo.</p>
+      </div>
+    </section>
+
+    <section class="section" style="padding-top:1rem;">
+      <div class="container">
+
+        <div id="admin-aviso" hidden></div>
+
+        <h2>Pendentes de aprovação <span id="contador-pendentes" style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;"></span></h2>
+        <div id="lista-pendentes" style="display:grid;gap:0.75rem;margin-bottom:2.5rem;">
+          <div class="lista-vazia" id="vazio-pendentes">Carregando…</div>
+        </div>
+
+        <h2>Associadas ativas <span id="contador-ativos" style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;"></span></h2>
+        <div id="lista-ativos" style="display:grid;gap:0.75rem;margin-bottom:2.5rem;">
+          <div class="lista-vazia" id="vazio-ativos">Carregando…</div>
+        </div>
+
+        <h2>Inativas <span id="contador-inativos" style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;"></span></h2>
+        <div id="lista-inativos" style="display:grid;gap:0.75rem;">
+          <div class="lista-vazia" id="vazio-inativos">Carregando…</div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer" style="margin-top:2rem;">
+    <div class="container">
+      <div class="copyright" style="border:0;padding:1rem 0;">
+        © <span id="ano"></span> Abenfo RJ.
+      </div>
+    </div>
+  </footer>
+
+  <script>document.getElementById('ano').textContent = new Date().getFullYear();</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/supabase-client.js"></script>
+  <script src="../js/area-comum.js"></script>
+  <script>
+    (function () {
+      var ROTULOS = {
+        enfermeira: 'Enfermeira / Enfermeiro',
+        tecnica: 'Técnica / Técnico de Enfermagem',
+        auxiliar: 'Auxiliar de Enfermagem',
+        estudante: 'Estudante'
+      };
+
+      var aviso = document.getElementById('admin-aviso');
+
+      function mostrarAviso(texto, tipo) {
+        aviso.hidden = false;
+        aviso.className = 'aviso';
+        aviso.style.background = tipo === 'erro' ? '#fde8e8' : (tipo === 'sucesso' ? '#e6f4ea' : 'var(--aviso-bg)');
+        aviso.style.borderLeftColor = tipo === 'erro' ? '#c53030' : (tipo === 'sucesso' ? '#2e7d4f' : 'var(--aviso-borda)');
+        aviso.style.color = tipo === 'erro' ? '#742020' : (tipo === 'sucesso' ? '#1f5d3a' : '#5a4a10');
+        aviso.innerHTML = texto;
+        setTimeout(function () { aviso.hidden = true; }, 4000);
+      }
+
+      function escapar(s) {
+        if (!s) return '';
+        return String(s).replace(/[&<>"']/g, function (c) {
+          return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+      }
+
+      function renderCard(p, tipo) {
+        var anoAtual = new Date().getFullYear();
+        var meta = [];
+        meta.push('<span class="badge badge-' + p.status + '">' + p.status + '</span>');
+        if (p.categoria) meta.push(escapar(ROTULOS[p.categoria] || p.categoria));
+        if (p.coren) meta.push('Coren ' + escapar(p.coren));
+        if (p.telefone) meta.push(escapar(p.telefone));
+        if (p.ano_vigencia) meta.push('Vigência ' + p.ano_vigencia);
+        if (p.is_admin) meta.push('Admin');
+
+        var acoes = '';
+        if (tipo === 'pendente') {
+          acoes =
+            '<input type="number" min="2020" max="2099" value="' + anoAtual + '" data-ano="' + p.id + '" aria-label="Ano de vigência">' +
+            '<button class="btn btn-solid" style="min-height:0;padding:0.5rem 1rem;" data-acao="aprovar" data-id="' + p.id + '">Aprovar</button>' +
+            '<button class="btn btn-ghost" style="min-height:0;padding:0.5rem 1rem;" data-acao="recusar" data-id="' + p.id + '">Recusar</button>';
+        } else if (tipo === 'ativo') {
+          acoes =
+            '<input type="number" min="2020" max="2099" value="' + (p.ano_vigencia || anoAtual) + '" data-ano="' + p.id + '" aria-label="Ano de vigência">' +
+            '<button class="btn btn-ghost" style="min-height:0;padding:0.5rem 1rem;" data-acao="atualizar" data-id="' + p.id + '">Atualizar vigência</button>' +
+            '<button class="btn btn-ghost" style="min-height:0;padding:0.5rem 1rem;" data-acao="desativar" data-id="' + p.id + '">Desativar</button>';
+        } else {
+          acoes = '<button class="btn btn-ghost" style="min-height:0;padding:0.5rem 1rem;" data-acao="reativar" data-id="' + p.id + '">Reativar</button>';
+        }
+
+        return (
+          '<div class="assoc-card" data-id="' + p.id + '">' +
+            '<div class="assoc-info">' +
+              '<strong>' + escapar(p.nome_completo || '(sem nome)') + '</strong>' +
+              '<div class="assoc-meta">' + meta.join(' · ') + '</div>' +
+            '</div>' +
+            '<div class="assoc-acoes">' + acoes + '</div>' +
+          '</div>'
+        );
+      }
+
+      async function carregar() {
+        var sb = window.abenfo.sb;
+        var r = await sb.from('profiles').select('*').order('created_at', { ascending: false });
+        if (r.error) {
+          mostrarAviso('Erro ao carregar associadas: ' + r.error.message, 'erro');
+          return;
+        }
+
+        var pendentes = [], ativos = [], inativos = [];
+        r.data.forEach(function (p) {
+          if (p.status === 'pendente') pendentes.push(p);
+          else if (p.status === 'ativo') ativos.push(p);
+          else inativos.push(p);
+        });
+
+        document.getElementById('contador-pendentes').textContent = '(' + pendentes.length + ')';
+        document.getElementById('contador-ativos').textContent = '(' + ativos.length + ')';
+        document.getElementById('contador-inativos').textContent = '(' + inativos.length + ')';
+
+        function preencher(idLista, idVazio, dados, tipo, msgVazia) {
+          var el = document.getElementById(idLista);
+          if (dados.length === 0) {
+            el.innerHTML = '<div class="lista-vazia">' + msgVazia + '</div>';
+          } else {
+            el.innerHTML = dados.map(function (p) { return renderCard(p, tipo); }).join('');
+          }
+        }
+
+        preencher('lista-pendentes', 'vazio-pendentes', pendentes, 'pendente', 'Sem pendências de aprovação 🎉');
+        preencher('lista-ativos', 'vazio-ativos', ativos, 'ativo', 'Nenhuma associada ativa ainda.');
+        preencher('lista-inativos', 'vazio-inativos', inativos, 'inativo', 'Sem inativas.');
+      }
+
+      // Delegação de eventos pros botões de ação
+      document.addEventListener('click', async function (e) {
+        var btn = e.target.closest('button[data-acao]');
+        if (!btn) return;
+        e.preventDefault();
+        var acao = btn.getAttribute('data-acao');
+        var id = btn.getAttribute('data-id');
+        var sb = window.abenfo.sb;
+
+        var atualiz = { updated_at: new Date().toISOString() };
+        var msgOk = '';
+
+        if (acao === 'aprovar' || acao === 'atualizar') {
+          var inp = document.querySelector('input[data-ano="' + id + '"]');
+          var ano = inp ? parseInt(inp.value, 10) : new Date().getFullYear();
+          if (!ano || ano < 2020 || ano > 2099) {
+            mostrarAviso('Ano de vigência inválido.', 'erro');
+            return;
+          }
+          atualiz.status = 'ativo';
+          atualiz.ano_vigencia = ano;
+          msgOk = acao === 'aprovar' ? 'Associada aprovada.' : 'Vigência atualizada.';
+        } else if (acao === 'recusar' || acao === 'desativar') {
+          if (!confirm('Tem certeza que quer ' + (acao === 'recusar' ? 'recusar' : 'desativar') + ' esta associada?')) return;
+          atualiz.status = 'inativo';
+          msgOk = acao === 'recusar' ? 'Associada recusada.' : 'Associada desativada.';
+        } else if (acao === 'reativar') {
+          atualiz.status = 'ativo';
+          atualiz.ano_vigencia = new Date().getFullYear();
+          msgOk = 'Associada reativada.';
+        }
+
+        btn.disabled = true;
+        var r = await sb.from('profiles').update(atualiz).eq('id', id);
+        if (r.error) {
+          mostrarAviso('Erro: ' + r.error.message, 'erro');
+          btn.disabled = false;
+          return;
+        }
+        mostrarAviso(msgOk, 'sucesso');
+        await carregar();
+      });
+
+      document.addEventListener('perfil-pronto', function (e) {
+        if (!e.detail.is_admin) {
+          window.location.href = 'index.html';
+          return;
+        }
+        carregar();
+      });
+    })();
+  </script>
+</body>
+</html>

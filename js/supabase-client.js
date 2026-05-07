@@ -115,12 +115,25 @@
     async exigirAcesso() {
       var sess = await this.sessao();
       if (!sess) {
-        window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.pathname);
+        window.location.href = '../login.html?redirect=' + encodeURIComponent(window.location.pathname);
         return null;
       }
       var perfil = await this.meuPerfil();
       if (!perfil || perfil.status !== 'ativo') {
-        window.location.href = 'aguardando-aprovacao.html';
+        window.location.href = '../aguardando-aprovacao.html';
+        return null;
+      }
+      return perfil;
+    },
+
+    /**
+     * Garante que é admin. Não-admins voltam para o dashboard.
+     */
+    async exigirAdmin() {
+      var perfil = await this.exigirAcesso();
+      if (!perfil) return null;
+      if (!perfil.is_admin) {
+        window.location.href = 'index.html';
         return null;
       }
       return perfil;
