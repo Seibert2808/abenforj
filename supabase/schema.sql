@@ -34,6 +34,10 @@ alter table public.profiles
   add column if not exists categoria text
   check (categoria in ('enfermeira', 'tecnica', 'auxiliar', 'estudante'));
 
+-- Migração: cadastro_completo (documentos entregues e arquivados)
+alter table public.profiles
+  add column if not exists cadastro_completo boolean not null default false;
+
 comment on table public.profiles is 'Perfil estendido das usuárias autenticadas (associadas).';
 comment on column public.profiles.categoria is 'enfermeira | tecnica | auxiliar | estudante. Estudantes não têm Coren.';
 comment on column public.profiles.status is 'pendente = aguardando aprovação | ativo = liberada | inativo = revogada';

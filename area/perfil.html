@@ -51,6 +51,14 @@
 
         <div id="perfil-aviso" hidden></div>
 
+        <div class="aviso" id="banner-cadastro" hidden>
+          <strong>Complete seu cadastro de associada.</strong>
+          <p style="margin:0.5rem 0 0;">Preencha o formulário e anexe os documentos solicitados. Use o mesmo nome e e-mail do seu cadastro aqui.</p>
+          <p style="margin:0.85rem 0 0;">
+            <a href="https://docs.google.com/forms/d/e/1FAIpQLSd-LoOIQ6RQCKwZvz-wa0xnDGA1twvpXiCpQKdC-xiqWCmq0w/viewform" target="_blank" rel="noopener" class="btn btn-solid" style="min-height:0;padding:0.6rem 1.1rem;">Abrir formulário de documentos</a>
+          </p>
+        </div>
+
         <div class="card" style="padding:2rem;margin-bottom:1.5rem;">
           <h2 style="margin-bottom:1rem;">Foto da carteirinha</h2>
           <div class="upload-foto">
@@ -168,6 +176,9 @@
         document.getElementById('telefone').value = perfil.telefone || '';
         setPreview(perfil.foto_url);
         ajustarCoren();
+        if (!perfil.cadastro_completo) {
+          document.getElementById('banner-cadastro').hidden = false;
+        }
 
         // Email vem do auth, não do profile
         window.abenfo.auth.usuario().then(function (u) {

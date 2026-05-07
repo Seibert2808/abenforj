@@ -170,26 +170,38 @@
         var anoAtual = new Date().getFullYear();
         var meta = [];
         meta.push('<span class="badge badge-' + p.status + '">' + p.status + '</span>');
+        if (p.cadastro_completo) {
+          meta.push('<span class="badge" style="background:#e6f4ea;color:#1f5d3a;">docs ✓</span>');
+        } else {
+          meta.push('<span class="badge" style="background:#fff8e1;color:#856404;">docs pendentes</span>');
+        }
         if (p.categoria) meta.push(escapar(ROTULOS[p.categoria] || p.categoria));
         if (p.coren) meta.push('Coren ' + escapar(p.coren));
         if (p.telefone) meta.push(escapar(p.telefone));
         if (p.ano_vigencia) meta.push('Vigência ' + p.ano_vigencia);
         if (p.is_admin) meta.push('Admin');
 
-        var acoes = '';
+        var acoesBase = '';
         if (tipo === 'pendente') {
-          acoes =
+          acoesBase =
             '<input type="number" min="2020" max="2099" value="' + anoAtual + '" data-ano="' + p.id + '" aria-label="Ano de vigência">' +
             '<button class="btn btn-solid" style="min-height:0;padding:0.5rem 1rem;" data-acao="aprovar" data-id="' + p.id + '">Aprovar</button>' +
             '<button class="btn btn-ghost" style="min-height:0;padding:0.5rem 1rem;" data-acao="recusar" data-id="' + p.id + '">Recusar</button>';
         } else if (tipo === 'ativo') {
-          acoes =
+          acoesBase =
             '<input type="number" min="2020" max="2099" value="' + (p.ano_vigencia || anoAtual) + '" data-ano="' + p.id + '" aria-label="Ano de vigência">' +
             '<button class="btn btn-ghost" style="min-height:0;padding:0.5rem 1rem;" data-acao="atualizar" data-id="' + p.id + '">Atualizar vigência</button>' +
             '<button class="btn btn-ghost" style="min-height:0;padding:0.5rem 1rem;" data-acao="desativar" data-id="' + p.id + '">Desativar</button>';
         } else {
-          acoes = '<button class="btn btn-ghost" style="min-height:0;padding:0.5rem 1rem;" data-acao="reativar" data-id="' + p.id + '">Reativar</button>';
+          acoesBase = '<button class="btn btn-ghost" style="min-height:0;padding:0.5rem 1rem;" data-acao="reativar" data-id="' + p.id + '">Reativar</button>';
         }
+
+        // Botão de toggle dos documentos
+        var btnDocs = p.cadastro_completo
+          ? '<button class="btn btn-ghost" style="min-height:0;padding:0.5rem 1rem;" data-acao="docs-pendente" data-id="' + p.id + '">Reabrir docs</button>'
+          : '<button class="btn btn-ghost" style="min-height:0;padding:0.5rem 1rem;" data-acao="docs-completo" data-id="' + p.id + '">Marcar docs ✓</button>';
+
+        var acoes = acoesBase + btnDocs;
 
         return (
           '<div class="assoc-card" data-id="' + p.id + '">' +
@@ -265,6 +277,12 @@
           atualiz.status = 'ativo';
           atualiz.ano_vigencia = new Date().getFullYear();
           msgOk = 'Associada reativada.';
+        } else if (acao === 'docs-completo') {
+          atualiz.cadastro_completo = true;
+          msgOk = 'Documentos marcados como entregues.';
+        } else if (acao === 'docs-pendente') {
+          atualiz.cadastro_completo = false;
+          msgOk = 'Documentos marcados como pendentes.';
         }
 
         btn.disabled = true;

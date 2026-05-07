@@ -46,6 +46,18 @@
       </div>
     </section>
 
+    <section class="section" style="padding-top:0.5rem;">
+      <div class="container">
+        <div class="aviso" id="banner-cadastro" hidden>
+          <strong>Complete seu cadastro de associada.</strong>
+          <p style="margin:0.5rem 0 0;">Para finalizar sua filiação, preencha o formulário abaixo e anexe os documentos solicitados. Identifique-se com o mesmo nome e e-mail usados aqui no site.</p>
+          <p style="margin:0.85rem 0 0;">
+            <a href="https://docs.google.com/forms/d/e/1FAIpQLSd-LoOIQ6RQCKwZvz-wa0xnDGA1twvpXiCpQKdC-xiqWCmq0w/viewform" target="_blank" rel="noopener" class="btn btn-solid" style="min-height:0;padding:0.6rem 1.1rem;">Abrir formulário de documentos</a>
+          </p>
+        </div>
+      </div>
+    </section>
+
     <section class="section" style="padding-top:1rem;">
       <div class="container">
         <div class="cards-area">
@@ -111,6 +123,9 @@
       var perfil = e.detail;
       var nome = perfil.nome_completo ? perfil.nome_completo.split(/\s+/)[0] : 'associada';
       document.getElementById('saudacao-nome').textContent = nome;
+      if (!perfil.cadastro_completo) {
+        document.getElementById('banner-cadastro').hidden = false;
+      }
     });
   </script>
 </body>
