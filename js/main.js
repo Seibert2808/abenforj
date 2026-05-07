@@ -30,7 +30,7 @@
   // basta mudar 'v1' para 'v2' no HTML e neste JS.
   // ============================================================
   var modal = document.getElementById('modal-boas-vindas');
-  var STORAGE_KEY = 'abenfo_modal_ix_v2';
+  var STORAGE_KEY = 'abenfo_modal_ix_v3';
 
   if (modal) {
     var jaViu = false;
