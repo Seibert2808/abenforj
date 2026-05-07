@@ -193,6 +193,11 @@
         } else {
           meta.push('<span class="badge" style="background:#fff8e1;color:#856404;">docs pendentes</span>');
         }
+        if (p.foto_url) {
+          meta.push('<span class="badge" style="background:#e6f4ea;color:#1f5d3a;">foto ✓</span>');
+        } else {
+          meta.push('<span class="badge" style="background:#f1f1f1;color:#666;">sem foto</span>');
+        }
         if (p.categoria) meta.push(escapar(ROTULOS[p.categoria] || p.categoria));
         if (p.tipo_socio) meta.push(escapar(ROTULOS_SOCIO[p.tipo_socio] || p.tipo_socio));
         if (p.formacao) meta.push(escapar(ROTULOS_FORMACAO[p.formacao] || p.formacao));
