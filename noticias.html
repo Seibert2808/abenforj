@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notícias — Abenfo RJ</title>
+  <meta name="description" content="Acompanhe as notícias e publicações da Abenfo RJ direto do nosso Instagram.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/png" href="assets/logo-abenforj.png">
+
+  <!--
+    Widget Behold.so — feed do Instagram da Abenfo RJ.
+    Carregado uma única vez aqui no <head> (módulo).
+    Para conectar o feed real, ver instruções no <main> abaixo.
+  -->
+  <script src="https://w.behold.so/widget.js" type="module"></script>
+</head>
+<body>
+  <a href="#conteudo" class="skip-link">Pular para o conteúdo</a>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="index.html" class="logo-link" aria-label="Abenfo RJ — Página inicial">
+        <img src="assets/logo-abenforj.png" alt="Logo Abenfo RJ">
+        <div class="logo-text">Abenfo RJ<span>Enfermagem Obstétrica</span></div>
+      </a>
+      <button class="nav-toggle" aria-expanded="false" aria-label="Abrir menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+      <nav class="main-nav" aria-label="Principal">
+        <ul>
+          <li><a href="index.html">Início</a></li>
+          <li><a href="missao.html">Missão</a></li>
+          <li><a href="diretoria.html">Diretoria</a></li>
+          <li><a href="cursos.html">Cursos</a></li>
+          <li><a href="eventos.html">Eventos</a></li>
+          <li><a href="biblioteca.html">Biblioteca</a></li>
+          <li><a href="lai.html">LAI</a></li>
+          <li><a href="noticias.html">Notícias</a></li>
+          <li><a href="contato.html">Contato</a></li>
+          <li><a href="associe-se.html" class="btn btn-solid" style="padding:0.45rem 1rem;font-size:0.9rem;">Associe-se</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="conteudo">
+    <section class="page-hero">
+      <div class="container">
+        <h1>Notícias</h1>
+        <p>Acompanhe as últimas postagens e comunicados da Abenfo RJ direto do nosso Instagram.</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;max-width:none;">
+          <div>
+            <span class="eyebrow">Instagram @abenforj</span>
+            <h2 style="margin-bottom:0.25rem;">Últimas postagens</h2>
+            <p style="margin:0;">Atualizado automaticamente a partir do Instagram oficial.</p>
+          </div>
+          <a href="https://www.instagram.com/abenforj/" target="_blank" rel="noopener" class="btn btn-ghost">
+            Seguir no Instagram
+          </a>
+        </div>
+
+        <!--
+          ===== INSTRUÇÃO PARA SABRINA =====
+          Para ativar o feed real do Instagram, siga 5 passos:
+
+          1. Acesse https://behold.so e crie uma conta gratuita (use o e-mail da Abenfo).
+          2. No painel do Behold, clique em "Add a feed" e conecte a conta @abenforj
+             (ele vai pedir login no Instagram — use a conta oficial da Abenfo RJ).
+          3. Após conectar, o Behold mostra um trecho de código com algo como:
+                <behold-widget feed-id="ABCD1234EFGH"></behold-widget>
+             Copie esse feed-id (a parte entre aspas).
+          4. Substitua "COLE_AQUI_O_FEED_ID_DO_BEHOLD" abaixo pelo ID copiado.
+          5. Salve o arquivo. Pronto, o feed começa a aparecer.
+
+          Plano gratuito: 1 feed, atualização a cada ~48h, sem marca d'água.
+          ====================================
+        -->
+
+        <behold-widget feed-id="COLE_AQUI_O_FEED_ID_DO_BEHOLD"></behold-widget>
+
+        <!-- Fallback visual enquanto o feed não está conectado.
+             Pode apagar este bloco assim que o feed estiver no ar. -->
+        <div id="ig-fallback" class="card" style="margin-top:1rem;text-align:center;padding:3rem 2rem;">
+          <div style="font-size:3rem;line-height:1;margin-bottom:1rem;color:var(--verde);">
+            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin:0 auto;">
+              <rect x="2" y="2" width="20" height="20" rx="5"/>
+              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+              <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+            </svg>
+          </div>
+          <h3>Feed do Instagram em conexão</h3>
+          <p>Assim que o feed da Abenfo RJ for conectado, as últimas postagens aparecerão aqui automaticamente. Enquanto isso, acompanhe direto no Instagram:</p>
+          <a href="https://www.instagram.com/abenforj/" target="_blank" rel="noopener" class="btn btn-solid" style="margin-top:0.5rem;">@abenforj no Instagram</a>
+        </div>
+        <script>
+          // Esconde o fallback quando o widget Behold renderizar conteúdo real.
+          (function () {
+            var widget = document.querySelector('behold-widget');
+            var fallback = document.getElementById('ig-fallback');
+            if (!widget || !fallback) return;
+            var feedId = widget.getAttribute('feed-id');
+            if (feedId && feedId.indexOf('COLE_AQUI') !== 0) {
+              // ID já foi configurado — esconde o fallback.
+              fallback.style.display = 'none';
+            }
+          })();
+        </script>
+      </div>
+    </section>
+
+    <section class="section section-areia">
+      <div class="container" style="max-width:760px;">
+        <h2>Comunicados oficiais</h2>
+        <p>Para comunicados longos (ofícios, posicionamentos, notas técnicas) que não cabem em uma postagem do Instagram, use esta seção como complemento ao feed acima.</p>
+        <div class="aviso">
+          <strong>Em construção:</strong> Sabrina, quando publicarmos o primeiro comunicado oficial em texto, eu mostro como adicionar — basta um arquivo PDF ou um bloco de texto.
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <h4>Abenfo RJ</h4>
+          <p style="color:rgba(255,255,255,0.85);">Associação Brasileira de Obstetrizes e Enfermeiros Obstetras — Seção Rio de Janeiro.</p>
+        </div>
+        <div>
+          <h4>Navegação</h4>
+          <ul>
+            <li><a href="missao.html">Missão</a></li>
+            <li><a href="diretoria.html">Diretoria</a></li>
+            <li><a href="cursos.html">Cursos</a></li>
+            <li><a href="eventos.html">Eventos</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Institucional</h4>
+          <ul>
+            <li><a href="biblioteca.html">Biblioteca Virtual</a></li>
+            <li><a href="lai.html">Lei de Acesso à Informação</a></li>
+            <li><a href="associe-se.html">Associe-se</a></li>
+            <li><a href="noticias.html">Notícias</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Contato</h4>
+          <ul>
+            <li>contato@abenforj.org.br</li>
+            <li><a href="contato.html">Formulário de contato</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="copyright">
+        © <span id="ano"></span> Abenfo RJ. Todos os direitos reservados.
+      </div>
+    </div>
+  </footer>
+
+  <script>document.getElementById('ano').textContent = new Date().getFullYear();</script>
+  <script src="js/main.js"></script>
+</body>
+</html>

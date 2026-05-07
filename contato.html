@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contato — Abenfo RJ</title>
+  <meta name="description" content="Fale com a Abenfo RJ — secretaria, redes sociais e formulário de contato.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/png" href="assets/logo-abenforj.png">
+</head>
+<body>
+  <a href="#conteudo" class="skip-link">Pular para o conteúdo</a>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="index.html" class="logo-link" aria-label="Abenfo RJ — Página inicial">
+        <img src="assets/logo-abenforj.png" alt="Logo Abenfo RJ">
+        <div class="logo-text">Abenfo RJ<span>Enfermagem Obstétrica</span></div>
+      </a>
+      <button class="nav-toggle" aria-expanded="false" aria-label="Abrir menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+      <nav class="main-nav" aria-label="Principal">
+        <ul>
+          <li><a href="index.html">Início</a></li>
+          <li><a href="missao.html">Missão</a></li>
+          <li><a href="diretoria.html">Diretoria</a></li>
+          <li><a href="cursos.html">Cursos</a></li>
+          <li><a href="eventos.html">Eventos</a></li>
+          <li><a href="biblioteca.html">Biblioteca</a></li>
+          <li><a href="lai.html">LAI</a></li>
+          <li><a href="noticias.html">Notícias</a></li>
+          <li><a href="contato.html">Contato</a></li>
+          <li><a href="associe-se.html" class="btn btn-solid" style="padding:0.45rem 1rem;font-size:0.9rem;">Associe-se</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="conteudo">
+    <section class="page-hero">
+      <div class="container">
+        <h1>Fale com a Abenfo RJ</h1>
+        <p>Dúvidas, propostas de parceria, imprensa ou solicitação de informação.</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="grid grid-2">
+          <div>
+            <h2>Canais oficiais</h2>
+            <p><strong>E-mail:</strong> <a href="mailto:contato@abenforj.org.br">contato@abenforj.org.br</a></p>
+            <p><strong>Instagram:</strong> <a href="https://www.instagram.com/abenforj/" target="_blank" rel="noopener">@abenforj</a></p>
+            <p><strong>Endereço:</strong> a confirmar</p>
+
+            <div class="aviso">
+              <strong>Atualizar:</strong> Sabrina, confirme se o e-mail oficial é mesmo <em>contato@abenforj.org.br</em> ou se é outro endereço, e adicione o handle correto do Instagram e demais redes (Facebook, LinkedIn) caso existam.
+            </div>
+
+            <h2 style="margin-top:2.5rem;">Horário de atendimento</h2>
+            <p>Segunda a sexta, das 9h às 17h (atendimento por e-mail e redes sociais).</p>
+          </div>
+
+          <div class="card">
+            <h3>Envie uma mensagem</h3>
+            <form action="#" method="post" novalidate>
+              <div class="campo">
+                <label for="c-nome">Nome *</label>
+                <input type="text" id="c-nome" name="nome" required>
+              </div>
+              <div class="campo">
+                <label for="c-email">E-mail *</label>
+                <input type="email" id="c-email" name="email" required>
+              </div>
+              <div class="campo">
+                <label for="c-assunto">Assunto</label>
+                <select id="c-assunto" name="assunto">
+                  <option value="duvida">Dúvida geral</option>
+                  <option value="associacao">Sobre associação</option>
+                  <option value="cursos">Sobre cursos</option>
+                  <option value="parceria">Proposta de parceria</option>
+                  <option value="imprensa">Imprensa</option>
+                  <option value="outro">Outro</option>
+                </select>
+              </div>
+              <div class="campo">
+                <label for="c-mensagem">Mensagem *</label>
+                <textarea id="c-mensagem" name="mensagem" required></textarea>
+              </div>
+              <button type="submit" class="btn btn-solid">Enviar</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <h4>Abenfo RJ</h4>
+          <p style="color:rgba(255,255,255,0.85);">Associação Brasileira de Obstetrizes e Enfermeiros Obstetras — Seção Rio de Janeiro.</p>
+        </div>
+        <div>
+          <h4>Navegação</h4>
+          <ul>
+            <li><a href="missao.html">Missão</a></li>
+            <li><a href="diretoria.html">Diretoria</a></li>
+            <li><a href="cursos.html">Cursos</a></li>
+            <li><a href="eventos.html">Eventos</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Institucional</h4>
+          <ul>
+            <li><a href="biblioteca.html">Biblioteca Virtual</a></li>
+            <li><a href="lai.html">Lei de Acesso à Informação</a></li>
+            <li><a href="associe-se.html">Associe-se</a></li>
+            <li><a href="noticias.html">Notícias</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Contato</h4>
+          <ul>
+            <li>contato@abenforj.org.br</li>
+            <li><a href="contato.html">Formulário de contato</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="copyright">
+        © <span id="ano"></span> Abenfo RJ. Todos os direitos reservados.
+      </div>
+    </div>
+  </footer>
+
+  <script>document.getElementById('ano').textContent = new Date().getFullYear();</script>
+  <script src="js/main.js"></script>
+</body>
+</html>

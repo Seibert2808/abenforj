@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Associe-se — Abenfo RJ</title>
+  <meta name="description" content="Faça parte da Abenfo RJ. Conheça os benefícios, valores de filiação e formulário de inscrição.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/png" href="assets/logo-abenforj.png">
+</head>
+<body>
+  <a href="#conteudo" class="skip-link">Pular para o conteúdo</a>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="index.html" class="logo-link" aria-label="Abenfo RJ — Página inicial">
+        <img src="assets/logo-abenforj.png" alt="Logo Abenfo RJ">
+        <div class="logo-text">Abenfo RJ<span>Enfermagem Obstétrica</span></div>
+      </a>
+      <button class="nav-toggle" aria-expanded="false" aria-label="Abrir menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+      <nav class="main-nav" aria-label="Principal">
+        <ul>
+          <li><a href="index.html">Início</a></li>
+          <li><a href="missao.html">Missão</a></li>
+          <li><a href="diretoria.html">Diretoria</a></li>
+          <li><a href="cursos.html">Cursos</a></li>
+          <li><a href="eventos.html">Eventos</a></li>
+          <li><a href="biblioteca.html">Biblioteca</a></li>
+          <li><a href="lai.html">LAI</a></li>
+          <li><a href="noticias.html">Notícias</a></li>
+          <li><a href="contato.html">Contato</a></li>
+          <li><a href="associe-se.html" class="btn btn-solid" style="padding:0.45rem 1rem;font-size:0.9rem;">Associe-se</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="conteudo">
+    <section class="page-hero">
+      <div class="container">
+        <h1>Associe-se</h1>
+        <p>Fortaleça a categoria. Garanta sua participação política, científica e formativa na Abenfo RJ.</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="grid grid-2">
+          <div class="prose" style="margin:0;">
+            <h2>Quem pode se associar</h2>
+            <ul>
+              <li>Obstetrizes formadas em curso de graduação reconhecido pelo MEC.</li>
+              <li>Enfermeiros obstetras com especialização concluída ou em curso.</li>
+              <li>Estudantes de pós-graduação em Enfermagem Obstétrica (categoria estudante).</li>
+              <li>Profissionais que atuem em ensino, pesquisa ou assistência na área.</li>
+            </ul>
+
+            <h2>Benefícios</h2>
+            <ul>
+              <li>Descontos em cursos, eventos e congressos da Abenfo RJ e Abenfo Nacional.</li>
+              <li>Direito a voz e voto em assembleias.</li>
+              <li>Acesso à biblioteca virtual e a pareceres técnicos.</li>
+              <li>Participação em comissões e grupos de trabalho.</li>
+            </ul>
+          </div>
+
+          <div class="card" id="valores">
+            <h3>Valores de filiação</h3>
+            <p>Anuidade vigente para 2026:</p>
+            <table class="valores">
+              <thead>
+                <tr><th>Categoria</th><th>Valor anual</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Profissional</td><td>R$ —,—</td></tr>
+                <tr><td>Estudante de pós</td><td>R$ —,—</td></tr>
+                <tr><td>Profissional aposentada</td><td>R$ —,—</td></tr>
+              </tbody>
+            </table>
+            <div class="aviso" style="margin:0;">
+              Sabrina, defina os valores vigentes para 2026 com a tesouraria e atualize esta tabela. Os valores antigos eram de 2021.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-areia">
+      <div class="container" style="max-width:760px;">
+        <h2>Formulário de inscrição</h2>
+        <p>Preencha os dados abaixo e nossa secretaria entrará em contato com as instruções de pagamento e envio de documentação.</p>
+
+        <form action="#" method="post" novalidate>
+          <div class="campo">
+            <label for="nome">Nome completo *</label>
+            <input type="text" id="nome" name="nome" required>
+          </div>
+          <div class="campo">
+            <label for="email">E-mail *</label>
+            <input type="email" id="email" name="email" required>
+          </div>
+          <div class="campo">
+            <label for="telefone">Telefone / WhatsApp</label>
+            <input type="tel" id="telefone" name="telefone">
+          </div>
+          <div class="campo">
+            <label for="coren">Nº de inscrição no Coren-RJ</label>
+            <input type="text" id="coren" name="coren">
+          </div>
+          <div class="campo">
+            <label for="categoria">Categoria de associação *</label>
+            <select id="categoria" name="categoria" required>
+              <option value="">Selecione...</option>
+              <option value="profissional">Profissional</option>
+              <option value="estudante">Estudante de pós-graduação</option>
+              <option value="aposentada">Profissional aposentada</option>
+            </select>
+          </div>
+          <div class="campo">
+            <label for="formacao">Formação / instituição</label>
+            <input type="text" id="formacao" name="formacao" placeholder="Ex: Especialização em Enf. Obstétrica — UFRJ">
+          </div>
+          <div class="campo">
+            <label for="mensagem">Observações</label>
+            <textarea id="mensagem" name="mensagem"></textarea>
+          </div>
+
+          <button type="submit" class="btn btn-solid">Enviar inscrição</button>
+        </form>
+
+        <div class="aviso" style="margin-top:2rem;">
+          Este formulário precisa ser conectado a um serviço de envio (Formspree, Netlify Forms, ou e-mail). Posso configurar quando definirmos a hospedagem.
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="renovacao">
+      <div class="container">
+        <h2>Já é associada? Renove sua filiação</h2>
+        <p>Se você já é associada e deseja apenas renovar sua anuidade, entre em contato com a secretaria pelo e-mail <a href="mailto:contato@abenforj.org.br">contato@abenforj.org.br</a> informando seu nome e CPF.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <h4>Abenfo RJ</h4>
+          <p style="color:rgba(255,255,255,0.85);">Associação Brasileira de Obstetrizes e Enfermeiros Obstetras — Seção Rio de Janeiro.</p>
+        </div>
+        <div>
+          <h4>Navegação</h4>
+          <ul>
+            <li><a href="missao.html">Missão</a></li>
+            <li><a href="diretoria.html">Diretoria</a></li>
+            <li><a href="cursos.html">Cursos</a></li>
+            <li><a href="eventos.html">Eventos</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Institucional</h4>
+          <ul>
+            <li><a href="biblioteca.html">Biblioteca Virtual</a></li>
+            <li><a href="lai.html">Lei de Acesso à Informação</a></li>
+            <li><a href="associe-se.html">Associe-se</a></li>
+            <li><a href="noticias.html">Notícias</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Contato</h4>
+          <ul>
+            <li>contato@abenforj.org.br</li>
+            <li><a href="contato.html">Formulário de contato</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="copyright">
+        © <span id="ano"></span> Abenfo RJ. Todos os direitos reservados.
+      </div>
+    </div>
+  </footer>
+
+  <script>document.getElementById('ano').textContent = new Date().getFullYear();</script>
+  <script src="js/main.js"></script>
+</body>
+</html>
