@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Entrar — Abenfo RJ</title>
+  <meta name="description" content="Acesso à área da associada da Abenfo RJ.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/png" href="assets/logo-abenforj.png">
+</head>
+<body>
+  <a href="#conteudo" class="skip-link">Pular para o conteúdo</a>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="index.html" class="logo-link" aria-label="Abenfo RJ — Página inicial">
+        <img src="assets/logo-abenforj.png" alt="Logo Abenfo RJ">
+        <div class="logo-text">Abenfo RJ<span>Enfermagem Obstétrica</span></div>
+      </a>
+      <button class="nav-toggle" aria-expanded="false" aria-label="Abrir menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+      <nav class="main-nav" aria-label="Principal">
+        <ul>
+          <li><a href="index.html">Início</a></li>
+          <li><a href="missao.html">Missão</a></li>
+          <li><a href="diretoria.html">Diretoria</a></li>
+          <li><a href="cursos.html">Cursos</a></li>
+          <li><a href="eventos.html">Eventos</a></li>
+          <li><a href="lai.html">Transparência</a></li>
+          <li><a href="noticias.html">Notícias</a></li>
+          <li><a href="contato.html">Contato</a></li>
+          <li><a href="login.html" style="font-weight:500;">Entrar</a></li>
+          <li><a href="associe-se.html" class="btn btn-solid" style="padding:0.5rem 1rem;font-size:0.9rem;min-height:0;">Associe-se</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="conteudo">
+    <section class="page-hero">
+      <div class="container">
+        <h1>Área da associada</h1>
+        <p>Entre para acessar a biblioteca, materiais de cursos, sua carteirinha e documentos.</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container" style="max-width:440px;">
+        <div class="card" style="padding:2rem;">
+          <h2 style="margin-bottom:1.5rem;">Entrar</h2>
+
+          <div id="login-aviso" hidden></div>
+
+          <form id="login-form" novalidate>
+            <div class="campo">
+              <label for="email">E-mail</label>
+              <input type="email" id="email" name="email" autocomplete="email" required>
+            </div>
+            <div class="campo">
+              <label for="senha">Senha</label>
+              <input type="password" id="senha" name="senha" autocomplete="current-password" required minlength="6">
+            </div>
+            <button type="submit" class="btn btn-solid btn-block" id="btn-entrar">Entrar</button>
+          </form>
+
+          <p style="margin-top:1.25rem;text-align:center;font-size:0.95rem;">
+            <a href="recuperar-senha.html">Esqueci minha senha</a>
+          </p>
+        </div>
+
+        <div class="card" style="margin-top:1.5rem;padding:1.5rem;background:var(--areia);">
+          <h3 style="font-size:1.05rem;">Ainda não tem login?</h3>
+          <p style="font-size:0.95rem;">Se você já é associada da Abenfo RJ, crie sua conta para acessar a área restrita.</p>
+          <p style="margin:0;"><a href="cadastro.html" class="btn btn-ghost btn-block">Criar conta de associada</a></p>
+        </div>
+
+        <p style="margin-top:1rem;text-align:center;font-size:0.9rem;color:var(--texto-suave);">
+          Ainda não é associada? <a href="associe-se.html">Conheça os benefícios e associe-se</a>.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="copyright" style="border:0;padding:1rem 0;">
+        © <span id="ano"></span> Abenfo RJ.
+      </div>
+    </div>
+  </footer>
+
+  <script>document.getElementById('ano').textContent = new Date().getFullYear();</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    (function () {
+      var form = document.getElementById('login-form');
+      var aviso = document.getElementById('login-aviso');
+      var btn = document.getElementById('btn-entrar');
+
+      function mostrarAviso(texto, tipo) {
+        aviso.hidden = false;
+        aviso.className = tipo === 'erro' ? 'aviso' : 'aviso';
+        aviso.style.background = tipo === 'erro' ? '#fde8e8' : 'var(--aviso-bg)';
+        aviso.style.borderLeftColor = tipo === 'erro' ? '#c53030' : 'var(--aviso-borda)';
+        aviso.style.color = tipo === 'erro' ? '#742020' : '#5a4a10';
+        aviso.textContent = texto;
+      }
+
+      // Aviso quando Supabase ainda não configurado
+      if (!window.SUPABASE_PRONTO) {
+        mostrarAviso('A área da associada ainda está em configuração. Em breve estará disponível.', 'info');
+        btn.disabled = true;
+        return;
+      }
+
+      form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        aviso.hidden = true;
+        btn.disabled = true;
+        btn.textContent = 'Entrando…';
+
+        var email = document.getElementById('email').value.trim();
+        var senha = document.getElementById('senha').value;
+
+        try {
+          var res = await window.abenfo.auth.entrar(email, senha);
+          if (res.error) {
+            mostrarAviso('E-mail ou senha incorretos. Verifique e tente novamente.', 'erro');
+            btn.disabled = false;
+            btn.textContent = 'Entrar';
+            return;
+          }
+          // Sucesso — checa se aprovada
+          var perfil = await window.abenfo.auth.meuPerfil();
+          var qs = new URLSearchParams(window.location.search);
+          var redirect = qs.get('redirect');
+          if (perfil && perfil.status === 'ativo') {
+            window.location.href = redirect || 'area/index.html';
+          } else {
+            window.location.href = 'aguardando-aprovacao.html';
+          }
+        } catch (err) {
+          mostrarAviso('Erro ao tentar entrar. Tente novamente em alguns instantes.', 'erro');
+          btn.disabled = false;
+          btn.textContent = 'Entrar';
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

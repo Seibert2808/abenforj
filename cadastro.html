@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Criar conta — Abenfo RJ</title>
+  <meta name="description" content="Crie sua conta de associada da Abenfo RJ para acessar a área restrita.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/png" href="assets/logo-abenforj.png">
+</head>
+<body>
+  <a href="#conteudo" class="skip-link">Pular para o conteúdo</a>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="index.html" class="logo-link" aria-label="Abenfo RJ — Página inicial">
+        <img src="assets/logo-abenforj.png" alt="Logo Abenfo RJ">
+        <div class="logo-text">Abenfo RJ<span>Enfermagem Obstétrica</span></div>
+      </a>
+      <button class="nav-toggle" aria-expanded="false" aria-label="Abrir menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+      <nav class="main-nav" aria-label="Principal">
+        <ul>
+          <li><a href="index.html">Início</a></li>
+          <li><a href="missao.html">Missão</a></li>
+          <li><a href="diretoria.html">Diretoria</a></li>
+          <li><a href="cursos.html">Cursos</a></li>
+          <li><a href="eventos.html">Eventos</a></li>
+          <li><a href="lai.html">Transparência</a></li>
+          <li><a href="noticias.html">Notícias</a></li>
+          <li><a href="contato.html">Contato</a></li>
+          <li><a href="login.html" style="font-weight:500;">Entrar</a></li>
+          <li><a href="associe-se.html" class="btn btn-solid" style="padding:0.5rem 1rem;font-size:0.9rem;min-height:0;">Associe-se</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="conteudo">
+    <section class="page-hero">
+      <div class="container">
+        <h1>Criar conta de associada</h1>
+        <p>Para associadas que já fizeram a filiação via PIX e querem acessar a área restrita.</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container" style="max-width:520px;">
+        <div class="aviso">
+          <strong>Importante:</strong> sua conta fica em análise até a diretoria confirmar sua filiação no quadro associativo. Você recebe um e-mail assim que for aprovada (em geral, até 3 dias úteis). Se ainda não é associada, comece <a href="associe-se.html">aqui</a>.
+        </div>
+
+        <div class="card" style="padding:2rem;">
+          <h2 style="margin-bottom:1.5rem;">Seus dados</h2>
+
+          <div id="cadastro-aviso" hidden></div>
+
+          <form id="cadastro-form" novalidate>
+            <div class="campo">
+              <label for="nome">Nome completo *</label>
+              <input type="text" id="nome" name="nome_completo" autocomplete="name" required>
+            </div>
+            <div class="campo">
+              <label for="email">E-mail *</label>
+              <input type="email" id="email" name="email" autocomplete="email" required>
+            </div>
+            <div class="campo">
+              <label for="coren">Inscrição no Coren-RJ</label>
+              <input type="text" id="coren" name="coren" placeholder="Ex.: 123456-ENF">
+            </div>
+            <div class="campo">
+              <label for="telefone">Telefone / WhatsApp</label>
+              <input type="tel" id="telefone" name="telefone" autocomplete="tel">
+            </div>
+            <div class="campo">
+              <label for="senha">Senha *</label>
+              <input type="password" id="senha" name="senha" autocomplete="new-password" required minlength="8">
+              <small style="color:var(--texto-suave);font-size:0.85rem;">Mínimo de 8 caracteres.</small>
+            </div>
+            <div class="campo">
+              <label for="senha2">Confirmar senha *</label>
+              <input type="password" id="senha2" name="senha2" autocomplete="new-password" required minlength="8">
+            </div>
+
+            <button type="submit" class="btn btn-solid btn-block" id="btn-cadastrar">Criar conta</button>
+          </form>
+        </div>
+
+        <p style="margin-top:1rem;text-align:center;font-size:0.95rem;">
+          Já tem conta? <a href="login.html">Entrar</a>.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="copyright" style="border:0;padding:1rem 0;">
+        © <span id="ano"></span> Abenfo RJ.
+      </div>
+    </div>
+  </footer>
+
+  <script>document.getElementById('ano').textContent = new Date().getFullYear();</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    (function () {
+      var form = document.getElementById('cadastro-form');
+      var aviso = document.getElementById('cadastro-aviso');
+      var btn = document.getElementById('btn-cadastrar');
+
+      function mostrarAviso(texto, tipo) {
+        aviso.hidden = false;
+        aviso.className = 'aviso';
+        aviso.style.background = tipo === 'erro' ? '#fde8e8' : (tipo === 'sucesso' ? '#e6f4ea' : 'var(--aviso-bg)');
+        aviso.style.borderLeftColor = tipo === 'erro' ? '#c53030' : (tipo === 'sucesso' ? '#2e7d4f' : 'var(--aviso-borda)');
+        aviso.style.color = tipo === 'erro' ? '#742020' : (tipo === 'sucesso' ? '#1f5d3a' : '#5a4a10');
+        aviso.innerHTML = texto;
+      }
+
+      if (!window.SUPABASE_PRONTO) {
+        mostrarAviso('A criação de contas ainda está em configuração. Em breve estará disponível.', 'info');
+        btn.disabled = true;
+        return;
+      }
+
+      form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        aviso.hidden = true;
+
+        var nome = document.getElementById('nome').value.trim();
+        var email = document.getElementById('email').value.trim();
+        var senha = document.getElementById('senha').value;
+        var senha2 = document.getElementById('senha2').value;
+        var coren = document.getElementById('coren').value.trim();
+        var telefone = document.getElementById('telefone').value.trim();
+
+        if (senha !== senha2) {
+          mostrarAviso('As senhas não conferem. Verifique e tente novamente.', 'erro');
+          return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Criando conta…';
+
+        try {
+          var res = await window.abenfo.auth.cadastrar({
+            nome_completo: nome,
+            email: email,
+            senha: senha,
+            coren: coren,
+            telefone: telefone
+          });
+
+          if (res.error) {
+            var msg = res.error.message || 'Não foi possível criar a conta.';
+            if (msg.toLowerCase().indexOf('already') >= 0) {
+              msg = 'Este e-mail já tem uma conta. Tente <a href="login.html">entrar</a> ou <a href="recuperar-senha.html">recuperar a senha</a>.';
+            }
+            mostrarAviso(msg, 'erro');
+            btn.disabled = false;
+            btn.textContent = 'Criar conta';
+            return;
+          }
+
+          form.reset();
+          mostrarAviso(
+            '<strong>Conta criada!</strong> Verifique seu e-mail para confirmar o endereço. Depois disso, sua conta fica em análise pela diretoria — você recebe um aviso quando for aprovada.',
+            'sucesso'
+          );
+          btn.style.display = 'none';
+        } catch (err) {
+          mostrarAviso('Erro ao criar a conta. Tente novamente em alguns instantes.', 'erro');
+          btn.disabled = false;
+          btn.textContent = 'Criar conta';
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

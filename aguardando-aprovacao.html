@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aguardando aprovação — Abenfo RJ</title>
+  <meta name="description" content="Sua conta está em análise pela diretoria da Abenfo RJ.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/png" href="assets/logo-abenforj.png">
+</head>
+<body>
+  <a href="#conteudo" class="skip-link">Pular para o conteúdo</a>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="index.html" class="logo-link" aria-label="Abenfo RJ — Página inicial">
+        <img src="assets/logo-abenforj.png" alt="Logo Abenfo RJ">
+        <div class="logo-text">Abenfo RJ<span>Enfermagem Obstétrica</span></div>
+      </a>
+      <button class="nav-toggle" aria-expanded="false" aria-label="Abrir menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+      <nav class="main-nav" aria-label="Principal">
+        <ul>
+          <li><a href="index.html">Início</a></li>
+          <li><a href="missao.html">Missão</a></li>
+          <li><a href="diretoria.html">Diretoria</a></li>
+          <li><a href="cursos.html">Cursos</a></li>
+          <li><a href="eventos.html">Eventos</a></li>
+          <li><a href="lai.html">Transparência</a></li>
+          <li><a href="noticias.html">Notícias</a></li>
+          <li><a href="contato.html">Contato</a></li>
+          <li><a href="login.html" style="font-weight:500;">Entrar</a></li>
+          <li><a href="associe-se.html" class="btn btn-solid" style="padding:0.5rem 1rem;font-size:0.9rem;min-height:0;">Associe-se</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="conteudo">
+    <section class="page-hero">
+      <div class="container">
+        <h1>Aguardando aprovação</h1>
+        <p>Sua conta foi criada e está em análise pela diretoria.</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container" style="max-width:560px;">
+        <div class="locked-card">
+          <div class="lock-icon" aria-hidden="true">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <h2>Conta em análise</h2>
+          <p>Sua filiação está sendo confirmada no quadro associativo da Abenfo RJ. Em geral, o processo leva até 3 dias úteis. Você recebe um e-mail assim que sua conta for aprovada.</p>
+          <p>Se já se passaram mais de 3 dias úteis ou você acredita que houve algum engano, entre em contato:</p>
+          <p style="display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap;margin-top:1rem;">
+            <a href="contato.html" class="btn btn-solid">Falar com a secretaria</a>
+            <button type="button" class="btn btn-ghost" id="btn-sair">Sair</button>
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="copyright" style="border:0;padding:1rem 0;">
+        © <span id="ano"></span> Abenfo RJ.
+      </div>
+    </div>
+  </footer>
+
+  <script>document.getElementById('ano').textContent = new Date().getFullYear();</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    document.getElementById('btn-sair').addEventListener('click', async function () {
+      if (window.SUPABASE_PRONTO && window.abenfo) {
+        await window.abenfo.auth.sair();
+      }
+      window.location.href = 'index.html';
+    });
+  </script>
+</body>
+</html>

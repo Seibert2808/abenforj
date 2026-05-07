@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recuperar senha — Abenfo RJ</title>
+  <meta name="description" content="Recupere o acesso à sua conta de associada da Abenfo RJ.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/png" href="assets/logo-abenforj.png">
+</head>
+<body>
+  <a href="#conteudo" class="skip-link">Pular para o conteúdo</a>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="index.html" class="logo-link" aria-label="Abenfo RJ — Página inicial">
+        <img src="assets/logo-abenforj.png" alt="Logo Abenfo RJ">
+        <div class="logo-text">Abenfo RJ<span>Enfermagem Obstétrica</span></div>
+      </a>
+      <button class="nav-toggle" aria-expanded="false" aria-label="Abrir menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+      <nav class="main-nav" aria-label="Principal">
+        <ul>
+          <li><a href="index.html">Início</a></li>
+          <li><a href="missao.html">Missão</a></li>
+          <li><a href="diretoria.html">Diretoria</a></li>
+          <li><a href="cursos.html">Cursos</a></li>
+          <li><a href="eventos.html">Eventos</a></li>
+          <li><a href="lai.html">Transparência</a></li>
+          <li><a href="noticias.html">Notícias</a></li>
+          <li><a href="contato.html">Contato</a></li>
+          <li><a href="login.html" style="font-weight:500;">Entrar</a></li>
+          <li><a href="associe-se.html" class="btn btn-solid" style="padding:0.5rem 1rem;font-size:0.9rem;min-height:0;">Associe-se</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="conteudo">
+    <section class="page-hero">
+      <div class="container">
+        <h1>Recuperar senha</h1>
+        <p>Enviaremos um link no seu e-mail para você definir uma nova senha.</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container" style="max-width:440px;">
+        <div class="card" style="padding:2rem;">
+          <div id="rec-aviso" hidden></div>
+
+          <form id="rec-form" novalidate>
+            <div class="campo">
+              <label for="email">E-mail cadastrado</label>
+              <input type="email" id="email" name="email" autocomplete="email" required>
+            </div>
+            <button type="submit" class="btn btn-solid btn-block" id="btn-rec">Enviar link de recuperação</button>
+          </form>
+
+          <p style="margin-top:1.25rem;text-align:center;font-size:0.95rem;">
+            Lembrou? <a href="login.html">Voltar para entrar</a>
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="copyright" style="border:0;padding:1rem 0;">
+        © <span id="ano"></span> Abenfo RJ.
+      </div>
+    </div>
+  </footer>
+
+  <script>document.getElementById('ano').textContent = new Date().getFullYear();</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    (function () {
+      var form = document.getElementById('rec-form');
+      var aviso = document.getElementById('rec-aviso');
+      var btn = document.getElementById('btn-rec');
+
+      function mostrarAviso(texto, tipo) {
+        aviso.hidden = false;
+        aviso.className = 'aviso';
+        aviso.style.background = tipo === 'erro' ? '#fde8e8' : (tipo === 'sucesso' ? '#e6f4ea' : 'var(--aviso-bg)');
+        aviso.style.borderLeftColor = tipo === 'erro' ? '#c53030' : (tipo === 'sucesso' ? '#2e7d4f' : 'var(--aviso-borda)');
+        aviso.style.color = tipo === 'erro' ? '#742020' : (tipo === 'sucesso' ? '#1f5d3a' : '#5a4a10');
+        aviso.innerHTML = texto;
+      }
+
+      if (!window.SUPABASE_PRONTO) {
+        mostrarAviso('A área da associada ainda está em configuração. Em breve estará disponível.', 'info');
+        btn.disabled = true;
+        return;
+      }
+
+      form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        aviso.hidden = true;
+        btn.disabled = true;
+        btn.textContent = 'Enviando…';
+
+        var email = document.getElementById('email').value.trim();
+
+        try {
+          var res = await window.abenfo.auth.recuperarSenha(email);
+          if (res.error) {
+            mostrarAviso('Não foi possível enviar o link. Verifique o e-mail e tente novamente.', 'erro');
+            btn.disabled = false;
+            btn.textContent = 'Enviar link de recuperação';
+            return;
+          }
+          mostrarAviso(
+            '<strong>Pronto!</strong> Se o e-mail estiver cadastrado, em poucos minutos você recebe um link para definir uma nova senha. Verifique também a caixa de spam.',
+            'sucesso'
+          );
+          form.style.display = 'none';
+        } catch (err) {
+          mostrarAviso('Erro ao processar a solicitação. Tente novamente em alguns instantes.', 'erro');
+          btn.disabled = false;
+          btn.textContent = 'Enviar link de recuperação';
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
