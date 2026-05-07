@@ -146,6 +146,24 @@
         auxiliar: 'Auxiliar de Enfermagem',
         estudante: 'Estudante'
       };
+      var ROTULOS_FORMACAO = {
+        fundamental: 'Ens. Fundamental',
+        medio: 'Ens. Médio',
+        graduacao: 'Graduação',
+        especializacao: 'Especialização',
+        mestrado: 'Mestrado',
+        doutorado: 'Doutorado'
+      };
+      var ROTULOS_SOCIO = {
+        efetiva: 'Sócia Efetiva',
+        especial: 'Sócia Especial'
+      };
+
+      function fmtCpf(v) {
+        v = (v || '').replace(/\D/g, '');
+        if (v.length !== 11) return v;
+        return v.slice(0, 3) + '.' + v.slice(3, 6) + '.' + v.slice(6, 9) + '-' + v.slice(9);
+      }
 
       var aviso = document.getElementById('admin-aviso');
 
@@ -176,7 +194,10 @@
           meta.push('<span class="badge" style="background:#fff8e1;color:#856404;">docs pendentes</span>');
         }
         if (p.categoria) meta.push(escapar(ROTULOS[p.categoria] || p.categoria));
+        if (p.tipo_socio) meta.push(escapar(ROTULOS_SOCIO[p.tipo_socio] || p.tipo_socio));
+        if (p.formacao) meta.push(escapar(ROTULOS_FORMACAO[p.formacao] || p.formacao));
         if (p.coren) meta.push('Coren ' + escapar(p.coren));
+        if (p.cpf) meta.push('CPF ' + escapar(fmtCpf(p.cpf)));
         if (p.telefone) meta.push(escapar(p.telefone));
         if (p.ano_vigencia) meta.push('Vigência ' + p.ano_vigencia);
         if (p.is_admin) meta.push('Admin');

@@ -96,13 +96,43 @@
             </select>
           </div>
           <div class="campo" id="campo-coren">
-            <label for="coren">Inscrição no Coren-RJ</label>
-            <input type="text" id="coren" name="coren" placeholder="Ex.: 123456-ENF">
+            <label for="coren">Inscrição no Coren (UF + número)</label>
+            <input type="text" id="coren" name="coren" placeholder="Ex.: RJ-123456">
             <small style="color:var(--texto-suave);font-size:0.85rem;">Não se aplica a estudantes.</small>
           </div>
           <div class="campo">
-            <label for="telefone">Telefone / WhatsApp</label>
-            <input type="tel" id="telefone" name="telefone" autocomplete="tel">
+            <label for="cpf">CPF</label>
+            <input type="text" id="cpf" name="cpf" inputmode="numeric" maxlength="14" placeholder="000.000.000-00">
+            <small style="color:var(--texto-suave);font-size:0.85rem;">Será gravado só com números.</small>
+          </div>
+          <div class="campo">
+            <label for="telefone">Telefone / WhatsApp (com DDD)</label>
+            <input type="tel" id="telefone" name="telefone" inputmode="numeric" autocomplete="tel" placeholder="21999999999">
+            <small style="color:var(--texto-suave);font-size:0.85rem;">Somente números.</small>
+          </div>
+          <div class="campo">
+            <label for="formacao">Maior grau de formação acadêmica</label>
+            <select id="formacao" name="formacao">
+              <option value="">Selecione...</option>
+              <option value="fundamental">Ensino fundamental</option>
+              <option value="medio">Ensino médio</option>
+              <option value="graduacao">Graduação</option>
+              <option value="especializacao">Especialização</option>
+              <option value="mestrado">Mestrado</option>
+              <option value="doutorado">Doutorado</option>
+            </select>
+          </div>
+          <div class="campo">
+            <label for="tipo_socio">Categoria de sócia(o)</label>
+            <select id="tipo_socio" name="tipo_socio">
+              <option value="">Selecione...</option>
+              <option value="efetiva">Sócia(o) Efetiva(o)</option>
+              <option value="especial">Sócia(o) Especial</option>
+            </select>
+            <small style="color:var(--texto-suave);font-size:0.85rem;display:block;margin-top:0.5rem;line-height:1.5;">
+              <strong>Efetiva:</strong> Enfermeiras Obstétricas, Obstetrizes e Enfermeiras com especialização em Saúde da Mulher e do Recém-Nascido.<br>
+              <strong>Especial:</strong> Enfermeiras que atuam na área e estudantes de graduação em Enfermagem.
+            </small>
           </div>
 
           <button type="submit" class="btn btn-solid" id="btn-salvar">Salvar alterações</button>
@@ -168,12 +198,28 @@
       }
       selCat.addEventListener('change', ajustarCoren);
 
+      function formatarCpf(v) {
+        v = (v || '').replace(/\D/g, '').slice(0, 11);
+        if (v.length <= 3) return v;
+        if (v.length <= 6) return v.slice(0, 3) + '.' + v.slice(3);
+        if (v.length <= 9) return v.slice(0, 3) + '.' + v.slice(3, 6) + '.' + v.slice(6);
+        return v.slice(0, 3) + '.' + v.slice(3, 6) + '.' + v.slice(6, 9) + '-' + v.slice(9);
+      }
+
+      var inpCpf = document.getElementById('cpf');
+      inpCpf.addEventListener('input', function () {
+        inpCpf.value = formatarCpf(inpCpf.value);
+      });
+
       document.addEventListener('perfil-pronto', function (e) {
         perfil = e.detail;
         document.getElementById('nome').value = perfil.nome_completo || '';
         selCat.value = perfil.categoria || '';
         document.getElementById('coren').value = perfil.coren || '';
+        inpCpf.value = formatarCpf(perfil.cpf || '');
         document.getElementById('telefone').value = perfil.telefone || '';
+        document.getElementById('formacao').value = perfil.formacao || '';
+        document.getElementById('tipo_socio').value = perfil.tipo_socio || '';
         setPreview(perfil.foto_url);
         ajustarCoren();
         if (!perfil.cadastro_completo) {
@@ -238,11 +284,20 @@
         try {
           var categoria = selCat.value || null;
           var corenValor = document.getElementById('coren').value.trim();
+          var cpfDigitos = inpCpf.value.replace(/\D/g, '');
+          if (cpfDigitos && cpfDigitos.length !== 11) {
+            mostrarAviso('CPF deve ter 11 dígitos.', 'erro');
+            return;
+          }
+          var telefoneDigitos = document.getElementById('telefone').value.replace(/\D/g, '');
           var dados = {
             nome_completo: document.getElementById('nome').value.trim(),
             categoria: categoria,
             coren: categoria === 'estudante' ? null : (corenValor || null),
-            telefone: document.getElementById('telefone').value.trim() || null,
+            cpf: cpfDigitos || null,
+            telefone: telefoneDigitos || null,
+            formacao: document.getElementById('formacao').value || null,
+            tipo_socio: document.getElementById('tipo_socio').value || null,
             updated_at: new Date().toISOString()
           };
           var r = await window.abenfo.sb.from('profiles').update(dados).eq('id', perfil.id);

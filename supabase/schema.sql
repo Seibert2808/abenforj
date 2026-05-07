@@ -15,18 +15,22 @@
 -- ============================================================
 
 create table if not exists public.profiles (
-  id              uuid primary key references auth.users(id) on delete cascade,
-  nome_completo   text,
-  categoria       text check (categoria in ('enfermeira', 'tecnica', 'auxiliar', 'estudante')),
-  coren           text,
-  telefone        text,
-  foto_url        text,
-  ano_vigencia    integer,
-  status          text not null default 'pendente'
-                  check (status in ('pendente', 'ativo', 'inativo')),
-  is_admin        boolean not null default false,
-  created_at      timestamptz not null default now(),
-  updated_at      timestamptz not null default now()
+  id                 uuid primary key references auth.users(id) on delete cascade,
+  nome_completo      text,
+  categoria          text check (categoria in ('enfermeira', 'tecnica', 'auxiliar', 'estudante')),
+  tipo_socio         text check (tipo_socio in ('efetiva', 'especial')),
+  formacao           text check (formacao in ('fundamental', 'medio', 'graduacao', 'especializacao', 'mestrado', 'doutorado')),
+  cpf                text,
+  coren              text,
+  telefone           text,
+  foto_url           text,
+  ano_vigencia       integer,
+  status             text not null default 'pendente'
+                     check (status in ('pendente', 'ativo', 'inativo')),
+  is_admin           boolean not null default false,
+  cadastro_completo  boolean not null default false,
+  created_at         timestamptz not null default now(),
+  updated_at         timestamptz not null default now()
 );
 
 -- Migração para bancos que já existem sem a coluna categoria
@@ -37,6 +41,13 @@ alter table public.profiles
 -- Migração: cadastro_completo (documentos entregues e arquivados)
 alter table public.profiles
   add column if not exists cadastro_completo boolean not null default false;
+
+-- Migração: campos de cadastro completo (CPF, formação, tipo de sócia)
+alter table public.profiles add column if not exists cpf text;
+alter table public.profiles add column if not exists formacao text
+  check (formacao in ('fundamental', 'medio', 'graduacao', 'especializacao', 'mestrado', 'doutorado'));
+alter table public.profiles add column if not exists tipo_socio text
+  check (tipo_socio in ('efetiva', 'especial'));
 
 comment on table public.profiles is 'Perfil estendido das usuárias autenticadas (associadas).';
 comment on column public.profiles.categoria is 'enfermeira | tecnica | auxiliar | estudante. Estudantes não têm Coren.';
