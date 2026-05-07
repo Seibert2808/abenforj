@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meu perfil — Abenfo RJ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/area.css">
+  <link rel="icon" type="image/png" href="../assets/logo-abenforj.png">
+</head>
+<body>
+  <a href="#conteudo" class="skip-link">Pular para o conteúdo</a>
+
+  <header class="site-header area-header">
+    <div class="header-inner">
+      <a href="index.html" class="logo-link" aria-label="Área da associada — Início">
+        <img src="../assets/logo-abenforj.png" alt="Logo Abenfo RJ">
+        <div class="logo-text">Abenfo RJ<span>Área da associada</span></div>
+      </a>
+      <button class="nav-toggle" aria-expanded="false" aria-label="Abrir menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+      <nav class="main-nav" aria-label="Principal">
+        <ul>
+          <li><a href="index.html">Início</a></li>
+          <li><a href="carteirinha.html">Carteirinha</a></li>
+          <li><a href="biblioteca.html">Biblioteca</a></li>
+          <li><a href="cursos.html">Cursos</a></li>
+          <li><a href="lai.html">Transparência</a></li>
+          <li><a href="perfil.html">Perfil</a></li>
+          <li><span class="user-chip"><span class="mini-foto">A</span><span class="nome">Associada</span></span></li>
+          <li><button type="button" class="btn-sair">Sair</button></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="conteudo">
+    <section class="area-saudacao">
+      <div class="container">
+        <h1>Meu perfil</h1>
+        <p>Mantenha seus dados atualizados — eles aparecem na sua carteirinha digital.</p>
+      </div>
+    </section>
+
+    <section class="section" style="padding-top:1rem;">
+      <div class="container" style="max-width:640px;">
+
+        <div id="perfil-aviso" hidden></div>
+
+        <div class="card" style="padding:2rem;margin-bottom:1.5rem;">
+          <h2 style="margin-bottom:1rem;">Foto da carteirinha</h2>
+          <div class="upload-foto">
+            <div class="foto-preview" id="foto-preview">
+              <span style="font-size:0.8rem;text-align:center;padding:0.5rem;">Sem foto</span>
+            </div>
+            <div style="flex:1;min-width:200px;">
+              <label for="foto-input" class="btn btn-ghost" style="display:inline-block;cursor:pointer;">Escolher foto</label>
+              <input type="file" id="foto-input" accept="image/*" style="display:none;">
+              <p style="font-size:0.85rem;color:var(--texto-suave);margin-top:0.5rem;">JPG ou PNG, até 5 MB. Use uma foto recente, com fundo claro.</p>
+            </div>
+          </div>
+        </div>
+
+        <form id="perfil-form" class="card" style="padding:2rem;">
+          <h2 style="margin-bottom:1rem;">Dados pessoais</h2>
+
+          <div class="campo">
+            <label for="nome">Nome completo</label>
+            <input type="text" id="nome" name="nome_completo" autocomplete="name">
+          </div>
+          <div class="campo">
+            <label for="email">E-mail</label>
+            <input type="email" id="email" name="email" disabled>
+            <small style="color:var(--texto-suave);font-size:0.85rem;">O e-mail é seu identificador de acesso e não pode ser alterado aqui.</small>
+          </div>
+          <div class="campo">
+            <label for="coren">Inscrição no Coren-RJ</label>
+            <input type="text" id="coren" name="coren" placeholder="Ex.: 123456-ENF">
+          </div>
+          <div class="campo">
+            <label for="telefone">Telefone / WhatsApp</label>
+            <input type="tel" id="telefone" name="telefone" autocomplete="tel">
+          </div>
+
+          <button type="submit" class="btn btn-solid" id="btn-salvar">Salvar alterações</button>
+        </form>
+
+        <p style="margin-top:1.5rem;text-align:center;">
+          <a href="index.html">← Voltar ao painel</a>
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer" style="margin-top:2rem;">
+    <div class="container">
+      <div class="copyright" style="border:0;padding:1rem 0;">
+        © <span id="ano"></span> Abenfo RJ.
+      </div>
+    </div>
+  </footer>
+
+  <script>document.getElementById('ano').textContent = new Date().getFullYear();</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/supabase-client.js"></script>
+  <script src="../js/area-comum.js"></script>
+  <script>
+    (function () {
+      var aviso = document.getElementById('perfil-aviso');
+      var btn = document.getElementById('btn-salvar');
+      var form = document.getElementById('perfil-form');
+      var fotoInput = document.getElementById('foto-input');
+      var fotoPreview = document.getElementById('foto-preview');
+      var perfil = null;
+
+      function mostrarAviso(texto, tipo) {
+        aviso.hidden = false;
+        aviso.className = 'aviso';
+        aviso.style.background = tipo === 'erro' ? '#fde8e8' : (tipo === 'sucesso' ? '#e6f4ea' : 'var(--aviso-bg)');
+        aviso.style.borderLeftColor = tipo === 'erro' ? '#c53030' : (tipo === 'sucesso' ? '#2e7d4f' : 'var(--aviso-borda)');
+        aviso.style.color = tipo === 'erro' ? '#742020' : (tipo === 'sucesso' ? '#1f5d3a' : '#5a4a10');
+        aviso.innerHTML = texto;
+        setTimeout(function () { aviso.hidden = true; }, 5000);
+      }
+
+      function setPreview(url) {
+        if (url) {
+          fotoPreview.innerHTML = '<img src="' + url + '" alt="Sua foto">';
+        } else {
+          fotoPreview.innerHTML = '<span style="font-size:0.8rem;text-align:center;padding:0.5rem;">Sem foto</span>';
+        }
+      }
+
+      document.addEventListener('perfil-pronto', function (e) {
+        perfil = e.detail;
+        document.getElementById('nome').value = perfil.nome_completo || '';
+        document.getElementById('coren').value = perfil.coren || '';
+        document.getElementById('telefone').value = perfil.telefone || '';
+        setPreview(perfil.foto_url);
+
+        // Email vem do auth, não do profile
+        window.abenfo.auth.usuario().then(function (u) {
+          if (u) document.getElementById('email').value = u.email || '';
+        });
+      });
+
+      // Upload de foto
+      fotoInput.addEventListener('change', async function () {
+        if (!perfil) return;
+        var arquivo = fotoInput.files[0];
+        if (!arquivo) return;
+        if (arquivo.size > 5 * 1024 * 1024) {
+          mostrarAviso('Foto muito grande. Use uma imagem de até 5 MB.', 'erro');
+          fotoInput.value = '';
+          return;
+        }
+
+        var ext = (arquivo.name.split('.').pop() || 'jpg').toLowerCase();
+        var caminho = perfil.id + '/foto.' + ext;
+
+        // Preview otimista
+        var reader = new FileReader();
+        reader.onload = function (e) { setPreview(e.target.result); };
+        reader.readAsDataURL(arquivo);
+
+        try {
+          var up = await window.abenfo.sb.storage
+            .from('fotos-perfil')
+            .upload(caminho, arquivo, { upsert: true, contentType: arquivo.type });
+          if (up.error) throw up.error;
+
+          var pub = window.abenfo.sb.storage.from('fotos-perfil').getPublicUrl(caminho);
+          var fotoUrl = pub.data.publicUrl + '?t=' + Date.now();
+
+          var update = await window.abenfo.sb
+            .from('profiles')
+            .update({ foto_url: fotoUrl })
+            .eq('id', perfil.id);
+          if (update.error) throw update.error;
+
+          perfil.foto_url = fotoUrl;
+          setPreview(fotoUrl);
+          mostrarAviso('<strong>Foto atualizada!</strong> Já aparece na sua carteirinha.', 'sucesso');
+        } catch (err) {
+          mostrarAviso('Erro ao subir a foto: ' + (err.message || 'tente novamente'), 'erro');
+          setPreview(perfil.foto_url);
+        }
+      });
+
+      // Salvar dados
+      form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        if (!perfil) return;
+        btn.disabled = true;
+        btn.textContent = 'Salvando…';
+        try {
+          var dados = {
+            nome_completo: document.getElementById('nome').value.trim(),
+            coren: document.getElementById('coren').value.trim() || null,
+            telefone: document.getElementById('telefone').value.trim() || null,
+            updated_at: new Date().toISOString()
+          };
+          var r = await window.abenfo.sb.from('profiles').update(dados).eq('id', perfil.id);
+          if (r.error) throw r.error;
+          Object.assign(perfil, dados);
+          mostrarAviso('<strong>Dados atualizados.</strong>', 'sucesso');
+        } catch (err) {
+          mostrarAviso('Erro ao salvar: ' + (err.message || 'tente novamente'), 'erro');
+        } finally {
+          btn.disabled = false;
+          btn.textContent = 'Salvar alterações';
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

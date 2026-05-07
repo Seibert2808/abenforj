@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transparência — Abenfo RJ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/area.css">
+  <link rel="icon" type="image/png" href="../assets/logo-abenforj.png">
+</head>
+<body>
+  <a href="#conteudo" class="skip-link">Pular para o conteúdo</a>
+
+  <header class="site-header area-header">
+    <div class="header-inner">
+      <a href="index.html" class="logo-link" aria-label="Área da associada — Início">
+        <img src="../assets/logo-abenforj.png" alt="Logo Abenfo RJ">
+        <div class="logo-text">Abenfo RJ<span>Área da associada</span></div>
+      </a>
+      <button class="nav-toggle" aria-expanded="false" aria-label="Abrir menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+      <nav class="main-nav" aria-label="Principal">
+        <ul>
+          <li><a href="index.html">Início</a></li>
+          <li><a href="carteirinha.html">Carteirinha</a></li>
+          <li><a href="biblioteca.html">Biblioteca</a></li>
+          <li><a href="cursos.html">Cursos</a></li>
+          <li><a href="lai.html">Transparência</a></li>
+          <li><a href="perfil.html">Perfil</a></li>
+          <li><span class="user-chip"><span class="mini-foto">A</span><span class="nome">Associada</span></span></li>
+          <li><button type="button" class="btn-sair">Sair</button></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="conteudo">
+    <section class="area-saudacao">
+      <div class="container">
+        <h1>Transparência</h1>
+        <p>Documentos institucionais — exclusivos para associadas.</p>
+      </div>
+    </section>
+
+    <section class="section" style="padding-top:1rem;">
+      <div class="container">
+        <h2>Estatuto</h2>
+        <ul class="doc-list">
+          <li>
+            <div class="doc-info">
+              <strong>Estatuto da Abenfo RJ</strong>
+              <span>Documento que rege a finalidade, organização e funcionamento da associação.</span>
+            </div>
+            <a href="../documentos/estatuto.pdf" target="_blank" rel="noopener">Abrir →</a>
+          </li>
+        </ul>
+
+        <h2 style="margin-top:2.5rem;">Atas de assembleia</h2>
+        <div class="aviso">
+          <strong>Em organização:</strong> as atas das assembleias serão publicadas aqui à medida que forem digitalizadas.
+        </div>
+        <h3 style="font-size:1rem;margin-top:1.5rem;">2026</h3>
+        <ul class="doc-list">
+          <li><div class="doc-info"><strong>Em breve</strong><span>Atas a publicar.</span></div></li>
+        </ul>
+        <h3 style="font-size:1rem;margin-top:1rem;">2025</h3>
+        <ul class="doc-list">
+          <li><div class="doc-info"><strong>Em breve</strong><span>Atas a publicar.</span></div></li>
+        </ul>
+
+        <h2 style="margin-top:2.5rem;">Prestação de contas</h2>
+        <ul class="doc-list">
+          <li><div class="doc-info"><strong>Em breve</strong><span>Balanços aprovados pelo Conselho Fiscal e pela Assembleia Geral.</span></div></li>
+        </ul>
+
+        <h2 style="margin-top:2.5rem;">Quadro associativo</h2>
+        <p style="color:var(--texto-suave);">Lista nominal das associadas em dia. Visível apenas para associadas em situação regular.</p>
+        <ul class="doc-list">
+          <li><div class="doc-info"><strong>Em breve</strong><span>A lista será publicada periodicamente após confirmação dos cadastros.</span></div></li>
+        </ul>
+
+        <p style="margin-top:2rem;font-size:0.95rem;color:var(--texto-suave);">
+          Para solicitar um documento que não está aqui, escreva para <a href="mailto:contato@abenforj.org.br">contato@abenforj.org.br</a>.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer" style="margin-top:2rem;">
+    <div class="container">
+      <div class="copyright" style="border:0;padding:1rem 0;">
+        © <span id="ano"></span> Abenfo RJ.
+      </div>
+    </div>
+  </footer>
+
+  <script>document.getElementById('ano').textContent = new Date().getFullYear();</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/supabase-client.js"></script>
+  <script src="../js/area-comum.js"></script>
+</body>
+</html>

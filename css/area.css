@@ -1,0 +1,235 @@
+/* ==========================================================================
+   Estilos específicos da área da associada (/area/*)
+   ========================================================================== */
+
+.area-header {
+  background: var(--verde-pastel);
+  border-bottom: 1px solid var(--borda);
+}
+
+.area-header .logo-text span {
+  color: var(--verde-escuro);
+  font-weight: 500;
+}
+
+/* Botão "Sair" no nav */
+.btn-sair {
+  background: transparent;
+  border: 1px solid var(--verde-escuro);
+  color: var(--verde-escuro);
+  padding: 0.45rem 0.9rem;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 0.9rem;
+  cursor: pointer;
+  font-family: inherit;
+  min-height: 0;
+}
+.btn-sair:hover { background: var(--branco); }
+
+/* Hero/Saudação da área */
+.area-saudacao {
+  padding: 2.5rem 0 1rem;
+}
+.area-saudacao h1 {
+  font-size: clamp(1.4rem, 2vw + 1rem, 2rem);
+  margin-bottom: 0.25rem;
+}
+.area-saudacao p {
+  margin-bottom: 0;
+  color: var(--texto-suave);
+}
+
+/* Grid de cards do dashboard */
+.cards-area {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+@media (min-width: 600px) { .cards-area { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 900px) { .cards-area { grid-template-columns: repeat(3, 1fr); } }
+
+.card-area {
+  background: var(--branco);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  padding: 1.5rem;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  transition: border-color var(--transicao), transform var(--transicao);
+  min-height: 160px;
+}
+.card-area:hover { border-color: var(--verde); transform: translateY(-2px); color: inherit; }
+.card-area .icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  background: var(--verde-pastel);
+  color: var(--verde-escuro);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.85rem;
+}
+.card-area h3 { color: var(--texto); font-size: 1.1rem; margin-bottom: 0.25rem; }
+.card-area p { font-size: 0.95rem; color: var(--texto-suave); margin: 0; }
+
+/* ==========================================================================
+   Carteirinha digital
+   ========================================================================== */
+
+.carteirinha {
+  width: 100%;
+  max-width: 380px;
+  aspect-ratio: 1.6 / 1;
+  background: linear-gradient(135deg, var(--verde-escuro) 0%, var(--verde) 100%);
+  border-radius: 14px;
+  padding: 1.25rem;
+  color: var(--branco);
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  grid-template-rows: auto 1fr;
+  gap: 1rem;
+  box-shadow: 0 8px 24px rgba(31, 42, 35, 0.16);
+  position: relative;
+  overflow: hidden;
+  margin: 0 auto;
+}
+
+.carteirinha::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle at 90% 10%, rgba(255,255,255,0.08) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.carteirinha .cart-header {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+  opacity: 0.85;
+}
+.carteirinha .cart-header img { height: 28px; filter: brightness(0) invert(1); }
+
+.carteirinha .cart-foto {
+  grid-column: 1;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+  padding: 0.5rem;
+}
+.carteirinha .cart-foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.carteirinha .cart-info {
+  grid-column: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.carteirinha .cart-info .label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.75;
+  margin-bottom: 0.1rem;
+}
+.carteirinha .cart-info .nome {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 0.6rem;
+  line-height: 1.2;
+}
+.carteirinha .cart-info .dado {
+  font-size: 0.85rem;
+  margin-bottom: 0.4rem;
+}
+.carteirinha .cart-info .dado strong { font-weight: 600; }
+
+/* Upload de foto */
+.upload-foto {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.foto-preview {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--areia);
+  border: 2px solid var(--borda);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--texto-suave);
+  flex-shrink: 0;
+}
+.foto-preview img { width: 100%; height: 100%; object-fit: cover; }
+.upload-foto input[type="file"] { width: auto; min-height: 0; padding: 0.5rem; background: transparent; border: 0; }
+
+/* ==========================================================================
+   Lista de documentos / materiais
+   ========================================================================== */
+
+.doc-list {
+  list-style: none;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+.doc-list li {
+  background: var(--branco);
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.doc-list .doc-info { flex: 1; min-width: 0; }
+.doc-list .doc-info strong { display: block; color: var(--texto); }
+.doc-list .doc-info span { font-size: 0.85rem; color: var(--texto-suave); }
+.doc-list a { white-space: nowrap; }
+
+/* Nome do usuário no header */
+.user-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.6rem;
+  background: var(--branco);
+  border: 1px solid var(--borda);
+  border-radius: 999px;
+  font-size: 0.85rem;
+  color: var(--texto);
+}
+.user-chip .mini-foto {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--verde-pastel);
+  color: var(--verde-escuro);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  overflow: hidden;
+}
+.user-chip .mini-foto img { width: 100%; height: 100%; object-fit: cover; }

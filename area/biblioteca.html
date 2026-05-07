@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Biblioteca — Abenfo RJ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/area.css">
+  <link rel="icon" type="image/png" href="../assets/logo-abenforj.png">
+</head>
+<body>
+  <a href="#conteudo" class="skip-link">Pular para o conteúdo</a>
+
+  <header class="site-header area-header">
+    <div class="header-inner">
+      <a href="index.html" class="logo-link" aria-label="Área da associada — Início">
+        <img src="../assets/logo-abenforj.png" alt="Logo Abenfo RJ">
+        <div class="logo-text">Abenfo RJ<span>Área da associada</span></div>
+      </a>
+      <button class="nav-toggle" aria-expanded="false" aria-label="Abrir menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+      <nav class="main-nav" aria-label="Principal">
+        <ul>
+          <li><a href="index.html">Início</a></li>
+          <li><a href="carteirinha.html">Carteirinha</a></li>
+          <li><a href="biblioteca.html">Biblioteca</a></li>
+          <li><a href="cursos.html">Cursos</a></li>
+          <li><a href="lai.html">Transparência</a></li>
+          <li><a href="perfil.html">Perfil</a></li>
+          <li><span class="user-chip"><span class="mini-foto">A</span><span class="nome">Associada</span></span></li>
+          <li><button type="button" class="btn-sair">Sair</button></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="conteudo">
+    <section class="area-saudacao">
+      <div class="container">
+        <h1>Biblioteca</h1>
+        <p>Acervo exclusivo das associadas: publicações, legislação, pareceres e materiais didáticos.</p>
+      </div>
+    </section>
+
+    <section class="section" style="padding-top:1rem;">
+      <div class="container">
+        <div class="aviso">
+          <strong>Acervo em construção:</strong> a diretoria está reunindo o material para publicar aqui. Nas primeiras semanas você verá esta lista crescer. Sugestões de inclusão? Escreva para <a href="../contato.html">a secretaria</a>.
+        </div>
+
+        <h2 style="margin-top:2.5rem;">Publicações</h2>
+        <ul class="doc-list" id="lista-publicacoes">
+          <li><div class="doc-info"><strong>Em breve</strong><span>Aguardando publicações da Diretoria Científica.</span></div></li>
+        </ul>
+
+        <h2 style="margin-top:2.5rem;">Legislação e marcos regulatórios</h2>
+        <ul class="doc-list">
+          <li>
+            <div class="doc-info">
+              <strong>Lei do Exercício Profissional da Enfermagem (Lei 7.498/1986)</strong>
+              <span>Regula o exercício da enfermagem no Brasil.</span>
+            </div>
+            <a href="https://www.planalto.gov.br/ccivil_03/leis/l7498.htm" target="_blank" rel="noopener">Abrir →</a>
+          </li>
+          <li>
+            <div class="doc-info">
+              <strong>Resolução Cofen 0516/2016</strong>
+              <span>Normatiza a atuação e a responsabilidade do enfermeiro obstetra e da obstetriz.</span>
+            </div>
+            <a href="http://www.cofen.gov.br/resolucao-cofen-no-05162016_41989.html" target="_blank" rel="noopener">Abrir →</a>
+          </li>
+        </ul>
+
+        <h2 style="margin-top:2.5rem;">Pareceres técnicos</h2>
+        <ul class="doc-list">
+          <li><div class="doc-info"><strong>Em breve</strong><span>Pareceres do Cofen e Coren-RJ específicos para enfermagem obstétrica.</span></div></li>
+        </ul>
+
+        <h2 style="margin-top:2.5rem;">Materiais didáticos</h2>
+        <ul class="doc-list">
+          <li><div class="doc-info"><strong>Em breve</strong><span>Cartilhas e infográficos produzidos pela Abenfo RJ.</span></div></li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer" style="margin-top:2rem;">
+    <div class="container">
+      <div class="copyright" style="border:0;padding:1rem 0;">
+        © <span id="ano"></span> Abenfo RJ.
+      </div>
+    </div>
+  </footer>
+
+  <script>document.getElementById('ano').textContent = new Date().getFullYear();</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/supabase-client.js"></script>
+  <script src="../js/area-comum.js"></script>
+</body>
+</html>

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Área da associada — Abenfo RJ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/area.css">
+  <link rel="icon" type="image/png" href="../assets/logo-abenforj.png">
+</head>
+<body>
+  <a href="#conteudo" class="skip-link">Pular para o conteúdo</a>
+
+  <header class="site-header area-header">
+    <div class="header-inner">
+      <a href="index.html" class="logo-link" aria-label="Área da associada — Início">
+        <img src="../assets/logo-abenforj.png" alt="Logo Abenfo RJ">
+        <div class="logo-text">Abenfo RJ<span>Área da associada</span></div>
+      </a>
+      <button class="nav-toggle" aria-expanded="false" aria-label="Abrir menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+      <nav class="main-nav" aria-label="Principal">
+        <ul>
+          <li><a href="index.html">Início</a></li>
+          <li><a href="carteirinha.html">Carteirinha</a></li>
+          <li><a href="biblioteca.html">Biblioteca</a></li>
+          <li><a href="cursos.html">Cursos</a></li>
+          <li><a href="lai.html">Transparência</a></li>
+          <li><a href="perfil.html">Perfil</a></li>
+          <li><span class="user-chip"><span class="mini-foto">A</span><span class="nome">Associada</span></span></li>
+          <li><button type="button" class="btn-sair">Sair</button></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="conteudo">
+    <section class="area-saudacao">
+      <div class="container">
+        <h1>Olá, <span id="saudacao-nome">associada</span> 👋</h1>
+        <p>Bem-vinda à sua área restrita. Aqui você encontra sua carteirinha, materiais e documentos.</p>
+      </div>
+    </section>
+
+    <section class="section" style="padding-top:1rem;">
+      <div class="container">
+        <div class="cards-area">
+          <a href="carteirinha.html" class="card-area">
+            <div class="icon" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h2"/></svg>
+            </div>
+            <h3>Carteirinha</h3>
+            <p>Sua carteirinha digital com nome, registro e ano de vigência.</p>
+          </a>
+
+          <a href="perfil.html" class="card-area">
+            <div class="icon" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            <h3>Meu perfil</h3>
+            <p>Atualize seus dados, sua foto e seus contatos.</p>
+          </a>
+
+          <a href="biblioteca.html" class="card-area">
+            <div class="icon" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            </div>
+            <h3>Biblioteca</h3>
+            <p>Publicações, legislação, pareceres técnicos e materiais didáticos.</p>
+          </a>
+
+          <a href="cursos.html" class="card-area">
+            <div class="icon" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/></svg>
+            </div>
+            <h3>Cursos & materiais</h3>
+            <p>Inscrições nos cursos da Abenfo e materiais dos cursos passados.</p>
+          </a>
+
+          <a href="lai.html" class="card-area">
+            <div class="icon" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+            </div>
+            <h3>Transparência</h3>
+            <p>Atas de assembleia, prestação de contas e quadro associativo.</p>
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer" style="margin-top:2rem;">
+    <div class="container">
+      <div class="copyright" style="border:0;padding:1rem 0;">
+        © <span id="ano"></span> Abenfo RJ. Área da associada.
+      </div>
+    </div>
+  </footer>
+
+  <script>document.getElementById('ano').textContent = new Date().getFullYear();</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/supabase-client.js"></script>
+  <script src="../js/area-comum.js"></script>
+  <script>
+    document.addEventListener('perfil-pronto', function (e) {
+      var perfil = e.detail;
+      var nome = perfil.nome_completo ? perfil.nome_completo.split(/\s+/)[0] : 'associada';
+      document.getElementById('saudacao-nome').textContent = nome;
+    });
+  </script>
+</body>
+</html>

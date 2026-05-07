@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Carteirinha digital — Abenfo RJ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/area.css">
+  <link rel="icon" type="image/png" href="../assets/logo-abenforj.png">
+  <style>
+    @media print {
+      .site-header, .site-footer, .area-saudacao, .actions-print { display: none !important; }
+      body { background: white; }
+      main { padding: 0; }
+      .carteirinha { box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+  <a href="#conteudo" class="skip-link">Pular para o conteúdo</a>
+
+  <header class="site-header area-header">
+    <div class="header-inner">
+      <a href="index.html" class="logo-link" aria-label="Área da associada — Início">
+        <img src="../assets/logo-abenforj.png" alt="Logo Abenfo RJ">
+        <div class="logo-text">Abenfo RJ<span>Área da associada</span></div>
+      </a>
+      <button class="nav-toggle" aria-expanded="false" aria-label="Abrir menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+      <nav class="main-nav" aria-label="Principal">
+        <ul>
+          <li><a href="index.html">Início</a></li>
+          <li><a href="carteirinha.html">Carteirinha</a></li>
+          <li><a href="biblioteca.html">Biblioteca</a></li>
+          <li><a href="cursos.html">Cursos</a></li>
+          <li><a href="lai.html">Transparência</a></li>
+          <li><a href="perfil.html">Perfil</a></li>
+          <li><span class="user-chip"><span class="mini-foto">A</span><span class="nome">Associada</span></span></li>
+          <li><button type="button" class="btn-sair">Sair</button></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="conteudo">
+    <section class="area-saudacao">
+      <div class="container">
+        <h1>Carteirinha digital</h1>
+        <p>Sua identificação como associada da Abenfo RJ.</p>
+      </div>
+    </section>
+
+    <section class="section" style="padding-top:1rem;">
+      <div class="container" style="max-width:520px;">
+
+        <div class="carteirinha" id="carteirinha">
+          <div class="cart-header">
+            <span>Abenfo RJ · Associada</span>
+            <img src="../assets/logo-abenforj.png" alt="">
+          </div>
+          <div class="cart-foto" id="cart-foto">
+            <span>Sem foto</span>
+          </div>
+          <div class="cart-info">
+            <div class="label">Nome</div>
+            <div class="nome" id="cart-nome">—</div>
+            <div class="dado"><strong>Coren:</strong> <span id="cart-coren">—</span></div>
+            <div class="dado"><strong>Vigência:</strong> <span id="cart-ano">—</span></div>
+          </div>
+        </div>
+
+        <div class="actions-print" style="display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap;margin-top:2rem;">
+          <button type="button" class="btn btn-solid" onclick="window.print()">Imprimir / salvar PDF</button>
+          <a href="perfil.html" class="btn btn-ghost">Atualizar foto e dados</a>
+        </div>
+
+        <div class="aviso" style="margin-top:2rem;">
+          <strong>Sobre a vigência:</strong> a vigência da carteirinha corresponde ao ano da sua última anuidade quitada. Se você não vê o ano correto, entre em <a href="../contato.html">contato com a secretaria</a>.
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer" style="margin-top:2rem;">
+    <div class="container">
+      <div class="copyright" style="border:0;padding:1rem 0;">
+        © <span id="ano"></span> Abenfo RJ.
+      </div>
+    </div>
+  </footer>
+
+  <script>document.getElementById('ano').textContent = new Date().getFullYear();</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/supabase-client.js"></script>
+  <script src="../js/area-comum.js"></script>
+  <script>
+    document.addEventListener('perfil-pronto', function (e) {
+      var p = e.detail;
+      document.getElementById('cart-nome').textContent = p.nome_completo || '—';
+      document.getElementById('cart-coren').textContent = p.coren || '—';
+      document.getElementById('cart-ano').textContent = p.ano_vigencia || new Date().getFullYear();
+      var fotoEl = document.getElementById('cart-foto');
+      if (p.foto_url) {
+        fotoEl.innerHTML = '<img src="' + p.foto_url + '" alt="Foto da associada">';
+      }
+    });
+  </script>
+</body>
+</html>

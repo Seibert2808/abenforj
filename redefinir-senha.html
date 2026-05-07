@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Definir nova senha — Abenfo RJ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/png" href="assets/logo-abenforj.png">
+</head>
+<body>
+  <a href="#conteudo" class="skip-link">Pular para o conteúdo</a>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="index.html" class="logo-link" aria-label="Abenfo RJ — Página inicial">
+        <img src="assets/logo-abenforj.png" alt="Logo Abenfo RJ">
+        <div class="logo-text">Abenfo RJ<span>Enfermagem Obstétrica</span></div>
+      </a>
+    </div>
+  </header>
+
+  <main id="conteudo">
+    <section class="page-hero">
+      <div class="container">
+        <h1>Definir nova senha</h1>
+        <p>Escolha uma nova senha para acessar a sua conta.</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container" style="max-width:440px;">
+        <div class="card" style="padding:2rem;">
+          <div id="def-aviso" hidden></div>
+
+          <form id="def-form" novalidate>
+            <div class="campo">
+              <label for="senha">Nova senha</label>
+              <input type="password" id="senha" name="senha" autocomplete="new-password" required minlength="8">
+              <small style="color:var(--texto-suave);font-size:0.85rem;">Mínimo de 8 caracteres.</small>
+            </div>
+            <div class="campo">
+              <label for="senha2">Confirmar nova senha</label>
+              <input type="password" id="senha2" name="senha2" autocomplete="new-password" required minlength="8">
+            </div>
+            <button type="submit" class="btn btn-solid btn-block" id="btn-def">Salvar nova senha</button>
+          </form>
+        </div>
+
+        <p style="margin-top:1.25rem;text-align:center;font-size:0.95rem;">
+          <a href="login.html">Voltar para entrar</a>
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="copyright" style="border:0;padding:1rem 0;">
+        © <span id="ano"></span> Abenfo RJ.
+      </div>
+    </div>
+  </footer>
+
+  <script>document.getElementById('ano').textContent = new Date().getFullYear();</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    (function () {
+      var form = document.getElementById('def-form');
+      var aviso = document.getElementById('def-aviso');
+      var btn = document.getElementById('btn-def');
+
+      function mostrarAviso(texto, tipo) {
+        aviso.hidden = false;
+        aviso.className = 'aviso';
+        aviso.style.background = tipo === 'erro' ? '#fde8e8' : (tipo === 'sucesso' ? '#e6f4ea' : 'var(--aviso-bg)');
+        aviso.style.borderLeftColor = tipo === 'erro' ? '#c53030' : (tipo === 'sucesso' ? '#2e7d4f' : 'var(--aviso-borda)');
+        aviso.style.color = tipo === 'erro' ? '#742020' : (tipo === 'sucesso' ? '#1f5d3a' : '#5a4a10');
+        aviso.innerHTML = texto;
+      }
+
+      if (!window.SUPABASE_PRONTO) {
+        mostrarAviso('Sistema em configuração. Volte em breve.', 'info');
+        btn.disabled = true;
+        return;
+      }
+
+      // O Supabase já processa o token via URL (detectSessionInUrl: true).
+      // Quando a sessão estiver pronta, o user pode trocar a senha.
+
+      form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        var s1 = document.getElementById('senha').value;
+        var s2 = document.getElementById('senha2').value;
+        if (s1 !== s2) {
+          mostrarAviso('As senhas não conferem.', 'erro');
+          return;
+        }
+        btn.disabled = true;
+        btn.textContent = 'Salvando…';
+        try {
+          var r = await window.abenfo.auth.atualizarSenha(s1);
+          if (r.error) throw r.error;
+          mostrarAviso('<strong>Senha atualizada!</strong> Redirecionando para a área da associada…', 'sucesso');
+          form.style.display = 'none';
+          setTimeout(function () { window.location.href = 'area/index.html'; }, 1500);
+        } catch (err) {
+          mostrarAviso('Erro ao atualizar a senha: ' + (err.message || 'tente novamente'), 'erro');
+          btn.disabled = false;
+          btn.textContent = 'Salvar nova senha';
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
