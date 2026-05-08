@@ -88,7 +88,7 @@
               <div class="nome" id="cart-nome">—</div>
               <div class="dado" id="cart-categoria-linha"><strong>Categoria:</strong> <span id="cart-categoria">—</span></div>
               <div class="dado" id="cart-coren-linha"><strong>Coren:</strong> <span id="cart-coren">—</span></div>
-              <div class="dado"><strong>Vigência:</strong> <span id="cart-ano">—</span></div>
+              <div class="dado"><strong>Válida até:</strong> <span id="cart-ano">—</span></div>
             </div>
           </div>
 
@@ -98,7 +98,7 @@
           </div>
 
           <div class="aviso" style="margin-top:2rem;">
-            <strong>Sobre a vigência:</strong> a vigência da carteirinha corresponde ao ano da sua última anuidade quitada. Se você não vê o ano correto, entre em <a href="../contato.html">contato com a secretaria</a>.
+            <strong>Sobre a validade:</strong> a carteirinha é válida até 31 de dezembro do ano da sua última anuidade quitada. Em caso de divergência na data exibida, entre em <a href="../contato.html">contato com a secretaria</a>.
           </div>
         </div>
       </div>
@@ -166,7 +166,8 @@
       var nomeExibido = p.nome_social || p.nome_completo || '—';
       document.getElementById('cart-nome').textContent = nomeExibido;
       document.getElementById('cart-categoria').textContent = rotuloCategoria(p.categoria, p.genero);
-      document.getElementById('cart-ano').textContent = p.ano_vigencia || new Date().getFullYear();
+      var ano = p.ano_vigencia || new Date().getFullYear();
+      document.getElementById('cart-ano').textContent = '31/12/' + ano;
 
       // Coren só aparece se a associada tiver
       var corenLinha = document.getElementById('cart-coren-linha');

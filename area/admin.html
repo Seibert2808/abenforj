@@ -219,7 +219,7 @@
         if (p.cpf) meta.push('CPF ' + escapar(fmtCpf(p.cpf)));
         if (p.telefone) meta.push(escapar(p.telefone));
         if (p.email) meta.push(escapar(p.email));
-        if (p.ano_vigencia) meta.push('Vigência até 31/12/' + p.ano_vigencia);
+        if (p.ano_vigencia) meta.push('Válida até 31/12/' + p.ano_vigencia);
         if (p.is_admin) meta.push('Admin');
 
         var acoesBase = '';
@@ -332,7 +332,7 @@
           atualiz.ano_vigencia = ano;
           msgOk = acao === 'aprovar'
             ? 'Associada aprovada.'
-            : 'Anuidade registrada — vigência até 31/12/' + ano + '.';
+            : 'Anuidade registrada — válida até 31/12/' + ano + '.';
         } else if (acao === 'recusar' || acao === 'desativar') {
           if (!confirm('Tem certeza que quer ' + (acao === 'recusar' ? 'recusar' : 'desativar') + ' esta associada?')) return;
           atualiz.status = 'inativo';
