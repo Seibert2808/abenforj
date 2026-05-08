@@ -17,6 +17,8 @@
 create table if not exists public.profiles (
   id                 uuid primary key references auth.users(id) on delete cascade,
   nome_completo      text,
+  nome_social        text,
+  genero             text check (genero in ('feminino', 'masculino', 'outro')),
   email              text,
   categoria          text check (categoria in ('enfermeira_obstetrica', 'obstetriz', 'enfermeira', 'tecnica', 'auxiliar', 'estudante')),
   tipo_socio         text check (tipo_socio in ('efetiva', 'especial')),
@@ -36,6 +38,11 @@ create table if not exists public.profiles (
 
 -- Migração: email
 alter table public.profiles add column if not exists email text;
+
+-- Migração: nome social e gênero
+alter table public.profiles add column if not exists nome_social text;
+alter table public.profiles add column if not exists genero text
+  check (genero in ('feminino', 'masculino', 'outro'));
 
 -- Migração para bancos que já existem sem a coluna categoria
 alter table public.profiles
@@ -72,14 +79,16 @@ language plpgsql
 security definer set search_path = public
 as $$
 begin
-  insert into public.profiles (id, nome_completo, email, coren, telefone, categoria)
+  insert into public.profiles (id, nome_completo, nome_social, email, coren, telefone, categoria, genero)
   values (
     new.id,
     new.raw_user_meta_data->>'nome_completo',
+    new.raw_user_meta_data->>'nome_social',
     new.email,
     new.raw_user_meta_data->>'coren',
     new.raw_user_meta_data->>'telefone',
-    new.raw_user_meta_data->>'categoria'
+    new.raw_user_meta_data->>'categoria',
+    new.raw_user_meta_data->>'genero'
   )
   on conflict (id) do update set email = excluded.email;
   return new;

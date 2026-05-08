@@ -90,13 +90,28 @@
           <h2 style="margin-bottom:1rem;">Dados pessoais</h2>
 
           <div class="campo">
-            <label for="nome">Nome completo</label>
+            <label for="nome">Nome completo (de registro)</label>
             <input type="text" id="nome" name="nome_completo" autocomplete="name">
+          </div>
+          <div class="campo">
+            <label for="nome_social">Nome social</label>
+            <input type="text" id="nome_social" name="nome_social">
+            <small style="color:var(--texto-suave);font-size:0.85rem;">Se preenchido, aparece na sua carteirinha em vez do nome de registro.</small>
           </div>
           <div class="campo">
             <label for="email">E-mail</label>
             <input type="email" id="email" name="email" disabled>
             <small style="color:var(--texto-suave);font-size:0.85rem;">O e-mail é seu identificador de acesso e não pode ser alterado aqui.</small>
+          </div>
+          <div class="campo">
+            <label for="genero">Gênero</label>
+            <select id="genero" name="genero">
+              <option value="">Prefiro não declarar</option>
+              <option value="feminino">Feminino</option>
+              <option value="masculino">Masculino</option>
+              <option value="outro">Outro</option>
+            </select>
+            <small style="color:var(--texto-suave);font-size:0.85rem;">Usado para flexionar a categoria profissional na sua carteirinha.</small>
           </div>
           <div class="campo">
             <label for="categoria">Categoria profissional</label>
@@ -111,9 +126,9 @@
             </select>
           </div>
           <div class="campo" id="campo-coren">
-            <label for="coren">Inscrição no Coren (UF + número)</label>
-            <input type="text" id="coren" name="coren" placeholder="Ex.: RJ-123456">
-            <small style="color:var(--texto-suave);font-size:0.85rem;">Não se aplica a estudantes.</small>
+            <label for="coren">Coren-RJ — número de inscrição</label>
+            <input type="text" id="coren" name="coren" placeholder="Ex.: 123456">
+            <small style="color:var(--texto-suave);font-size:0.85rem;">Apenas o número — o "Coren-RJ" é adicionado automaticamente. Não se aplica a estudantes.</small>
           </div>
           <div class="campo">
             <label for="cpf">CPF</label>
@@ -252,6 +267,8 @@
       document.addEventListener('perfil-pronto', function (e) {
         perfil = e.detail;
         document.getElementById('nome').value = perfil.nome_completo || '';
+        document.getElementById('nome_social').value = perfil.nome_social || '';
+        document.getElementById('genero').value = perfil.genero || '';
         selCat.value = perfil.categoria || '';
         document.getElementById('coren').value = perfil.coren || '';
         inpCpf.value = formatarCpf(perfil.cpf || '');
@@ -356,6 +373,8 @@
           var telefoneDigitos = document.getElementById('telefone').value.replace(/\D/g, '');
           var dados = {
             nome_completo: document.getElementById('nome').value.trim(),
+            nome_social: document.getElementById('nome_social').value.trim() || null,
+            genero: document.getElementById('genero').value || null,
             categoria: categoria,
             coren: categoria === 'estudante' ? null : (corenValor || null),
             cpf: cpfDigitos || null,

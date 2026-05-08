@@ -167,6 +167,17 @@
         return v.slice(0, 3) + '.' + v.slice(3, 6) + '.' + v.slice(6, 9) + '-' + v.slice(9);
       }
 
+      function fmtCoren(v) {
+        if (!v) return '';
+        return 'Coren-RJ ' + String(v).replace(/^RJ[-\s]?/i, '').trim();
+      }
+
+      var ROTULOS_GENERO = {
+        feminino: 'Feminino',
+        masculino: 'Masculino',
+        outro: 'Outro'
+      };
+
       var aviso = document.getElementById('admin-aviso');
 
       function mostrarAviso(texto, tipo) {
@@ -201,9 +212,10 @@
           meta.push('<span class="badge" style="background:#f1f1f1;color:#666;">sem foto</span>');
         }
         if (p.categoria) meta.push(escapar(ROTULOS[p.categoria] || p.categoria));
+        if (p.genero) meta.push(escapar(ROTULOS_GENERO[p.genero] || p.genero));
         if (p.tipo_socio) meta.push(escapar(ROTULOS_SOCIO[p.tipo_socio] || p.tipo_socio));
         if (p.formacao) meta.push(escapar(ROTULOS_FORMACAO[p.formacao] || p.formacao));
-        if (p.coren) meta.push('Coren ' + escapar(p.coren));
+        if (p.coren) meta.push(escapar(fmtCoren(p.coren)));
         if (p.cpf) meta.push('CPF ' + escapar(fmtCpf(p.cpf)));
         if (p.telefone) meta.push(escapar(p.telefone));
         if (p.email) meta.push(escapar(p.email));
@@ -249,10 +261,14 @@
 
         var acoes = acoesBase + btnDocs;
 
+        var nomeExibido = escapar(p.nome_completo || '(sem nome)');
+        if (p.nome_social) {
+          nomeExibido = escapar(p.nome_social) + ' <span style="font-weight:400;color:var(--texto-suave);">(' + escapar(p.nome_completo) + ')</span>';
+        }
         return (
           '<div class="assoc-card" data-id="' + p.id + '">' +
             '<div class="assoc-info">' +
-              '<strong>' + escapar(p.nome_completo || '(sem nome)') + '</strong>' +
+              '<strong>' + nomeExibido + '</strong>' +
               '<div class="assoc-meta">' + meta.join(' · ') + '</div>' +
             '</div>' +
             '<div class="assoc-acoes">' + acoes + '</div>' +

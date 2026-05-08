@@ -119,14 +119,38 @@
   <script src="../js/supabase-client.js"></script>
   <script src="../js/area-comum.js"></script>
   <script>
-    var ROTULOS_CATEGORIA = {
-      enfermeira_obstetrica: 'Enfermeira Obstétrica / Enfermeiro Obstetra',
-      obstetriz: 'Obstetriz',
-      enfermeira: 'Enfermeira / Enfermeiro',
-      tecnica: 'Técnica / Técnico de Enfermagem',
-      auxiliar: 'Auxiliar de Enfermagem',
-      estudante: 'Estudante de Enfermagem ou Obstetrícia'
-    };
+    // Rótulo da categoria flexionado por gênero
+    function rotuloCategoria(categoria, genero) {
+      var mapa = {
+        enfermeira_obstetrica: {
+          feminino: 'Enfermeira Obstétrica',
+          masculino: 'Enfermeiro Obstetra',
+          _: 'Enfermeira Obstétrica / Enfermeiro Obstetra'
+        },
+        obstetriz: { _: 'Obstetriz' },
+        enfermeira: {
+          feminino: 'Enfermeira',
+          masculino: 'Enfermeiro',
+          _: 'Enfermeira / Enfermeiro'
+        },
+        tecnica: {
+          feminino: 'Técnica de Enfermagem',
+          masculino: 'Técnico de Enfermagem',
+          _: 'Técnica / Técnico de Enfermagem'
+        },
+        auxiliar: { _: 'Auxiliar de Enfermagem' },
+        estudante: { _: 'Estudante de Enfermagem ou Obstetrícia' }
+      };
+      var entry = mapa[categoria];
+      if (!entry) return '—';
+      return entry[genero] || entry._;
+    }
+
+    // Limpa "RJ-" se a pessoa tiver salvo nesse formato antigo
+    function formatarCoren(valor) {
+      if (!valor) return '';
+      return 'Coren-RJ ' + valor.replace(/^RJ[-\s]?/i, '').trim();
+    }
 
     document.addEventListener('perfil-pronto', function (e) {
       var p = e.detail;
@@ -138,14 +162,17 @@
       }
       document.getElementById('bloco-carteirinha').hidden = false;
 
-      document.getElementById('cart-nome').textContent = p.nome_completo || '—';
-      document.getElementById('cart-categoria').textContent = ROTULOS_CATEGORIA[p.categoria] || '—';
+      // Nome social prevalece sobre nome de registro na carteirinha
+      var nomeExibido = p.nome_social || p.nome_completo || '—';
+      document.getElementById('cart-nome').textContent = nomeExibido;
+      document.getElementById('cart-categoria').textContent = rotuloCategoria(p.categoria, p.genero);
       document.getElementById('cart-ano').textContent = p.ano_vigencia || new Date().getFullYear();
 
       // Coren só aparece se a associada tiver
       var corenLinha = document.getElementById('cart-coren-linha');
       if (p.coren) {
-        document.getElementById('cart-coren').textContent = p.coren;
+        // Substitui o "Coren:" fixo do HTML pelo "Coren-RJ" formatado completo
+        corenLinha.innerHTML = '<strong>' + formatarCoren(p.coren) + '</strong>';
       } else {
         corenLinha.style.display = 'none';
       }

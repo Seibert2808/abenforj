@@ -61,12 +61,27 @@
 
           <form id="cadastro-form" novalidate>
             <div class="campo">
-              <label for="nome">Nome completo *</label>
+              <label for="nome">Nome completo (de registro) *</label>
               <input type="text" id="nome" name="nome_completo" autocomplete="name" required>
+            </div>
+            <div class="campo">
+              <label for="nome_social">Nome social</label>
+              <input type="text" id="nome_social" name="nome_social">
+              <small style="color:var(--texto-suave);font-size:0.85rem;">Se você usa um nome diferente do registro civil, preencha aqui — ele aparecerá na sua carteirinha.</small>
             </div>
             <div class="campo">
               <label for="email">E-mail *</label>
               <input type="email" id="email" name="email" autocomplete="email" required>
+            </div>
+            <div class="campo">
+              <label for="genero">Gênero</label>
+              <select id="genero" name="genero">
+                <option value="">Prefiro não declarar</option>
+                <option value="feminino">Feminino</option>
+                <option value="masculino">Masculino</option>
+                <option value="outro">Outro</option>
+              </select>
+              <small style="color:var(--texto-suave);font-size:0.85rem;">Usado para flexionar a categoria profissional na sua carteirinha.</small>
             </div>
             <div class="campo">
               <label for="categoria">Categoria profissional *</label>
@@ -81,9 +96,9 @@
               </select>
             </div>
             <div class="campo" id="campo-coren">
-              <label for="coren">Inscrição no Coren-RJ *</label>
-              <input type="text" id="coren" name="coren" placeholder="Ex.: 123456-ENF">
-              <small style="color:var(--texto-suave);font-size:0.85rem;">Não se aplica a estudantes.</small>
+              <label for="coren">Coren-RJ — número de inscrição *</label>
+              <input type="text" id="coren" name="coren" placeholder="Ex.: 123456">
+              <small style="color:var(--texto-suave);font-size:0.85rem;">Apenas o número — o "Coren-RJ" é adicionado automaticamente. Não se aplica a estudantes.</small>
             </div>
             <div class="campo">
               <label for="telefone">Telefone / WhatsApp</label>
@@ -165,7 +180,9 @@
         aviso.hidden = true;
 
         var nome = document.getElementById('nome').value.trim();
+        var nomeSocial = document.getElementById('nome_social').value.trim();
         var email = document.getElementById('email').value.trim();
+        var genero = document.getElementById('genero').value;
         var categoria = selCat.value;
         var senha = document.getElementById('senha').value;
         var senha2 = document.getElementById('senha2').value;
@@ -191,8 +208,10 @@
         try {
           var res = await window.abenfo.auth.cadastrar({
             nome_completo: nome,
+            nome_social: nomeSocial,
             email: email,
             senha: senha,
+            genero: genero,
             categoria: categoria,
             coren: categoria === 'estudante' ? null : coren,
             telefone: telefone
