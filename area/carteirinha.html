@@ -57,30 +57,47 @@
     <section class="section" style="padding-top:1rem;">
       <div class="container" style="max-width:520px;">
 
-        <div class="carteirinha" id="carteirinha">
-          <div class="cart-header">
-            <span>Abenfo RJ · Associada</span>
-            <img src="../assets/logo-abenforj.png" alt="">
+        <!-- Bloco mostrado quando os documentos ainda não foram confirmados pela diretoria -->
+        <div id="bloco-aguardando" class="locked-card" hidden>
+          <div class="lock-icon" aria-hidden="true">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
           </div>
-          <div class="cart-foto" id="cart-foto">
-            <span>Sem foto</span>
-          </div>
-          <div class="cart-info">
-            <div class="label">Nome</div>
-            <div class="nome" id="cart-nome">—</div>
-            <div class="dado" id="cart-categoria-linha"><strong>Categoria:</strong> <span id="cart-categoria">—</span></div>
-            <div class="dado" id="cart-coren-linha"><strong>Coren:</strong> <span id="cart-coren">—</span></div>
-            <div class="dado"><strong>Vigência:</strong> <span id="cart-ano">—</span></div>
-          </div>
+          <h2>Aguardando aprovação da diretoria</h2>
+          <p>Sua carteirinha digital fica disponível assim que a diretoria confirmar o recebimento e a conferência dos seus documentos.</p>
+          <p>Se ainda não enviou os documentos, pode fazer isso agora pelo formulário oficial:</p>
+          <p style="display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap;margin-top:1rem;">
+            <a href="https://docs.google.com/forms/d/e/1FAIpQLSd-LoOIQ6RQCKwZvz-wa0xnDGA1twvpXiCpQKdC-xiqWCmq0w/viewform" target="_blank" rel="noopener" class="btn btn-solid">Abrir formulário de documentos</a>
+            <a href="/area/perfil" class="btn btn-ghost">Ir para meu perfil</a>
+          </p>
         </div>
 
-        <div class="actions-print" style="display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap;margin-top:2rem;">
-          <button type="button" class="btn btn-solid" onclick="window.print()">Imprimir / salvar PDF</button>
-          <a href="/area/perfil" class="btn btn-ghost">Atualizar foto e dados</a>
-        </div>
+        <!-- Carteirinha real, exibida apenas quando cadastro_completo = true -->
+        <div id="bloco-carteirinha" hidden>
+          <div class="carteirinha" id="carteirinha">
+            <div class="cart-header">
+              <span>Abenfo RJ · Associada</span>
+              <img src="../assets/logo-abenforj.png" alt="">
+            </div>
+            <div class="cart-foto" id="cart-foto">
+              <span>Sem foto</span>
+            </div>
+            <div class="cart-info">
+              <div class="label">Nome</div>
+              <div class="nome" id="cart-nome">—</div>
+              <div class="dado" id="cart-categoria-linha"><strong>Categoria:</strong> <span id="cart-categoria">—</span></div>
+              <div class="dado" id="cart-coren-linha"><strong>Coren:</strong> <span id="cart-coren">—</span></div>
+              <div class="dado"><strong>Vigência:</strong> <span id="cart-ano">—</span></div>
+            </div>
+          </div>
 
-        <div class="aviso" style="margin-top:2rem;">
-          <strong>Sobre a vigência:</strong> a vigência da carteirinha corresponde ao ano da sua última anuidade quitada. Se você não vê o ano correto, entre em <a href="../contato.html">contato com a secretaria</a>.
+          <div class="actions-print" style="display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap;margin-top:2rem;">
+            <button type="button" class="btn btn-solid" onclick="window.print()">Imprimir / salvar PDF</button>
+            <a href="/area/perfil" class="btn btn-ghost">Atualizar foto e dados</a>
+          </div>
+
+          <div class="aviso" style="margin-top:2rem;">
+            <strong>Sobre a vigência:</strong> a vigência da carteirinha corresponde ao ano da sua última anuidade quitada. Se você não vê o ano correto, entre em <a href="../contato.html">contato com a secretaria</a>.
+          </div>
         </div>
       </div>
     </section>
@@ -111,6 +128,14 @@
 
     document.addEventListener('perfil-pronto', function (e) {
       var p = e.detail;
+
+      // Carteirinha só aparece se a diretoria já confirmou os documentos
+      if (!p.cadastro_completo) {
+        document.getElementById('bloco-aguardando').hidden = false;
+        return;
+      }
+      document.getElementById('bloco-carteirinha').hidden = false;
+
       document.getElementById('cart-nome').textContent = p.nome_completo || '—';
       document.getElementById('cart-categoria').textContent = ROTULOS_CATEGORIA[p.categoria] || '—';
       document.getElementById('cart-ano').textContent = p.ano_vigencia || new Date().getFullYear();
