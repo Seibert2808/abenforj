@@ -17,6 +17,7 @@
 create table if not exists public.profiles (
   id                 uuid primary key references auth.users(id) on delete cascade,
   nome_completo      text,
+  email              text,
   categoria          text check (categoria in ('enfermeira', 'tecnica', 'auxiliar', 'estudante')),
   tipo_socio         text check (tipo_socio in ('efetiva', 'especial')),
   formacao           text check (formacao in ('fundamental', 'medio', 'graduacao', 'especializacao', 'mestrado', 'doutorado')),
@@ -32,6 +33,9 @@ create table if not exists public.profiles (
   created_at         timestamptz not null default now(),
   updated_at         timestamptz not null default now()
 );
+
+-- Migração: email
+alter table public.profiles add column if not exists email text;
 
 -- Migração para bancos que já existem sem a coluna categoria
 alter table public.profiles
@@ -65,15 +69,16 @@ language plpgsql
 security definer set search_path = public
 as $$
 begin
-  insert into public.profiles (id, nome_completo, coren, telefone, categoria)
+  insert into public.profiles (id, nome_completo, email, coren, telefone, categoria)
   values (
     new.id,
     new.raw_user_meta_data->>'nome_completo',
+    new.email,
     new.raw_user_meta_data->>'coren',
     new.raw_user_meta_data->>'telefone',
     new.raw_user_meta_data->>'categoria'
   )
-  on conflict (id) do nothing;
+  on conflict (id) do update set email = excluded.email;
   return new;
 end;
 $$;

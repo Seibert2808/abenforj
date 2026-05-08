@@ -204,7 +204,8 @@
         if (p.coren) meta.push('Coren ' + escapar(p.coren));
         if (p.cpf) meta.push('CPF ' + escapar(fmtCpf(p.cpf)));
         if (p.telefone) meta.push(escapar(p.telefone));
-        if (p.ano_vigencia) meta.push('Vigência ' + p.ano_vigencia);
+        if (p.email) meta.push(escapar(p.email));
+        if (p.ano_vigencia) meta.push('Vigência até 31/12/' + p.ano_vigencia);
         if (p.is_admin) meta.push('Admin');
 
         var acoesBase = '';
@@ -219,7 +220,19 @@
             '<button class="btn btn-ghost" style="min-height:0;padding:0.5rem 1rem;" data-acao="atualizar" data-id="' + p.id + '">Atualizar vigência</button>' +
             '<button class="btn btn-ghost" style="min-height:0;padding:0.5rem 1rem;" data-acao="desativar" data-id="' + p.id + '">Desativar</button>';
         } else {
+          // inativo: reativar + (se houver email) enviar lembrete via mailto
           acoesBase = '<button class="btn btn-ghost" style="min-height:0;padding:0.5rem 1rem;" data-acao="reativar" data-id="' + p.id + '">Reativar</button>';
+          if (p.email) {
+            var assunto = encodeURIComponent('Renove sua filiação à ABENFO-RJ');
+            var corpo = encodeURIComponent(
+              'Olá ' + (p.nome_completo || '') + ',\n\n' +
+              'Esperamos que você esteja bem. Notamos que sua anuidade junto à Associação Brasileira de Obstetrizes e Enfermeiros Obstetras do Estado do Rio de Janeiro (ABENFO-RJ) venceu.\n\n' +
+              'Convidamos você a renovar sua filiação para continuar acessando todos os benefícios — biblioteca, materiais de cursos, descontos em eventos e participação ativa nas decisões da categoria.\n\n' +
+              'Para renovar, basta responder este e-mail ou entrar em contato com a secretaria pelo abenforio@gmail.com.\n\n' +
+              'Atenciosamente,\nDiretoria da ABENFO-RJ'
+            );
+            acoesBase += '<a class="btn btn-solid" style="min-height:0;padding:0.5rem 1rem;text-decoration:none;" href="mailto:' + p.email + '?subject=' + assunto + '&body=' + corpo + '">Enviar lembrete</a>';
+          }
         }
 
         // Botão de toggle dos documentos
