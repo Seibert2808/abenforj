@@ -143,6 +143,7 @@
           </div>
 
           <button type="submit" class="btn btn-solid" id="btn-salvar">Salvar alterações</button>
+          <p id="status-form" style="margin:0.85rem 0 0;font-size:0.95rem;text-align:center;" hidden></p>
         </form>
 
         <p style="margin-top:1.5rem;text-align:center;">
@@ -283,17 +284,44 @@
       });
 
       // Salvar dados
+      var statusForm = document.getElementById('status-form');
+      var btnTextoOriginal = btn.textContent;
+      var btnCorOriginal = btn.style.background;
+      var statusTimeout = null;
+
+      function mostrarStatusForm(texto, tipo) {
+        if (statusTimeout) clearTimeout(statusTimeout);
+        statusForm.hidden = false;
+        statusForm.textContent = texto;
+        statusForm.style.color = tipo === 'erro' ? '#742020' : '#1f5d3a';
+      }
+
+      function resetarBotao() {
+        btn.disabled = false;
+        btn.textContent = btnTextoOriginal;
+        btn.style.background = btnCorOriginal;
+      }
+
+      function botaoSucesso() {
+        btn.disabled = true;
+        btn.textContent = '✓ Alterações salvas';
+        btn.style.background = 'var(--verde)';
+      }
+
       form.addEventListener('submit', async function (e) {
         e.preventDefault();
         if (!perfil) return;
         btn.disabled = true;
         btn.textContent = 'Salvando…';
+        statusForm.hidden = true;
+
         try {
           var categoria = selCat.value || null;
           var corenValor = document.getElementById('coren').value.trim();
           var cpfDigitos = inpCpf.value.replace(/\D/g, '');
           if (cpfDigitos && cpfDigitos.length !== 11) {
-            mostrarAviso('CPF deve ter 11 dígitos.', 'erro');
+            mostrarStatusForm('CPF deve ter 11 dígitos.', 'erro');
+            resetarBotao();
             return;
           }
           var telefoneDigitos = document.getElementById('telefone').value.replace(/\D/g, '');
@@ -310,12 +338,23 @@
           var r = await window.abenfo.sb.from('profiles').update(dados).eq('id', perfil.id);
           if (r.error) throw r.error;
           Object.assign(perfil, dados);
-          mostrarAviso('<strong>Dados atualizados.</strong>', 'sucesso');
+
+          // Sucesso: feedback no botão + status abaixo
+          botaoSucesso();
+          mostrarStatusForm('Suas informações foram salvas.', 'sucesso');
+
+          // Volta o botão ao normal após 2,5s
+          statusTimeout = setTimeout(function () {
+            resetarBotao();
+            statusForm.hidden = true;
+          }, 2500);
         } catch (err) {
-          mostrarAviso('Erro ao salvar: ' + (err.message || 'tente novamente'), 'erro');
-        } finally {
-          btn.disabled = false;
-          btn.textContent = 'Salvar alterações';
+          var msg = 'Erro ao salvar: ' + (err.message || 'tente novamente');
+          mostrarAviso(msg, 'erro');
+          mostrarStatusForm(msg, 'erro');
+          // Rola até o aviso do topo (mais detalhado)
+          aviso.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          resetarBotao();
         }
       });
     })();
