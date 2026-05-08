@@ -53,17 +53,23 @@
 
         <div class="aviso" id="banner-cadastro" hidden>
           <strong>Complete seu cadastro de associada.</strong>
-          <p style="margin:0.5rem 0 0;">Use a seção <em>Foto da carteirinha</em> abaixo para subir sua foto. Depois, anexe os seguintes documentos pelo formulário oficial (envie só os que se aplicam ao seu caso):</p>
-          <ul style="margin:0.5rem 0 0 1.5rem;color:inherit;">
-            <li>Cópia da carteira do COREN</li>
-            <li>Diploma de graduação</li>
-            <li>Diploma de pós-graduação (se aplicável)</li>
-            <li>Comprovante de matrícula (se estudante)</li>
-            <li>Outros documentos pertinentes ao seu caso</li>
-          </ul>
-          <p style="margin:0.85rem 0 0;">
-            <a href="https://docs.google.com/forms/d/e/1FAIpQLSd-LoOIQ6RQCKwZvz-wa0xnDGA1twvpXiCpQKdC-xiqWCmq0w/viewform" target="_blank" rel="noopener" class="btn btn-solid" style="min-height:0;padding:0.6rem 1.1rem;">Abrir formulário de documentos</a>
-          </p>
+          <p style="margin:0.5rem 0 0;" id="banner-intro-perfil"></p>
+          <div id="bloco-foto" hidden>
+            <p style="margin:0.5rem 0 0;">Suba sua <strong>foto da carteirinha</strong> na seção abaixo.</p>
+          </div>
+          <div id="bloco-docs" hidden>
+            <p style="margin:0.5rem 0 0;">Anexe os seguintes documentos pelo formulário oficial (envie só os que se aplicam ao seu caso):</p>
+            <ul style="margin:0.5rem 0 0 1.5rem;color:inherit;">
+              <li>Cópia da carteira do COREN</li>
+              <li>Diploma de graduação</li>
+              <li>Diploma de pós-graduação (se aplicável)</li>
+              <li>Comprovante de matrícula (se estudante)</li>
+              <li>Outros documentos pertinentes ao seu caso</li>
+            </ul>
+            <p style="margin:0.85rem 0 0;">
+              <a href="https://docs.google.com/forms/d/e/1FAIpQLSd-LoOIQ6RQCKwZvz-wa0xnDGA1twvpXiCpQKdC-xiqWCmq0w/viewform" target="_blank" rel="noopener" class="btn btn-solid" style="min-height:0;padding:0.6rem 1.1rem;">Abrir formulário de documentos</a>
+            </p>
+          </div>
         </div>
 
         <div class="card" style="padding:2rem;margin-bottom:1.5rem;">
@@ -219,6 +225,28 @@
         inpCpf.value = formatarCpf(inpCpf.value);
       });
 
+      function atualizarBanner() {
+        if (!perfil) return;
+        var precisaFoto = !perfil.foto_url;
+        var precisaDocs = !perfil.cadastro_completo;
+        var banner = document.getElementById('banner-cadastro');
+        if (!precisaFoto && !precisaDocs) {
+          banner.hidden = true;
+          return;
+        }
+        banner.hidden = false;
+        document.getElementById('bloco-foto').hidden = !precisaFoto;
+        document.getElementById('bloco-docs').hidden = !precisaDocs;
+        var intro = document.getElementById('banner-intro-perfil');
+        if (precisaFoto && precisaDocs) {
+          intro.textContent = 'Faltam dois passos para finalizar sua filiação:';
+        } else if (precisaFoto) {
+          intro.textContent = 'Falta a foto da carteirinha:';
+        } else {
+          intro.textContent = 'Falta enviar seus documentos:';
+        }
+      }
+
       document.addEventListener('perfil-pronto', function (e) {
         perfil = e.detail;
         document.getElementById('nome').value = perfil.nome_completo || '';
@@ -230,9 +258,7 @@
         document.getElementById('tipo_socio').value = perfil.tipo_socio || '';
         setPreview(perfil.foto_url);
         ajustarCoren();
-        if (!perfil.cadastro_completo) {
-          document.getElementById('banner-cadastro').hidden = false;
-        }
+        atualizarBanner();
 
         // Email vem do auth, não do profile
         window.abenfo.auth.usuario().then(function (u) {
@@ -276,6 +302,7 @@
 
           perfil.foto_url = fotoUrl;
           setPreview(fotoUrl);
+          atualizarBanner();
           mostrarAviso('<strong>Foto atualizada!</strong> Já aparece na sua carteirinha.', 'sucesso');
         } catch (err) {
           mostrarAviso('Erro ao subir a foto: ' + (err.message || 'tente novamente'), 'erro');

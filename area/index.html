@@ -50,14 +50,14 @@
       <div class="container">
         <div class="aviso" id="banner-cadastro" hidden>
           <strong>Complete seu cadastro de associada.</strong>
-          <p style="margin:0.5rem 0 0;">Faltam dois passos para finalizar sua filiação:</p>
+          <p style="margin:0.5rem 0 0;" id="banner-intro">Falta finalizar sua filiação:</p>
           <ol style="margin:0.5rem 0 0 1.5rem;color:inherit;">
-            <li>Subir sua <strong>foto da carteirinha</strong> em "Meu perfil".</li>
-            <li>Anexar seus <strong>documentos</strong> pelo formulário oficial (link abaixo).</li>
+            <li id="passo-foto" hidden>Subir sua <strong>foto da carteirinha</strong> em "Meu perfil".</li>
+            <li id="passo-docs" hidden>Anexar seus <strong>documentos</strong> pelo formulário oficial.</li>
           </ol>
           <p style="margin:0.85rem 0 0;display:flex;gap:0.5rem;flex-wrap:wrap;">
-            <a href="https://docs.google.com/forms/d/e/1FAIpQLSd-LoOIQ6RQCKwZvz-wa0xnDGA1twvpXiCpQKdC-xiqWCmq0w/viewform" target="_blank" rel="noopener" class="btn btn-solid" style="min-height:0;padding:0.6rem 1.1rem;">Abrir formulário de documentos</a>
-            <a href="/area/perfil" class="btn btn-ghost" style="min-height:0;padding:0.6rem 1.1rem;">Ir para meu perfil</a>
+            <a id="btn-banner-docs" href="https://docs.google.com/forms/d/e/1FAIpQLSd-LoOIQ6RQCKwZvz-wa0xnDGA1twvpXiCpQKdC-xiqWCmq0w/viewform" target="_blank" rel="noopener" class="btn btn-solid" style="min-height:0;padding:0.6rem 1.1rem;" hidden>Abrir formulário de documentos</a>
+            <a id="btn-banner-perfil" href="/area/perfil" class="btn btn-ghost" style="min-height:0;padding:0.6rem 1.1rem;" hidden>Ir para meu perfil</a>
           </p>
         </div>
       </div>
@@ -128,8 +128,20 @@
       var perfil = e.detail;
       var nome = perfil.nome_completo ? perfil.nome_completo.split(/\s+/)[0] : 'associada';
       document.getElementById('saudacao-nome').textContent = nome;
-      if (!perfil.cadastro_completo) {
+
+      var precisaFoto = !perfil.foto_url;
+      var precisaDocs = !perfil.cadastro_completo;
+      if (precisaFoto || precisaDocs) {
         document.getElementById('banner-cadastro').hidden = false;
+        document.getElementById('passo-foto').hidden = !precisaFoto;
+        document.getElementById('passo-docs').hidden = !precisaDocs;
+        document.getElementById('btn-banner-docs').hidden = !precisaDocs;
+        document.getElementById('btn-banner-perfil').hidden = !precisaFoto;
+        if (precisaFoto && precisaDocs) {
+          document.getElementById('banner-intro').textContent = 'Faltam dois passos para finalizar sua filiação:';
+        } else {
+          document.getElementById('banner-intro').textContent = 'Falta finalizar sua filiação:';
+        }
       }
     });
   </script>
