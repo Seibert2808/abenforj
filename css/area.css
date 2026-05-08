@@ -115,9 +115,28 @@
   text-transform: uppercase;
   letter-spacing: 0.1em;
   font-weight: 600;
-  opacity: 0.85;
+  gap: 0.75rem;
 }
-.carteirinha .cart-header img { height: 28px; filter: brightness(0) invert(1); }
+.carteirinha .cart-header > span { opacity: 0.85; }
+.carteirinha .cart-logo {
+  width: 56px;
+  height: 56px;
+  background: var(--branco);
+  border-radius: 8px;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+.carteirinha .cart-logo img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  display: block;
+}
 
 .carteirinha .cart-foto {
   grid-column: 1;
