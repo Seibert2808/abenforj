@@ -217,18 +217,23 @@
         } else if (tipo === 'ativo') {
           acoesBase =
             '<input type="number" min="2020" max="2099" value="' + (p.ano_vigencia || anoAtual) + '" data-ano="' + p.id + '" aria-label="Ano de vigência">' +
-            '<button class="btn btn-ghost" style="min-height:0;padding:0.5rem 1rem;" data-acao="atualizar" data-id="' + p.id + '">Atualizar vigência</button>' +
+            '<button class="btn btn-solid" style="min-height:0;padding:0.5rem 1rem;" data-acao="anuidade-paga" data-id="' + p.id + '">Anuidade paga</button>' +
             '<button class="btn btn-ghost" style="min-height:0;padding:0.5rem 1rem;" data-acao="desativar" data-id="' + p.id + '">Desativar</button>';
         } else {
-          // inativo: reativar + (se houver email) enviar lembrete via mailto
-          acoesBase = '<button class="btn btn-ghost" style="min-height:0;padding:0.5rem 1rem;" data-acao="reativar" data-id="' + p.id + '">Reativar</button>';
+          // inativo: anuidade paga + (se houver email) enviar lembrete via mailto
+          acoesBase =
+            '<input type="number" min="2020" max="2099" value="' + (p.ano_vigencia || anoAtual) + '" data-ano="' + p.id + '" aria-label="Ano de vigência">' +
+            '<button class="btn btn-solid" style="min-height:0;padding:0.5rem 1rem;" data-acao="anuidade-paga" data-id="' + p.id + '">Anuidade paga</button>';
           if (p.email) {
             var assunto = encodeURIComponent('Renove sua filiação à ABENFO-RJ');
             var corpo = encodeURIComponent(
               'Olá ' + (p.nome_completo || '') + ',\n\n' +
               'Esperamos que você esteja bem. Notamos que sua anuidade junto à Associação Brasileira de Obstetrizes e Enfermeiros Obstetras do Estado do Rio de Janeiro (ABENFO-RJ) venceu.\n\n' +
               'Convidamos você a renovar sua filiação para continuar acessando todos os benefícios — biblioteca, materiais de cursos, descontos em eventos e participação ativa nas decisões da categoria.\n\n' +
-              'Para renovar, basta realizar o pagamento da anuidade e enviar o comprovante para abenforio@gmail.com.\n\n' +
+              'Como renovar:\n' +
+              '1. Consulte o valor da anuidade da sua categoria em https://abenforj.vercel.app/associe-se#valores (o valor varia conforme a categoria de sócia).\n' +
+              '2. Realize o pagamento da anuidade.\n' +
+              '3. Envie o comprovante para abenforio@gmail.com.\n\n' +
               'Atenciosamente,\nDiretoria da ABENFO-RJ'
             );
             acoesBase += '<a class="btn btn-solid" style="min-height:0;padding:0.5rem 1rem;text-decoration:none;" href="mailto:' + p.email + '?subject=' + assunto + '&body=' + corpo + '">Enviar lembrete</a>';
@@ -298,7 +303,7 @@
         var atualiz = { updated_at: new Date().toISOString() };
         var msgOk = '';
 
-        if (acao === 'aprovar' || acao === 'atualizar') {
+        if (acao === 'aprovar' || acao === 'anuidade-paga') {
           var inp = document.querySelector('input[data-ano="' + id + '"]');
           var ano = inp ? parseInt(inp.value, 10) : new Date().getFullYear();
           if (!ano || ano < 2020 || ano > 2099) {
@@ -307,15 +312,13 @@
           }
           atualiz.status = 'ativo';
           atualiz.ano_vigencia = ano;
-          msgOk = acao === 'aprovar' ? 'Associada aprovada.' : 'Vigência atualizada.';
+          msgOk = acao === 'aprovar'
+            ? 'Associada aprovada.'
+            : 'Anuidade registrada — vigência até 31/12/' + ano + '.';
         } else if (acao === 'recusar' || acao === 'desativar') {
           if (!confirm('Tem certeza que quer ' + (acao === 'recusar' ? 'recusar' : 'desativar') + ' esta associada?')) return;
           atualiz.status = 'inativo';
           msgOk = acao === 'recusar' ? 'Associada recusada.' : 'Associada desativada.';
-        } else if (acao === 'reativar') {
-          atualiz.status = 'ativo';
-          atualiz.ano_vigencia = new Date().getFullYear();
-          msgOk = 'Associada reativada.';
         } else if (acao === 'docs-completo') {
           atualiz.cadastro_completo = true;
           msgOk = 'Documentos marcados como entregues.';
