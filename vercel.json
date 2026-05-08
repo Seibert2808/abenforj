@@ -2,6 +2,13 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
   "trailingSlash": false,
+  "redirects": [
+    { "source": "/perfil", "destination": "/area/perfil", "permanent": false },
+    { "source": "/carteirinha", "destination": "/area/carteirinha", "permanent": false },
+    { "source": "/biblioteca", "destination": "/area/biblioteca", "permanent": false },
+    { "source": "/admin", "destination": "/area/admin", "permanent": false },
+    { "source": "/area", "destination": "/area/index", "permanent": false }
+  ],
   "headers": [
     {
       "source": "/(.*)",
