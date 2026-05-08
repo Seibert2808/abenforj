@@ -87,13 +87,24 @@
               <label for="categoria">Categoria profissional *</label>
               <select id="categoria" name="categoria" required>
                 <option value="">Selecione...</option>
-                <option value="enfermeira_obstetrica">Enfermeira Obstétrica / Enfermeiro Obstetra</option>
-                <option value="obstetriz">Obstetriz</option>
                 <option value="enfermeira">Enfermeira / Enfermeiro</option>
+                <option value="obstetriz">Obstetriz</option>
                 <option value="tecnica">Técnica / Técnico de Enfermagem</option>
                 <option value="auxiliar">Auxiliar de Enfermagem</option>
                 <option value="estudante">Estudante de Enfermagem ou Obstetrícia</option>
               </select>
+            </div>
+            <div class="campo">
+              <label for="especialidade-sel">Especialidade</label>
+              <select id="especialidade-sel" name="especialidade">
+                <option value="">Sem especialidade</option>
+                <option value="Enfermagem Obstétrica">Enfermagem Obstétrica</option>
+                <option value="Enfermagem Neonatal">Enfermagem Neonatal</option>
+                <option value="Enfermagem Pediátrica">Enfermagem Pediátrica</option>
+                <option value="__outra">Outra (especificar)</option>
+              </select>
+              <input type="text" id="especialidade-outra" placeholder="Digite sua especialidade" style="margin-top:0.5rem;display:none;">
+              <small style="color:var(--texto-suave);font-size:0.85rem;">Se você concluiu uma especialização, ela aparecerá na carteirinha abaixo da categoria.</small>
             </div>
             <div class="campo" id="campo-coren">
               <label for="coren">Coren-RJ — número de inscrição *</label>
@@ -169,6 +180,19 @@
       }
       selCat.addEventListener('change', ajustarCoren);
 
+      // Toggle do campo livre da Especialidade quando "Outra" é escolhida
+      var selEsp = document.getElementById('especialidade-sel');
+      var inpEspOutra = document.getElementById('especialidade-outra');
+      selEsp.addEventListener('change', function () {
+        if (selEsp.value === '__outra') {
+          inpEspOutra.style.display = '';
+          inpEspOutra.focus();
+        } else {
+          inpEspOutra.style.display = 'none';
+          inpEspOutra.value = '';
+        }
+      });
+
       if (!window.SUPABASE_PRONTO) {
         mostrarAviso('A criação de contas ainda está em configuração. Em breve estará disponível.', 'info');
         btn.disabled = true;
@@ -184,6 +208,9 @@
         var email = document.getElementById('email').value.trim();
         var genero = document.getElementById('genero').value;
         var categoria = selCat.value;
+        var especialidade = selEsp.value === '__outra'
+          ? inpEspOutra.value.trim()
+          : selEsp.value;
         var senha = document.getElementById('senha').value;
         var senha2 = document.getElementById('senha2').value;
         var coren = document.getElementById('coren').value.trim();
@@ -213,6 +240,7 @@
             senha: senha,
             genero: genero,
             categoria: categoria,
+            especialidade: especialidade,
             coren: categoria === 'estudante' ? null : coren,
             telefone: telefone
           });

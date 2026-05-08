@@ -87,6 +87,7 @@
               <div class="label">Nome</div>
               <div class="nome" id="cart-nome">—</div>
               <div class="dado" id="cart-categoria-linha"><strong>Categoria:</strong> <span id="cart-categoria">—</span></div>
+              <div class="dado" id="cart-especialidade-linha"><strong>Especialidade:</strong> <span id="cart-especialidade">—</span></div>
               <div class="dado" id="cart-coren-linha"><strong>Coren:</strong> <span id="cart-coren">—</span></div>
               <div class="dado"><strong>Válida até:</strong> <span id="cart-ano">—</span></div>
             </div>
@@ -122,11 +123,6 @@
     // Rótulo da categoria flexionado por gênero
     function rotuloCategoria(categoria, genero) {
       var mapa = {
-        enfermeira_obstetrica: {
-          feminino: 'Enfermeira Obstétrica',
-          masculino: 'Enfermeiro Obstetra',
-          _: 'Enfermeira Obstétrica / Enfermeiro Obstetra'
-        },
         obstetriz: { _: 'Obstetriz' },
         enfermeira: {
           feminino: 'Enfermeira',
@@ -166,6 +162,15 @@
       var nomeExibido = p.nome_social || p.nome_completo || '—';
       document.getElementById('cart-nome').textContent = nomeExibido;
       document.getElementById('cart-categoria').textContent = rotuloCategoria(p.categoria, p.genero);
+
+      // Especialidade só aparece se preenchida
+      var especialidadeLinha = document.getElementById('cart-especialidade-linha');
+      if (p.especialidade) {
+        document.getElementById('cart-especialidade').textContent = p.especialidade;
+      } else {
+        especialidadeLinha.style.display = 'none';
+      }
+
       var ano = p.ano_vigencia || new Date().getFullYear();
       document.getElementById('cart-ano').textContent = '31/12/' + ano;
 

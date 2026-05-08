@@ -52,6 +52,7 @@
         nome_social: dados.nome_social || null,
         genero: dados.genero || null,
         categoria: dados.categoria || null,
+        especialidade: dados.especialidade || null,
         coren: dados.coren || null,
         telefone: dados.telefone || null
       };

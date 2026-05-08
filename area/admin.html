@@ -141,7 +141,6 @@
   <script>
     (function () {
       var ROTULOS = {
-        enfermeira_obstetrica: 'Enfermeira Obstétrica',
         obstetriz: 'Obstetriz',
         enfermeira: 'Enfermeira / Enfermeiro',
         tecnica: 'Técnica / Técnico de Enfermagem',
@@ -212,6 +211,7 @@
           meta.push('<span class="badge" style="background:#f1f1f1;color:#666;">sem foto</span>');
         }
         if (p.categoria) meta.push(escapar(ROTULOS[p.categoria] || p.categoria));
+        if (p.especialidade) meta.push('Especialidade: ' + escapar(p.especialidade));
         if (p.genero) meta.push(escapar(ROTULOS_GENERO[p.genero] || p.genero));
         if (p.tipo_socio) meta.push(escapar(ROTULOS_SOCIO[p.tipo_socio] || p.tipo_socio));
         if (p.formacao) meta.push(escapar(ROTULOS_FORMACAO[p.formacao] || p.formacao));

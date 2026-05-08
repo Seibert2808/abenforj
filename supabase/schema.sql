@@ -20,7 +20,8 @@ create table if not exists public.profiles (
   nome_social        text,
   genero             text check (genero in ('feminino', 'masculino', 'outro')),
   email              text,
-  categoria          text check (categoria in ('enfermeira_obstetrica', 'obstetriz', 'enfermeira', 'tecnica', 'auxiliar', 'estudante')),
+  categoria          text check (categoria in ('enfermeira', 'obstetriz', 'tecnica', 'auxiliar', 'estudante')),
+  especialidade      text,
   tipo_socio         text check (tipo_socio in ('efetiva', 'especial')),
   formacao           text check (formacao in ('fundamental', 'medio', 'graduacao', 'especializacao', 'mestrado', 'doutorado')),
   cpf                text,
@@ -48,9 +49,18 @@ alter table public.profiles add column if not exists genero text
 alter table public.profiles
   add column if not exists categoria text;
 
+-- Migra dados antigos de enfermeira_obstetrica para a nova estrutura
+update public.profiles
+  set categoria = 'enfermeira',
+      especialidade = coalesce(especialidade, 'Enfermagem Obstétrica')
+  where categoria = 'enfermeira_obstetrica';
+
 alter table public.profiles drop constraint if exists profiles_categoria_check;
 alter table public.profiles add constraint profiles_categoria_check
-  check (categoria in ('enfermeira_obstetrica', 'obstetriz', 'enfermeira', 'tecnica', 'auxiliar', 'estudante'));
+  check (categoria in ('enfermeira', 'obstetriz', 'tecnica', 'auxiliar', 'estudante'));
+
+-- Migração: especialidade (campo livre)
+alter table public.profiles add column if not exists especialidade text;
 
 -- Migração: cadastro_completo (documentos entregues e arquivados)
 alter table public.profiles
@@ -79,7 +89,10 @@ language plpgsql
 security definer set search_path = public
 as $$
 begin
-  insert into public.profiles (id, nome_completo, nome_social, email, coren, telefone, categoria, genero)
+  insert into public.profiles (
+    id, nome_completo, nome_social, email, coren, telefone,
+    categoria, especialidade, genero
+  )
   values (
     new.id,
     new.raw_user_meta_data->>'nome_completo',
@@ -88,6 +101,7 @@ begin
     new.raw_user_meta_data->>'coren',
     new.raw_user_meta_data->>'telefone',
     new.raw_user_meta_data->>'categoria',
+    new.raw_user_meta_data->>'especialidade',
     new.raw_user_meta_data->>'genero'
   )
   on conflict (id) do update set email = excluded.email;
