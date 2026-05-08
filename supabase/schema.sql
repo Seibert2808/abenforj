@@ -18,7 +18,7 @@ create table if not exists public.profiles (
   id                 uuid primary key references auth.users(id) on delete cascade,
   nome_completo      text,
   email              text,
-  categoria          text check (categoria in ('enfermeira', 'tecnica', 'auxiliar', 'estudante')),
+  categoria          text check (categoria in ('enfermeira_obstetrica', 'obstetriz', 'enfermeira', 'tecnica', 'auxiliar', 'estudante')),
   tipo_socio         text check (tipo_socio in ('efetiva', 'especial')),
   formacao           text check (formacao in ('fundamental', 'medio', 'graduacao', 'especializacao', 'mestrado', 'doutorado')),
   cpf                text,
@@ -39,8 +39,11 @@ alter table public.profiles add column if not exists email text;
 
 -- Migração para bancos que já existem sem a coluna categoria
 alter table public.profiles
-  add column if not exists categoria text
-  check (categoria in ('enfermeira', 'tecnica', 'auxiliar', 'estudante'));
+  add column if not exists categoria text;
+
+alter table public.profiles drop constraint if exists profiles_categoria_check;
+alter table public.profiles add constraint profiles_categoria_check
+  check (categoria in ('enfermeira_obstetrica', 'obstetriz', 'enfermeira', 'tecnica', 'auxiliar', 'estudante'));
 
 -- Migração: cadastro_completo (documentos entregues e arquivados)
 alter table public.profiles
