@@ -142,9 +142,9 @@
           var qs = new URLSearchParams(window.location.search);
           var redirect = qs.get('redirect');
           if (perfil && perfil.status === 'ativo') {
-            window.location.href = redirect || 'area/index.html';
+            window.location.href = redirect || '/area';
           } else {
-            window.location.href = 'aguardando-aprovacao.html';
+            window.location.href = '/aguardando-aprovacao';
           }
         } catch (err) {
           mostrarAviso('Erro ao tentar entrar. Tente novamente em alguns instantes.', 'erro');

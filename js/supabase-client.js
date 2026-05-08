@@ -115,12 +115,12 @@
     async exigirAcesso() {
       var sess = await this.sessao();
       if (!sess) {
-        window.location.href = '../login.html?redirect=' + encodeURIComponent(window.location.pathname);
+        window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
         return null;
       }
       var perfil = await this.meuPerfil();
       if (!perfil || perfil.status !== 'ativo') {
-        window.location.href = '../aguardando-aprovacao.html';
+        window.location.href = '/aguardando-aprovacao';
         return null;
       }
       return perfil;
@@ -133,7 +133,7 @@
       var perfil = await this.exigirAcesso();
       if (!perfil) return null;
       if (!perfil.is_admin) {
-        window.location.href = 'index.html';
+        window.location.href = '/area';
         return null;
       }
       return perfil;

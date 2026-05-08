@@ -108,7 +108,7 @@
           if (r.error) throw r.error;
           mostrarAviso('<strong>Senha atualizada!</strong> Redirecionando para a área da associada…', 'sucesso');
           form.style.display = 'none';
-          setTimeout(function () { window.location.href = 'area/index.html'; }, 1500);
+          setTimeout(function () { window.location.href = '/area'; }, 1500);
         } catch (err) {
           mostrarAviso('Erro ao atualizar a senha: ' + (err.message || 'tente novamente'), 'erro');
           btn.disabled = false;
