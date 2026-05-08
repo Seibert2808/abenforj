@@ -234,6 +234,9 @@ p { margin-bottom: 1rem; color: var(--texto-suave); }
 .btn-ghost { color: var(--verde-escuro); border-color: var(--verde-escuro); background: transparent; }
 .btn-ghost:hover { background: var(--verde-pastel); }
 
+.btn-entrar { background: var(--verde-claro); color: var(--branco); }
+.btn-entrar:hover { background: var(--verde); color: var(--branco); }
+
 .btn-block { width: 100%; }
 
 /* ==========================================================================
