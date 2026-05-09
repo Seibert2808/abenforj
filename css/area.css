@@ -83,16 +83,20 @@
 .carteirinha {
   width: 100%;
   max-width: 380px;
-  aspect-ratio: 1.6 / 1;
-  background: linear-gradient(135deg, var(--verde-escuro) 0%, var(--verde) 100%);
-  border-radius: 14px;
-  padding: 1.25rem;
+  aspect-ratio: 1.45 / 1;
+  background:
+    radial-gradient(ellipse at top right, rgba(143, 165, 153, 0.35), transparent 55%),
+    linear-gradient(140deg, #2f4a3a 0%, var(--verde-escuro) 45%, var(--verde) 100%);
+  border-radius: 16px;
+  padding: 1.25rem 1.35rem;
   color: var(--branco);
   display: grid;
   grid-template-columns: 90px 1fr;
   grid-template-rows: auto 1fr;
-  gap: 1rem;
-  box-shadow: 0 8px 24px rgba(31, 42, 35, 0.16);
+  gap: 0.9rem 1.1rem;
+  box-shadow:
+    0 10px 28px rgba(31, 42, 35, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
   position: relative;
   overflow: hidden;
   margin: 0 auto;
@@ -102,7 +106,9 @@
   content: "";
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(circle at 90% 10%, rgba(255,255,255,0.08) 0%, transparent 50%);
+  background-image:
+    radial-gradient(circle at 92% 8%, rgba(255,255,255,0.10) 0%, transparent 45%),
+    radial-gradient(circle at 5% 95%, rgba(255,255,255,0.05) 0%, transparent 40%);
   pointer-events: none;
 }
 
@@ -158,25 +164,40 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
+  min-width: 0;
 }
 .carteirinha .cart-info .label {
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  opacity: 0.75;
-  margin-bottom: 0.1rem;
+  letter-spacing: 0.1em;
+  opacity: 0.7;
+  margin-bottom: 0.15rem;
+  font-weight: 500;
 }
 .carteirinha .cart-info .nome {
-  font-size: 1.05rem;
+  font-size: 1rem;
   font-weight: 700;
-  margin-bottom: 0.6rem;
+  margin-bottom: 0.55rem;
   line-height: 1.2;
+  letter-spacing: -0.01em;
+  word-wrap: break-word;
 }
 .carteirinha .cart-info .dado {
-  font-size: 0.85rem;
-  margin-bottom: 0.4rem;
+  font-size: 0.78rem;
+  margin-bottom: 0.28rem;
+  line-height: 1.35;
+  opacity: 0.95;
 }
-.carteirinha .cart-info .dado strong { font-weight: 600; }
+.carteirinha .cart-info .dado:last-child { margin-bottom: 0; }
+.carteirinha .cart-info .dado strong {
+  font-weight: 600;
+  opacity: 0.78;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: inline-block;
+  margin-right: 0.2rem;
+}
 
 /* Upload de foto */
 .upload-foto {
