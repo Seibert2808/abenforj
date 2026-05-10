@@ -445,6 +445,59 @@ p { margin-bottom: 1rem; color: var(--texto-suave); }
 }
 .lista-membros .nome { font-weight: 600; color: var(--texto); }
 
+/* Grid de membros com foto 3x4 (página /diretoria) */
+.membros-fotos {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+  margin-top: 1.25rem;
+}
+@media (min-width: 600px) { .membros-fotos { grid-template-columns: repeat(3, 1fr); gap: 1.5rem; } }
+@media (min-width: 900px) { .membros-fotos { grid-template-columns: repeat(5, 1fr); } }
+
+.membro { text-align: center; }
+
+.membro-foto {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  background: var(--verde-pastel);
+  border-radius: var(--raio);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.6rem;
+}
+.membro-foto img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.membro-iniciais {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--verde-escuro);
+  letter-spacing: 0.04em;
+}
+.membro-cargo {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--verde);
+  font-weight: 600;
+  margin: 0;
+  line-height: 1.3;
+}
+.membro-nome {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0.2rem 0 0;
+  color: var(--texto);
+  line-height: 1.3;
+}
+
 /* Tabela de valores */
 .valores {
   width: 100%;
