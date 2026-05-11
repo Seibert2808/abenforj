@@ -773,6 +773,18 @@ form textarea { min-height: 140px; resize: vertical; }
 }
 .eneon-hero .btn { min-width: 170px; }
 
+/* O .btn-outline padrão usa branco (pensado para hero verde escuro).
+   No hero do ENEON o fundo é claro, então invertemos para grafite. */
+.eneon-hero .btn-outline {
+  color: var(--eneon-grafite);
+  border-color: var(--eneon-grafite);
+  background: transparent;
+}
+.eneon-hero .btn-outline:hover {
+  background: rgba(122, 135, 148, 0.12);
+  color: var(--eneon-grafite);
+}
+
 /* Botão com as 4 cores pastel do logo do IX ENEON em gradient */
 .btn-cores-eneon {
   display: inline-flex;
