@@ -881,6 +881,53 @@ form textarea { min-height: 140px; resize: vertical; }
   margin: 0;
 }
 
+/* Bloco do Fórum de Enfermagem Obstétrica — convite + materiais */
+.forum-bloco {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+  margin-top: 1.25rem;
+  background: var(--branco);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  padding: 1.25rem;
+}
+@media (min-width: 700px) {
+  .forum-bloco { grid-template-columns: 260px 1fr; gap: 1.75rem; padding: 1.5rem; }
+}
+.forum-convite { line-height: 0; }
+.forum-convite a { display: block; }
+.forum-convite img {
+  width: 100%;
+  height: auto;
+  border-radius: var(--raio);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  transition: transform var(--transicao), box-shadow var(--transicao);
+}
+.forum-convite a:hover img {
+  transform: scale(1.015);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+}
+.forum-info .forum-data {
+  display: inline-block;
+  background: var(--verde-pastel);
+  color: var(--verde-escuro);
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.6rem;
+}
+.forum-info h3 {
+  color: var(--verde-escuro);
+  margin-bottom: 0.5rem;
+  font-size: 1.15rem;
+  line-height: 1.3;
+}
+.forum-info p { font-size: 0.95rem; line-height: 1.5; }
+
 /* Bloco "EM BREVE" — placeholder visual para seções ainda sem conteúdo */
 .em-breve {
   background: var(--verde-pastel);
