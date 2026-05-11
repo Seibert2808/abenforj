@@ -1431,9 +1431,8 @@ form textarea { min-height: 140px; resize: vertical; }
 
 /* Card de dia em destaque (dia 15 — cursos pré-encontro gratuitos) */
 .eneon-dia-destaque {
-  border: 2px solid var(--eneon-grafite);
-  box-shadow: 0 12px 32px rgba(122, 135, 148, 0.20);
-  padding-top: 1.85rem;
+  border: 2px solid var(--eneon-azul);
+  box-shadow: 0 10px 28px rgba(122, 135, 148, 0.16);
   margin-top: 1.5rem;
 }
 .eneon-dia-destaque::before { width: 7px; background: var(--eneon-azul); }
@@ -1455,21 +1454,18 @@ form textarea { min-height: 140px; resize: vertical; }
 .eneon-dia-full .destaque-grid ul { margin: 0; }
 .eneon-dia-full .dia-num { font-size: 3rem; }
 .eneon-dia-destaque .badge-destaque {
-  position: absolute;
-  top: -12px;
-  right: 1.1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   background: var(--eneon-grafite);
   color: var(--branco);
-  padding: 0.4rem 0.85rem;
+  padding: 0.4rem 0.95rem;
   border-radius: 999px;
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
+  margin-bottom: 1rem;
 }
 .eneon-dia-destaque .badge-destaque::before { content: "★"; font-size: 0.85rem; }
 .eneon-dia-destaque .destaque-nota {
