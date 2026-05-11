@@ -981,6 +981,63 @@ form textarea { min-height: 140px; resize: vertical; }
   color: var(--texto-suave);
 }
 
+/* Cards dos cursos pré-encontro — variação mais leve do .eneon-dia */
+.eneon-cursos {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+@media (min-width: 768px) {
+  .eneon-cursos { grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+}
+.eneon-curso {
+  background: var(--branco);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+  transition: transform var(--transicao), box-shadow var(--transicao);
+}
+.eneon-curso:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(122, 135, 148, 0.12);
+}
+.eneon-curso::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.eneon-curso:nth-child(1)::before { background: var(--eneon-azul); }
+.eneon-curso:nth-child(2)::before { background: var(--eneon-lavanda); }
+.eneon-curso:nth-child(3)::before { background: var(--eneon-pessego); }
+.eneon-curso-sala {
+  display: inline-block;
+  padding: 0.32rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.9rem;
+  background: rgba(122, 135, 148, 0.08);
+  color: var(--eneon-grafite);
+}
+.eneon-curso h3 {
+  color: var(--eneon-grafite);
+  font-size: 1.05rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.35;
+}
+.eneon-curso p {
+  font-size: 0.92rem;
+  color: var(--texto-suave);
+  line-height: 1.5;
+  margin: 0;
+}
+
 /* Chips dos 4 eixos temáticos */
 .eneon-eixos {
   display: flex;
