@@ -944,13 +944,10 @@ form textarea { min-height: 140px; resize: vertical; }
 }
 .scribia-logo {
   position: relative;
-  min-height: 110px;
-  background: var(--areia);
-  border-radius: var(--raio);
+  min-height: 80px;
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
 }
 .scribia-logo img {
   position: relative;
