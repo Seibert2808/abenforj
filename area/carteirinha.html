@@ -148,18 +148,38 @@
       return 'Coren-RJ ' + valor.replace(/^RJ[-\s]?/i, '').trim();
     }
 
+    // Título acadêmico flexionado por gênero — derivado de profiles.formacao
+    function tituloAcademico(formacao, genero) {
+      if (formacao === 'doutorado') {
+        if (genero === 'feminino') return 'Dra.';
+        if (genero === 'masculino') return 'Dr.';
+        return 'Dr(a).';
+      }
+      if (formacao === 'mestrado') {
+        if (genero === 'feminino') return 'Ma.';
+        if (genero === 'masculino') return 'Me.';
+        return 'Me(a).';
+      }
+      return '';
+    }
+
     document.addEventListener('perfil-pronto', function (e) {
       var p = e.detail;
 
-      // Carteirinha só aparece se a diretoria já confirmou os documentos
+      // Carteirinha só aparece se a diretoria já confirmou os documentos.
+      // Como título e especialidade são exibidos apenas dentro do bloco da
+      // carteirinha, eles só aparecem após essa aprovação.
       if (!p.cadastro_completo) {
         document.getElementById('bloco-aguardando').hidden = false;
         return;
       }
       document.getElementById('bloco-carteirinha').hidden = false;
 
-      // Nome social prevalece sobre nome de registro na carteirinha
-      var nomeExibido = p.nome_social || p.nome_completo || '—';
+      // Nome social prevalece sobre nome de registro na carteirinha.
+      // Se houver formação acadêmica (mestrado/doutorado), o título vai antes.
+      var nomeRaw = p.nome_social || p.nome_completo || '—';
+      var titulo = tituloAcademico(p.formacao, p.genero);
+      var nomeExibido = titulo ? (titulo + ' ' + nomeRaw) : nomeRaw;
       document.getElementById('cart-nome').textContent = nomeExibido;
       document.getElementById('cart-categoria').textContent = rotuloCategoria(p.categoria, p.genero);
 
