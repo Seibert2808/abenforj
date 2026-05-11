@@ -881,6 +881,87 @@ form textarea { min-height: 140px; resize: vertical; }
   margin: 0;
 }
 
+/* Hero das páginas individuais de edições anteriores */
+.ed-hero {
+  padding: 2.5rem 0 3rem;
+  text-align: center;
+  position: relative;
+}
+@media (min-width: 768px) { .ed-hero { padding: 3.5rem 0 4rem; } }
+.ed-hero .ed-hero-num {
+  font-size: 4rem;
+  font-weight: 700;
+  color: var(--branco);
+  letter-spacing: 0.06em;
+  line-height: 1;
+  margin: 0 0 0.5rem;
+  display: block;
+  text-shadow: 0 4px 18px rgba(0, 0, 0, 0.10);
+}
+@media (min-width: 768px) { .ed-hero .ed-hero-num { font-size: 5rem; } }
+.ed-hero h1 {
+  color: var(--verde-escuro);
+  margin-bottom: 0.6rem;
+  font-size: 1.6rem;
+}
+@media (min-width: 768px) { .ed-hero h1 { font-size: 2rem; } }
+.ed-hero .ed-data {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.7);
+  padding: 0.4rem 1rem;
+  border-radius: 999px;
+  color: var(--verde-escuro);
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-top: 0.4rem;
+}
+/* Variações de cor por edição — rotativas nas cores do logo do IX ENEON */
+.ed-hero.cor-azul    { background: linear-gradient(135deg, #a5c9e0, #c8dcec); }
+.ed-hero.cor-lavanda { background: linear-gradient(135deg, #c0b0d8, #d8cbe6); }
+.ed-hero.cor-pessego { background: linear-gradient(135deg, #f0c9a5, #f6dbbc); }
+.ed-hero.cor-sage    { background: linear-gradient(135deg, #a8c9b0, #c3dac8); }
+
+/* Lista de materiais para download nas páginas de edição */
+.materiais-lista {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+@media (min-width: 600px) { .materiais-lista { grid-template-columns: repeat(2, 1fr); } }
+.materiais-lista li {
+  background: var(--branco);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  padding: 0.9rem 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: border-color var(--transicao), box-shadow var(--transicao);
+}
+.materiais-lista li:hover {
+  border-color: var(--verde-claro);
+  box-shadow: 0 4px 14px rgba(63, 95, 77, 0.08);
+}
+.materiais-lista a {
+  text-decoration: none;
+  color: var(--verde-escuro);
+  font-weight: 500;
+  flex: 1;
+}
+.materiais-lista .ext {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: var(--verde-pastel);
+  color: var(--verde-escuro);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
 /* Grid de edições anteriores do ENEON */
 .edicoes-grid {
   display: grid;
