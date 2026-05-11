@@ -955,19 +955,6 @@ form textarea { min-height: 140px; resize: vertical; }
   max-width: 100%;
   max-height: 110px;
 }
-.scribia-placeholder {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--verde-escuro);
-  font-size: 1.5rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  font-style: italic;
-  opacity: 0.55;
-}
 .scribia-info .eyebrow { color: var(--verde); }
 .scribia-info h3 {
   color: var(--verde-escuro);
