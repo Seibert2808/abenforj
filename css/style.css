@@ -1353,6 +1353,19 @@ form textarea { min-height: 140px; resize: vertical; }
 @media (min-width: 768px) {
   .eneon-dias { grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
 }
+
+/* Linha com 2 cards (usado para os dias 16 e 17 quando o 15 fica sozinho) */
+.eneon-dias-pares {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+@media (min-width: 768px) {
+  .eneon-dias-pares { grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
+}
+.eneon-dias-pares .eneon-dia:nth-child(1)::before { background: var(--eneon-lavanda); }
+.eneon-dias-pares .eneon-dia:nth-child(2)::before { background: var(--eneon-pessego); }
 .eneon-dia {
   background: var(--branco);
   border: 1px solid var(--borda);
@@ -1421,8 +1434,26 @@ form textarea { min-height: 140px; resize: vertical; }
   border: 2px solid var(--eneon-grafite);
   box-shadow: 0 12px 32px rgba(122, 135, 148, 0.20);
   padding-top: 1.85rem;
+  margin-top: 1.5rem;
 }
-.eneon-dia-destaque::before { width: 7px; }
+.eneon-dia-destaque::before { width: 7px; background: var(--eneon-azul); }
+
+/* Card de dia full width, com layout interno em 2 colunas no desktop */
+.eneon-dia-full .destaque-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+  margin-top: 0.4rem;
+}
+@media (min-width: 768px) {
+  .eneon-dia-full .destaque-grid {
+    grid-template-columns: 1fr 1.1fr;
+    gap: 2rem;
+    align-items: start;
+  }
+}
+.eneon-dia-full .destaque-grid ul { margin: 0; }
+.eneon-dia-full .dia-num { font-size: 3rem; }
 .eneon-dia-destaque .badge-destaque {
   position: absolute;
   top: -12px;
