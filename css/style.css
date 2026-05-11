@@ -771,7 +771,40 @@ form textarea { min-height: 140px; resize: vertical; }
   flex-wrap: wrap;
   margin-top: 1rem;
 }
-.eneon-hero .btn { min-width: 180px; }
+.eneon-hero .btn { min-width: 170px; }
+
+/* Botão com as 4 cores pastel do logo do IX ENEON em gradient */
+.btn-cores-eneon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.85rem 1.4rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  border-radius: var(--raio);
+  text-decoration: none;
+  border: 1px solid rgba(122, 135, 148, 0.2);
+  color: var(--eneon-grafite);
+  background: linear-gradient(135deg,
+    var(--eneon-azul) 0%,
+    var(--eneon-lavanda) 33%,
+    var(--eneon-pessego) 66%,
+    var(--eneon-sage) 100%);
+  transition: transform var(--transicao), box-shadow var(--transicao), filter var(--transicao);
+  min-height: 44px;
+  cursor: pointer;
+}
+.btn-cores-eneon:hover {
+  color: var(--eneon-grafite);
+  filter: brightness(0.96) saturate(1.1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(122, 135, 148, 0.18);
+}
+.btn-cores-eneon:focus-visible {
+  outline: 3px solid var(--eneon-grafite);
+  outline-offset: 2px;
+}
 
 /* Banner compacto do IX ENEON na home */
 .eneon-banner {
