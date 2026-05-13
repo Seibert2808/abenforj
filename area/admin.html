@@ -14,48 +14,96 @@
     .assoc-card {
       background: var(--branco);
       border: 1px solid var(--borda);
-      border-radius: 8px;
-      padding: 1rem 1.25rem;
+      border-radius: 12px;
+      padding: 1.25rem;
       display: grid;
-      grid-template-columns: 1fr;
-      gap: 0.75rem;
+      grid-template-columns: 56px 1fr;
+      gap: 1rem;
       align-items: start;
     }
-    @media (min-width: 720px) {
-      .assoc-card { grid-template-columns: 1fr auto; align-items: center; }
-    }
-    .assoc-info strong { color: var(--texto); font-size: 1.05rem; }
-    .assoc-meta {
+
+    .assoc-avatar {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--verde-pastel);
+      color: var(--verde-escuro);
+      font-weight: 600;
+      font-size: 1.05rem;
       display: flex;
-      gap: 0.5rem 1rem;
-      flex-wrap: wrap;
-      color: var(--texto-suave);
-      font-size: 0.9rem;
-      margin-top: 0.25rem;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      flex-shrink: 0;
     }
-    .assoc-acoes {
+    .assoc-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+    .assoc-body { min-width: 0; }
+
+    .assoc-head {
       display: flex;
+      align-items: center;
       gap: 0.5rem;
       flex-wrap: wrap;
+      margin-bottom: 0.6rem;
+    }
+    .assoc-head strong { color: var(--texto); font-size: 1.05rem; line-height: 1.3; }
+
+    .assoc-meta {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.2rem 1.5rem;
+      color: var(--texto-suave);
+      font-size: 0.875rem;
+      margin-bottom: 1rem;
+    }
+    @media (min-width: 640px) {
+      .assoc-meta { grid-template-columns: 1fr 1fr; }
+    }
+    .assoc-meta .label { color: var(--texto-suave); font-weight: 500; margin-right: 0.35rem; }
+    .assoc-meta .valor { color: var(--texto); }
+
+    .assoc-acoes {
+      grid-column: 1 / -1;
+      display: flex;
+      gap: 0.45rem;
+      flex-wrap: wrap;
       align-items: center;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--borda);
     }
     .assoc-acoes input[type="number"] {
-      width: 90px;
-      padding: 0.5rem;
+      width: 80px;
+      padding: 0.45rem 0.5rem;
       min-height: 0;
-      font-size: 0.95rem;
+      font-size: 0.875rem;
     }
+    .assoc-acoes .btn,
+    .assoc-acoes a.btn {
+      min-height: 0;
+      padding: 0.45rem 0.85rem;
+      font-size: 0.875rem;
+      text-decoration: none;
+    }
+    .assoc-acoes .sep { flex: 1; }
+    .assoc-acoes .btn-excluir { color: #b00020; border-color: transparent; }
+    .assoc-acoes .btn-excluir:hover { background: #fdecef; color: #8a0019; }
+
     .badge {
-      display: inline-block;
-      padding: 0.2rem 0.6rem;
+      display: inline-flex;
+      align-items: center;
+      padding: 0.18rem 0.55rem;
       border-radius: 999px;
-      font-size: 0.78rem;
+      font-size: 0.72rem;
       font-weight: 600;
       letter-spacing: 0.02em;
+      text-transform: uppercase;
     }
     .badge-pendente { background: #fff8e1; color: #856404; }
     .badge-ativo    { background: #e6f4ea; color: #1f5d3a; }
     .badge-inativo  { background: #f1f1f1; color: #666; }
+    .badge-soft     { background: var(--areia); color: var(--texto-suave); }
+    .badge-admin    { background: var(--verde-pastel); color: var(--verde-escuro); }
 
     .lista-vazia {
       padding: 1.5rem;
@@ -196,48 +244,75 @@
         });
       }
 
+      function iniciaisDe(nome) {
+        if (!nome) return '?';
+        var partes = String(nome).trim().split(/\s+/);
+        var primeiro = partes[0] ? partes[0][0] : '';
+        var ultimo = partes.length > 1 ? partes[partes.length - 1][0] : '';
+        return (primeiro + ultimo).toUpperCase();
+      }
+
+      function metaLinha(label, valor) {
+        if (!valor) return '';
+        return '<div><span class="label">' + label + ':</span><span class="valor">' + valor + '</span></div>';
+      }
+
       function renderCard(p, tipo) {
         var anoAtual = new Date().getFullYear();
-        var meta = [];
-        meta.push('<span class="badge badge-' + p.status + '">' + p.status + '</span>');
-        if (p.cadastro_completo) {
-          meta.push('<span class="badge" style="background:#e6f4ea;color:#1f5d3a;">docs ✓</span>');
-        } else {
-          meta.push('<span class="badge" style="background:#fff8e1;color:#856404;">docs pendentes</span>');
-        }
-        if (p.foto_url) {
-          meta.push('<span class="badge" style="background:#e6f4ea;color:#1f5d3a;">foto ✓</span>');
-        } else {
-          meta.push('<span class="badge" style="background:#f1f1f1;color:#666;">sem foto</span>');
-        }
-        if (p.categoria) meta.push(escapar(ROTULOS[p.categoria] || p.categoria));
-        if (p.especialidade) meta.push('Especialidade: ' + escapar(p.especialidade));
-        if (p.genero) meta.push(escapar(ROTULOS_GENERO[p.genero] || p.genero));
-        if (p.tipo_socio) meta.push(escapar(ROTULOS_SOCIO[p.tipo_socio] || p.tipo_socio));
-        if (p.formacao) meta.push(escapar(ROTULOS_FORMACAO[p.formacao] || p.formacao));
-        if (p.coren) meta.push(escapar(fmtCoren(p.coren)));
-        if (p.cpf) meta.push('CPF ' + escapar(fmtCpf(p.cpf)));
-        if (p.telefone) meta.push(escapar(p.telefone));
-        if (p.email) meta.push(escapar(p.email));
-        if (p.ano_vigencia) meta.push('Válida até 31/12/' + p.ano_vigencia);
-        if (p.is_admin) meta.push('Admin');
 
-        var acoesBase = '';
+        // Avatar: foto se houver, senão iniciais
+        var nomeBase = p.nome_social || p.nome_completo || '';
+        var avatar = p.foto_url
+          ? '<div class="assoc-avatar"><img src="' + p.foto_url + '" alt=""></div>'
+          : '<div class="assoc-avatar">' + escapar(iniciaisDe(nomeBase)) + '</div>';
+
+        // Nome + badges no header
+        var nomeExibido = escapar(p.nome_completo || '(sem nome)');
+        if (p.nome_social) {
+          nomeExibido = escapar(p.nome_social) + ' <span style="font-weight:400;color:var(--texto-suave);">(' + escapar(p.nome_completo) + ')</span>';
+        }
+
+        var badges = '<span class="badge badge-' + p.status + '">' + p.status + '</span>';
+        if (p.cadastro_completo) {
+          badges += '<span class="badge badge-soft">docs ✓</span>';
+        } else {
+          badges += '<span class="badge badge-soft">docs pendentes</span>';
+        }
+        if (p.is_admin) {
+          badges += '<span class="badge badge-admin">admin</span>';
+        }
+
+        // Meta info estruturada
+        var meta = '';
+        if (p.categoria) meta += metaLinha('Categoria', escapar(ROTULOS[p.categoria] || p.categoria));
+        if (p.especialidade) meta += metaLinha('Especialidade', escapar(p.especialidade));
+        if (p.coren) meta += metaLinha('Coren', escapar(fmtCoren(p.coren)));
+        if (p.cpf) meta += metaLinha('CPF', escapar(fmtCpf(p.cpf)));
+        if (p.email) meta += metaLinha('E-mail', escapar(p.email));
+        if (p.telefone) meta += metaLinha('Telefone', escapar(p.telefone));
+        if (p.genero) meta += metaLinha('Gênero', escapar(ROTULOS_GENERO[p.genero] || p.genero));
+        if (p.formacao) meta += metaLinha('Formação', escapar(ROTULOS_FORMACAO[p.formacao] || p.formacao));
+        if (p.tipo_socio) meta += metaLinha('Tipo de sócia', escapar(ROTULOS_SOCIO[p.tipo_socio] || p.tipo_socio));
+        if (p.ano_vigencia) meta += metaLinha('Validade', '31/12/' + p.ano_vigencia);
+
+        // Ações primárias (com input de ano + botão solid) e secundária inversa
+        var acoesPrim = '';
+        var acoesSec = '';
         if (tipo === 'pendente') {
-          acoesBase =
+          acoesPrim =
             '<input type="number" min="2020" max="2099" value="' + anoAtual + '" data-ano="' + p.id + '" aria-label="Ano de vigência">' +
-            '<button class="btn btn-solid" style="min-height:0;padding:0.5rem 1rem;" data-acao="aprovar" data-id="' + p.id + '">Aprovar</button>' +
-            '<button class="btn btn-ghost" style="min-height:0;padding:0.5rem 1rem;" data-acao="recusar" data-id="' + p.id + '">Recusar</button>';
+            '<button class="btn btn-solid" data-acao="aprovar" data-id="' + p.id + '">Aprovar</button>';
+          acoesSec = '<button class="btn btn-ghost" data-acao="recusar" data-id="' + p.id + '">Recusar</button>';
         } else if (tipo === 'ativo') {
-          acoesBase =
+          acoesPrim =
             '<input type="number" min="2020" max="2099" value="' + (p.ano_vigencia || anoAtual) + '" data-ano="' + p.id + '" aria-label="Ano de vigência">' +
-            '<button class="btn btn-solid" style="min-height:0;padding:0.5rem 1rem;" data-acao="anuidade-paga" data-id="' + p.id + '">Anuidade paga</button>' +
-            '<button class="btn btn-ghost" style="min-height:0;padding:0.5rem 1rem;" data-acao="desativar" data-id="' + p.id + '">Desativar</button>';
+            '<button class="btn btn-solid" data-acao="anuidade-paga" data-id="' + p.id + '">Anuidade paga</button>';
+          acoesSec = '<button class="btn btn-ghost" data-acao="desativar" data-id="' + p.id + '">Desativar</button>';
         } else {
           // inativo: anuidade paga + (se houver email) enviar lembrete via mailto
-          acoesBase =
+          acoesPrim =
             '<input type="number" min="2020" max="2099" value="' + (p.ano_vigencia || anoAtual) + '" data-ano="' + p.id + '" aria-label="Ano de vigência">' +
-            '<button class="btn btn-solid" style="min-height:0;padding:0.5rem 1rem;" data-acao="anuidade-paga" data-id="' + p.id + '">Anuidade paga</button>';
+            '<button class="btn btn-solid" data-acao="anuidade-paga" data-id="' + p.id + '">Anuidade paga</button>';
           if (p.email) {
             var assunto = encodeURIComponent('Renove sua filiação à ABENFO-RJ');
             var corpo = encodeURIComponent(
@@ -250,36 +325,35 @@
               '3. Envie o comprovante para abenforio@gmail.com.\n\n' +
               'Atenciosamente,\nDiretoria da ABENFO-RJ'
             );
-            acoesBase += '<a class="btn btn-solid" style="min-height:0;padding:0.5rem 1rem;text-decoration:none;" href="mailto:' + p.email + '?subject=' + assunto + '&body=' + corpo + '">Enviar lembrete</a>';
+            acoesSec = '<a class="btn btn-ghost" href="mailto:' + p.email + '?subject=' + assunto + '&body=' + corpo + '">Enviar lembrete</a>';
           }
         }
 
-        // Botão de toggle dos documentos
         var btnDocs = p.cadastro_completo
-          ? '<button class="btn btn-ghost" style="min-height:0;padding:0.5rem 1rem;" data-acao="docs-pendente" data-id="' + p.id + '">Reabrir docs</button>'
-          : '<button class="btn btn-ghost" style="min-height:0;padding:0.5rem 1rem;" data-acao="docs-completo" data-id="' + p.id + '">Marcar docs ✓</button>';
+          ? '<button class="btn btn-ghost" data-acao="docs-pendente" data-id="' + p.id + '">Reabrir docs</button>'
+          : '<button class="btn btn-ghost" data-acao="docs-completo" data-id="' + p.id + '">Marcar docs ✓</button>';
 
-        // Botão para visualizar a carteirinha da associada (abre em nova aba)
         var btnCarteirinha =
-          '<a class="btn btn-ghost" style="min-height:0;padding:0.5rem 1rem;text-decoration:none;" href="carteirinha.html?id=' + p.id + '" target="_blank" rel="noopener">Ver carteirinha</a>';
+          '<a class="btn btn-ghost" href="carteirinha.html?id=' + p.id + '" target="_blank" rel="noopener">Ver carteirinha</a>';
 
-        // Botão de exclusão definitiva (só apaga o profile; aviso na confirmação)
         var btnExcluir =
-          '<button class="btn btn-ghost" style="min-height:0;padding:0.5rem 1rem;color:#b00020;" data-acao="excluir" data-id="' + p.id + '" data-nome="' + escapar(p.nome_completo || '(sem nome)') + '" data-email="' + escapar(p.email || '') + '">Excluir</button>';
+          '<button class="btn btn-ghost btn-excluir" data-acao="excluir" data-id="' + p.id + '" data-nome="' + escapar(p.nome_completo || '(sem nome)') + '" data-email="' + escapar(p.email || '') + '">Excluir</button>';
 
-        var acoes = acoesBase + btnDocs + btnCarteirinha + btnExcluir;
-
-        var nomeExibido = escapar(p.nome_completo || '(sem nome)');
-        if (p.nome_social) {
-          nomeExibido = escapar(p.nome_social) + ' <span style="font-weight:400;color:var(--texto-suave);">(' + escapar(p.nome_completo) + ')</span>';
-        }
         return (
           '<div class="assoc-card" data-id="' + p.id + '">' +
-            '<div class="assoc-info">' +
-              '<strong>' + nomeExibido + '</strong>' +
-              '<div class="assoc-meta">' + meta.join(' · ') + '</div>' +
+            avatar +
+            '<div class="assoc-body">' +
+              '<div class="assoc-head"><strong>' + nomeExibido + '</strong>' + badges + '</div>' +
+              '<div class="assoc-meta">' + meta + '</div>' +
             '</div>' +
-            '<div class="assoc-acoes">' + acoes + '</div>' +
+            '<div class="assoc-acoes">' +
+              acoesPrim +
+              acoesSec +
+              btnDocs +
+              btnCarteirinha +
+              '<span class="sep"></span>' +
+              btnExcluir +
+            '</div>' +
           '</div>'
         );
       }
