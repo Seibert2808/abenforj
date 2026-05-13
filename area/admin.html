@@ -259,7 +259,15 @@
           ? '<button class="btn btn-ghost" style="min-height:0;padding:0.5rem 1rem;" data-acao="docs-pendente" data-id="' + p.id + '">Reabrir docs</button>'
           : '<button class="btn btn-ghost" style="min-height:0;padding:0.5rem 1rem;" data-acao="docs-completo" data-id="' + p.id + '">Marcar docs ✓</button>';
 
-        var acoes = acoesBase + btnDocs;
+        // Botão para visualizar a carteirinha da associada (abre em nova aba)
+        var btnCarteirinha =
+          '<a class="btn btn-ghost" style="min-height:0;padding:0.5rem 1rem;text-decoration:none;" href="carteirinha.html?id=' + p.id + '" target="_blank" rel="noopener">Ver carteirinha</a>';
+
+        // Botão de exclusão definitiva (só apaga o profile; aviso na confirmação)
+        var btnExcluir =
+          '<button class="btn btn-ghost" style="min-height:0;padding:0.5rem 1rem;color:#b00020;" data-acao="excluir" data-id="' + p.id + '" data-nome="' + escapar(p.nome_completo || '(sem nome)') + '" data-email="' + escapar(p.email || '') + '">Excluir</button>';
+
+        var acoes = acoesBase + btnDocs + btnCarteirinha + btnExcluir;
 
         var nomeExibido = escapar(p.nome_completo || '(sem nome)');
         if (p.nome_social) {
@@ -317,6 +325,34 @@
         var acao = btn.getAttribute('data-acao');
         var id = btn.getAttribute('data-id');
         var sb = window.abenfo.sb;
+
+        // Exclusão definitiva é fluxo à parte (DELETE, não UPDATE)
+        if (acao === 'excluir') {
+          var nome = btn.getAttribute('data-nome') || '(sem nome)';
+          var email = btn.getAttribute('data-email') || '';
+          var aviso =
+            'Excluir o cadastro de ' + nome + (email ? ' (' + email + ')' : '') + '?\n\n' +
+            'Esta ação remove o perfil do banco. A conta de e-mail correspondente ' +
+            'permanece no sistema de autenticação do Supabase — para apagar de vez, ' +
+            'vá no painel do Supabase em Authentication > Users e remova manualmente.';
+          if (!confirm(aviso)) return;
+
+          btn.disabled = true;
+          var del = await sb.from('profiles').delete().eq('id', id);
+          if (del.error) {
+            mostrarAviso('Erro ao excluir: ' + del.error.message, 'erro');
+            btn.disabled = false;
+            return;
+          }
+          var msgFinal = 'Perfil de ' + nome + ' excluído.';
+          if (email) {
+            msgFinal += ' Lembre-se de apagar também a conta de e-mail ' + email +
+              ' no painel Supabase > Authentication > Users.';
+          }
+          mostrarAviso(msgFinal, 'sucesso');
+          await carregar();
+          return;
+        }
 
         var atualiz = { updated_at: new Date().toISOString() };
         var msgOk = '';

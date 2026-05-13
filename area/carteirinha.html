@@ -163,17 +163,34 @@
       return '';
     }
 
-    document.addEventListener('perfil-pronto', function (e) {
-      var p = e.detail;
-
+    // Renderiza a carteirinha a partir de um perfil (próprio ou de outra
+    // associada, no caso de admin visualizando pelo painel).
+    function renderizarCarteirinha(p, modoAdmin) {
       // Carteirinha só aparece se a diretoria já confirmou os documentos.
       // Como título e especialidade são exibidos apenas dentro do bloco da
       // carteirinha, eles só aparecem após essa aprovação.
-      if (!p.cadastro_completo) {
+      // Em modo admin, mostramos a carteirinha mesmo sem cadastro_completo
+      // para a diretoria poder conferir dados antes de aprovar.
+      if (!p.cadastro_completo && !modoAdmin) {
         document.getElementById('bloco-aguardando').hidden = false;
         return;
       }
       document.getElementById('bloco-carteirinha').hidden = false;
+
+      if (modoAdmin) {
+        var aviso = document.createElement('div');
+        aviso.className = 'aviso';
+        aviso.style.cssText = 'background:#fff8e1;color:#856404;margin-bottom:1.5rem;';
+        aviso.innerHTML = '<strong>Visualização administrativa.</strong> Você está vendo a carteirinha de ' +
+          (p.nome_social || p.nome_completo || '(sem nome)') +
+          '. <a href="admin.html">Voltar ao painel admin</a>.';
+        var bloco = document.getElementById('bloco-carteirinha');
+        bloco.parentNode.insertBefore(aviso, bloco);
+
+        // Esconde "Atualizar foto e dados" — admin não deve mexer na foto alheia por aqui.
+        var linkPerfil = document.querySelector('.actions-print a[href="/area/perfil"]');
+        if (linkPerfil) linkPerfil.style.display = 'none';
+      }
 
       // Nome social prevalece sobre nome de registro na carteirinha.
       // Se houver formação acadêmica (mestrado/doutorado), o título vai antes.
@@ -207,6 +224,31 @@
       if (p.foto_url) {
         fotoEl.innerHTML = '<img src="' + p.foto_url + '" alt="Foto da associada">';
       }
+    }
+
+    // Detecta se o admin está visualizando a carteirinha de outra associada
+    // via ?id={uuid}. Nesse modo, busca o perfil-alvo (em vez de usar o próprio)
+    // e renderiza com o banner administrativo.
+    var idAlvo = new URLSearchParams(window.location.search).get('id');
+
+    document.addEventListener('perfil-pronto', async function (e) {
+      var perfilLogado = e.detail;
+
+      if (idAlvo && perfilLogado.is_admin && idAlvo !== perfilLogado.id) {
+        var sb = window.abenfo.sb;
+        var r = await sb.from('profiles').select('*').eq('id', idAlvo).maybeSingle();
+        if (r.error || !r.data) {
+          var msg = r.error ? r.error.message : 'Perfil não encontrado.';
+          document.querySelector('main .container').innerHTML =
+            '<div class="aviso"><strong>Erro:</strong> ' + msg +
+            '</div><p style="margin-top:1rem;"><a href="admin.html" class="btn btn-ghost">Voltar ao admin</a></p>';
+          return;
+        }
+        renderizarCarteirinha(r.data, true);
+        return;
+      }
+
+      renderizarCarteirinha(perfilLogado, false);
     });
   </script>
 </body>
