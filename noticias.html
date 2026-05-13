@@ -68,52 +68,7 @@
           </a>
         </div>
 
-        <!--
-          ===== INSTRUÇÃO PARA SABRINA =====
-          Para ativar o feed real do Instagram, siga 5 passos:
-
-          1. Acesse https://behold.so e crie uma conta gratuita (use o e-mail da Abenfo).
-          2. No painel do Behold, clique em "Add a feed" e conecte a conta @abenforj
-             (ele vai pedir login no Instagram — use a conta oficial da Abenfo RJ).
-          3. Após conectar, o Behold mostra um trecho de código com algo como:
-                <behold-widget feed-id="ABCD1234EFGH"></behold-widget>
-             Copie esse feed-id (a parte entre aspas).
-          4. Substitua "COLE_AQUI_O_FEED_ID_DO_BEHOLD" abaixo pelo ID copiado.
-          5. Salve o arquivo. Pronto, o feed começa a aparecer.
-
-          Plano gratuito: 1 feed, atualização a cada ~48h, sem marca d'água.
-          ====================================
-        -->
-
-        <behold-widget feed-id="COLE_AQUI_O_FEED_ID_DO_BEHOLD"></behold-widget>
-
-        <!-- Fallback visual enquanto o feed não está conectado.
-             Pode apagar este bloco assim que o feed estiver no ar. -->
-        <div id="ig-fallback" class="card" style="margin-top:1rem;text-align:center;padding:3rem 2rem;">
-          <div style="font-size:3rem;line-height:1;margin-bottom:1rem;color:var(--verde);">
-            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin:0 auto;">
-              <rect x="2" y="2" width="20" height="20" rx="5"/>
-              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
-              <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
-            </svg>
-          </div>
-          <h3>Feed do Instagram em conexão</h3>
-          <p>Assim que o feed da Abenfo RJ for conectado, as últimas postagens aparecerão aqui automaticamente. Enquanto isso, acompanhe direto no Instagram:</p>
-          <a href="https://www.instagram.com/abenforj/" target="_blank" rel="noopener" class="btn btn-solid" style="margin-top:0.5rem;">@abenforj no Instagram</a>
-        </div>
-        <script>
-          // Esconde o fallback quando o widget Behold renderizar conteúdo real.
-          (function () {
-            var widget = document.querySelector('behold-widget');
-            var fallback = document.getElementById('ig-fallback');
-            if (!widget || !fallback) return;
-            var feedId = widget.getAttribute('feed-id');
-            if (feedId && feedId.indexOf('COLE_AQUI') !== 0) {
-              // ID já foi configurado — esconde o fallback.
-              fallback.style.display = 'none';
-            }
-          })();
-        </script>
+        <behold-widget feed-id="y1LpGGWagnhGsIuoAoMh"></behold-widget>
       </div>
     </section>
 
