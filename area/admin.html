@@ -286,12 +286,16 @@
         var meta = '';
         if (p.categoria) meta += metaLinha('Categoria', escapar(ROTULOS[p.categoria] || p.categoria));
         if (p.especialidade) meta += metaLinha('Especialidade', escapar(p.especialidade));
+        // Formação acadêmica aparece sempre (com — quando ainda não foi preenchida)
+        meta += metaLinha(
+          'Maior grau de formação acadêmica',
+          p.formacao ? escapar(ROTULOS_FORMACAO[p.formacao] || p.formacao) : '—'
+        );
         if (p.coren) meta += metaLinha('Coren', escapar(fmtCoren(p.coren)));
         if (p.cpf) meta += metaLinha('CPF', escapar(fmtCpf(p.cpf)));
         if (p.email) meta += metaLinha('E-mail', escapar(p.email));
         if (p.telefone) meta += metaLinha('Telefone', escapar(p.telefone));
         if (p.genero) meta += metaLinha('Gênero', escapar(ROTULOS_GENERO[p.genero] || p.genero));
-        if (p.formacao) meta += metaLinha('Formação', escapar(ROTULOS_FORMACAO[p.formacao] || p.formacao));
         if (p.tipo_socio) meta += metaLinha('Tipo de sócia', escapar(ROTULOS_SOCIO[p.tipo_socio] || p.tipo_socio));
         if (p.ano_vigencia) meta += metaLinha('Validade', '31/12/' + p.ano_vigencia);
 
