@@ -49,18 +49,20 @@
     <section class="section" style="padding-top:1rem;">
       <div class="container">
 
-        <h2>Inscrições atuais</h2>
         <p style="color:var(--texto-suave);">
-          Suas inscrições nos eventos da Abenfo RJ. As inscrições são feitas em
+          Suas inscrições nos eventos e cursos da Abenfo RJ. As inscrições são feitas em
           plataformas externas (Doity etc.) — depois que a diretoria importa a
-          lista, sua inscrição aparece aqui.
+          lista, aparecem aqui.
         </p>
+
+        <h2 style="margin-top:1.5rem;">Eventos em que estou inscrita</h2>
         <ul class="doc-list" id="lista-inscricoes-atuais">
-          <li id="placeholder-carregando">
-            <div class="doc-info">
-              <strong>Carregando…</strong>
-            </div>
-          </li>
+          <li><div class="doc-info"><strong>Carregando…</strong></div></li>
+        </ul>
+
+        <h2 style="margin-top:2.5rem;">Cursos em que estou inscrita</h2>
+        <ul class="doc-list" id="lista-inscricoes-cursos">
+          <li><div class="doc-info"><strong>Carregando…</strong></div></li>
         </ul>
 
         <h2 style="margin-top:2.5rem;">Histórico de participações</h2>
@@ -186,8 +188,63 @@
         }).join('');
       }
 
+      async function carregarInscricoesCursos(perfil) {
+        var sb = window.abenfo.sb;
+        var lista = document.getElementById('lista-inscricoes-cursos');
+        var r = await sb.from('inscricoes_curso')
+          .select('data_inscricao, observacao, cursos(nome, descricao, data, turno, local, link_externo, eventos(nome))')
+          .eq('profile_id', perfil.id)
+          .order('data_inscricao', { ascending: false });
+
+        if (r.error) {
+          lista.innerHTML =
+            '<li><div class="doc-info"><strong>Não foi possível carregar seus cursos</strong>' +
+            '<span>' + escapar(r.error.message) + '</span></div></li>';
+          return;
+        }
+
+        var inscricoes = r.data || [];
+        if (inscricoes.length === 0) {
+          lista.innerHTML =
+            '<li><div class="doc-info">' +
+              '<strong>Você ainda não tem cursos registrados</strong>' +
+              '<span>Cursos pré-encontro e cursos avulsos aparecem aqui quando você se inscrever.</span>' +
+            '</div></li>';
+          return;
+        }
+
+        lista.innerHTML = inscricoes.map(function (i) {
+          var c = i.cursos || {};
+          var nome = c.nome || '(curso removido)';
+          var evento = c.eventos && c.eventos.nome ? c.eventos.nome : null;
+          var detalhes = '';
+          var info = [];
+          if (c.data) info.push('📅 ' + formatarDataSimples(c.data));
+          if (c.turno) info.push('🕒 ' + c.turno);
+          if (c.local) info.push('📍 ' + c.local);
+          if (info.length > 0) detalhes += '<span>' + escapar(info.join(' · ')) + '</span>';
+          if (evento) detalhes += '<span style="color:var(--texto-suave);font-size:0.85rem;">Parte de: ' + escapar(evento) + '</span>';
+          detalhes += '<span style="color:var(--texto-suave);font-size:0.85rem;">Inscrição registrada em ' +
+            escapar(formatarData(i.data_inscricao)) + '</span>';
+
+          var linkExterno = '';
+          if (c.link_externo) {
+            linkExterno = '<a href="' + escapar(c.link_externo) + '" target="_blank" rel="noopener">Página do curso →</a>';
+          }
+
+          return '<li>' +
+            '<div class="doc-info">' +
+              '<strong>' + escapar(nome) + '</strong>' +
+              detalhes +
+            '</div>' +
+            linkExterno +
+          '</li>';
+        }).join('');
+      }
+
       document.addEventListener('perfil-pronto', function (e) {
         carregarInscricoes(e.detail);
+        carregarInscricoesCursos(e.detail);
       });
     })();
   </script>
