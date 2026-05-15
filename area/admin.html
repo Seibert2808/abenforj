@@ -257,8 +257,19 @@
             </div>
           </div>
 
-          <label for="emails-cole">E-mails das inscritas</label>
-          <textarea id="emails-cole" rows="8" placeholder="Cole um e-mail por linha, ou separados por vírgula/ponto-e-vírgula."></textarea>
+          <label>Importar planilha (opcional)</label>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
+            <input type="file" id="arquivo-inscritas" accept=".xlsx,.xls,.csv" hidden>
+            <button type="button" id="btn-escolher-arquivo" class="btn btn-ghost" style="min-height:0;padding:0.55rem 0.9rem;">Escolher planilha…</button>
+            <span id="arquivo-status" style="color:var(--texto-suave);font-size:0.875rem;"></span>
+          </div>
+          <p style="font-size:0.825rem;color:var(--texto-suave);margin:0.35rem 0 0;">
+            Aceita .xlsx (Excel), .xls e .csv. Reconhece o formato da Doity automaticamente
+            e filtra só as inscrições com situação <em>Confirmada</em>.
+          </p>
+
+          <label for="emails-cole" style="margin-top:1rem;">E-mails das inscritas</label>
+          <textarea id="emails-cole" rows="8" placeholder="Os e-mails da planilha aparecem aqui. Você também pode colar manualmente, um por linha."></textarea>
 
           <div style="margin-top:1rem;">
             <button type="button" id="btn-processar-inscricoes" class="btn btn-solid">Processar inscrições</button>
@@ -578,6 +589,105 @@
       // Inscrições em eventos: import via colagem de e-mails (CSV-like)
       // ============================================================
 
+      // Carrega o SheetJS sob demanda (só na primeira vez)
+      var _xlsxPromise = null;
+      function carregarXLSX() {
+        if (_xlsxPromise) return _xlsxPromise;
+        if (window.XLSX) {
+          _xlsxPromise = Promise.resolve(window.XLSX);
+          return _xlsxPromise;
+        }
+        _xlsxPromise = new Promise(function (resolve, reject) {
+          var s = document.createElement('script');
+          s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+          s.onload = function () { resolve(window.XLSX); };
+          s.onerror = function () { reject(new Error('Falha ao baixar leitor de planilha.')); };
+          document.head.appendChild(s);
+        });
+        return _xlsxPromise;
+      }
+
+      function statusArquivo(texto, tipo) {
+        var el = document.getElementById('arquivo-status');
+        el.textContent = texto || '';
+        el.style.color = tipo === 'erro' ? '#b00020' : 'var(--texto-suave)';
+      }
+
+      async function processarArquivoInscritas(file) {
+        statusArquivo('Lendo ' + file.name + '…');
+        try {
+          var XLSX = await carregarXLSX();
+          var buffer = await file.arrayBuffer();
+          var wb = XLSX.read(buffer, { type: 'array' });
+          var ws = wb.Sheets[wb.SheetNames[0]];
+          if (!ws) {
+            statusArquivo('Planilha sem abas.', 'erro');
+            return;
+          }
+          var rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: false });
+          if (rows.length < 2) {
+            statusArquivo('Planilha vazia.', 'erro');
+            return;
+          }
+
+          // Localiza colunas pelo cabeçalho
+          var header = rows[0].map(function (h) { return String(h || '').toLowerCase().trim(); });
+          var emailCol = -1;
+          for (var c = 0; c < header.length; c++) {
+            if (/e[-\s]?mail/.test(header[c])) { emailCol = c; break; }
+          }
+          if (emailCol === -1) {
+            statusArquivo('Não encontrei a coluna de e-mail no cabeçalho.', 'erro');
+            return;
+          }
+
+          // Colunas de situação (opcional — só filtra se existirem)
+          var statusInscCol = -1, statusCompraCol = -1;
+          for (var k = 0; k < header.length; k++) {
+            if (statusInscCol === -1 && header[k].indexOf('situa') !== -1 && header[k].indexOf('inscri') !== -1) statusInscCol = k;
+            if (statusCompraCol === -1 && header[k].indexOf('situa') !== -1 && header[k].indexOf('compra') !== -1) statusCompraCol = k;
+          }
+
+          // Extrai e-mails
+          var emails = [];
+          var vistos = {};
+          var ignoradosStatus = 0;
+          var ignoradosFormato = 0;
+          for (var i = 1; i < rows.length; i++) {
+            var row = rows[i];
+            if (!row || row.length === 0) continue;
+            var em = String(row[emailCol] || '').trim().toLowerCase();
+            if (!em) continue;
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { ignoradosFormato++; continue; }
+
+            // Se há colunas de situação, exige confirmada/concluído
+            var passouFiltro = true;
+            if (statusInscCol !== -1) {
+              var stInsc = String(row[statusInscCol] || '').toLowerCase();
+              if (!/confirmad/.test(stInsc)) passouFiltro = false;
+            }
+            if (passouFiltro && statusCompraCol !== -1) {
+              var stCompra = String(row[statusCompraCol] || '').toLowerCase();
+              // Aceita "Concluído", "Concluido", "Pago" etc.
+              if (!/concl|pago|aprovad/.test(stCompra)) passouFiltro = false;
+            }
+            if (!passouFiltro) { ignoradosStatus++; continue; }
+
+            if (vistos[em]) continue;
+            vistos[em] = true;
+            emails.push(em);
+          }
+
+          document.getElementById('emails-cole').value = emails.join('\n');
+          var msg = file.name + ': ' + emails.length + ' e-mail(s) extraído(s)';
+          if (ignoradosStatus > 0) msg += ' · ' + ignoradosStatus + ' ignorado(s) (não confirmadas)';
+          if (ignoradosFormato > 0) msg += ' · ' + ignoradosFormato + ' formato inválido';
+          statusArquivo(msg);
+        } catch (err) {
+          statusArquivo('Erro ao ler planilha: ' + err.message, 'erro');
+        }
+      }
+
       function parseEmails(raw) {
         if (!raw) return [];
         var partes = String(raw).split(/[\s,;]+/);
@@ -804,6 +914,16 @@
           document.getElementById('novo-evento-bloco').hidden = true;
         } else if (e.target.id === 'btn-salvar-evento') {
           salvarNovoEvento();
+        } else if (e.target.id === 'btn-escolher-arquivo') {
+          document.getElementById('arquivo-inscritas').click();
+        }
+      });
+
+      document.addEventListener('change', function (e) {
+        if (e.target && e.target.id === 'arquivo-inscritas') {
+          var f = e.target.files && e.target.files[0];
+          if (f) processarArquivoInscritas(f);
+          e.target.value = ''; // permite re-selecionar o mesmo arquivo
         }
       });
 
