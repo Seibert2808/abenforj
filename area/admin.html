@@ -222,17 +222,39 @@
         </p>
 
         <div class="import-card">
-          <label for="evento-chave">Evento</label>
-          <select id="evento-chave">
-            <option value="ix-eneon-2026" data-nome="IX ENEON 2026">IX ENEON 2026</option>
-            <option value="__outro__">Outro evento…</option>
-          </select>
+          <label for="evento-id">Evento</label>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
+            <select id="evento-id" style="flex:1;min-width:220px;">
+              <option value="" disabled selected>Carregando eventos…</option>
+            </select>
+            <button type="button" id="btn-novo-evento" class="btn btn-ghost" style="min-height:0;padding:0.55rem 0.9rem;">+ Novo evento</button>
+          </div>
 
-          <div id="evento-outro-bloco" hidden>
-            <label for="evento-outro-chave">Identificador único (ex.: <code>x-eneon-2027</code>)</label>
-            <input id="evento-outro-chave" type="text" placeholder="x-eneon-2027" autocomplete="off">
-            <label for="evento-outro-nome">Nome para exibição (ex.: <code>X ENEON 2027</code>)</label>
-            <input id="evento-outro-nome" type="text" placeholder="X ENEON 2027" autocomplete="off">
+          <div id="novo-evento-bloco" hidden style="margin-top:1rem;padding:1rem;background:var(--areia);border-radius:8px;">
+            <label for="novo-evento-nome">Nome do evento <span style="color:#b00020;">*</span></label>
+            <input id="novo-evento-nome" type="text" placeholder="Ex.: X ENEON 2027" autocomplete="off">
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+              <div>
+                <label for="novo-evento-inicio">Data de início</label>
+                <input id="novo-evento-inicio" type="date">
+              </div>
+              <div>
+                <label for="novo-evento-fim">Data de fim</label>
+                <input id="novo-evento-fim" type="date">
+              </div>
+            </div>
+
+            <label for="novo-evento-local">Local</label>
+            <input id="novo-evento-local" type="text" placeholder="Ex.: UERJ — Rio de Janeiro" autocomplete="off">
+
+            <label for="novo-evento-link">Link externo (inscrição na Doity, Sympla etc.)</label>
+            <input id="novo-evento-link" type="text" placeholder="https://..." autocomplete="off">
+
+            <div style="margin-top:0.75rem;display:flex;gap:0.5rem;">
+              <button type="button" id="btn-salvar-evento" class="btn btn-solid" style="min-height:0;padding:0.55rem 0.9rem;">Salvar evento</button>
+              <button type="button" id="btn-cancelar-evento" class="btn btn-ghost" style="min-height:0;padding:0.55rem 0.9rem;">Cancelar</button>
+            </div>
           </div>
 
           <label for="emails-cole">E-mails das inscritas</label>
@@ -556,13 +578,6 @@
       // Inscrições em eventos: import via colagem de e-mails (CSV-like)
       // ============================================================
 
-      // Mostra/esconde os campos de "outro evento" conforme o select
-      document.addEventListener('change', function (e) {
-        if (e.target && e.target.id === 'evento-chave') {
-          document.getElementById('evento-outro-bloco').hidden = e.target.value !== '__outro__';
-        }
-      });
-
       function parseEmails(raw) {
         if (!raw) return [];
         var partes = String(raw).split(/[\s,;]+/);
@@ -572,7 +587,6 @@
           var x = e.trim().toLowerCase();
           if (!x) return;
           if (vistos[x]) return;
-          // Validação leve: tem que parecer e-mail
           if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(x)) return;
           vistos[x] = true;
           out.push(x);
@@ -580,29 +594,76 @@
         return out;
       }
 
-      async function processarInscricoes() {
+      function fmtDataBR(iso) {
+        if (!iso) return '';
+        var partes = String(iso).split('-');
+        if (partes.length !== 3) return iso;
+        return partes[2] + '/' + partes[1] + '/' + partes[0];
+      }
+
+      async function carregarEventos(selecionarId) {
         var sb = window.abenfo.sb;
-        var sel = document.getElementById('evento-chave');
-        var evento_chave, evento_nome;
-        if (sel.value === '__outro__') {
-          evento_chave = document.getElementById('evento-outro-chave').value.trim().toLowerCase();
-          evento_nome = document.getElementById('evento-outro-nome').value.trim();
-          if (!evento_chave || !evento_nome) {
-            mostrarAviso('Preencha o identificador único e o nome do evento.', 'erro');
-            return;
-          }
-          // Identificador: só letras minúsculas, dígitos e hífen
-          if (!/^[a-z0-9-]+$/.test(evento_chave)) {
-            mostrarAviso('Identificador inválido. Use apenas letras minúsculas, dígitos e hífen.', 'erro');
-            return;
-          }
-        } else {
-          evento_chave = sel.value;
-          evento_nome = sel.options[sel.selectedIndex].getAttribute('data-nome');
+        var sel = document.getElementById('evento-id');
+        var r = await sb.from('eventos')
+          .select('id, nome, data_inicio, ativo')
+          .order('data_inicio', { ascending: false, nullsFirst: false });
+        if (r.error) {
+          sel.innerHTML = '<option value="" disabled selected>Erro: ' + escapar(r.error.message) + '</option>';
+          return;
+        }
+        var eventos = r.data || [];
+        var html = '<option value="" disabled' + (selecionarId ? '' : ' selected') + '>Selecione um evento…</option>';
+        eventos.forEach(function (e) {
+          var rotulo = escapar(e.nome) + (e.data_inicio ? ' (' + fmtDataBR(e.data_inicio) + ')' : '');
+          if (!e.ativo) rotulo += ' — inativo';
+          html += '<option value="' + e.id + '"' + (e.id === selecionarId ? ' selected' : '') + '>' + rotulo + '</option>';
+        });
+        sel.innerHTML = html;
+      }
+
+      async function salvarNovoEvento() {
+        var sb = window.abenfo.sb;
+        var nome = document.getElementById('novo-evento-nome').value.trim();
+        if (!nome) {
+          mostrarAviso('Informe o nome do evento.', 'erro');
+          return;
+        }
+        var dados = {
+          nome: nome,
+          data_inicio: document.getElementById('novo-evento-inicio').value || null,
+          data_fim: document.getElementById('novo-evento-fim').value || null,
+          local: document.getElementById('novo-evento-local').value.trim() || null,
+          link_externo: document.getElementById('novo-evento-link').value.trim() || null
+        };
+
+        var btn = document.getElementById('btn-salvar-evento');
+        btn.disabled = true;
+        var r = await sb.from('eventos').insert(dados).select().single();
+        btn.disabled = false;
+
+        if (r.error) {
+          mostrarAviso('Erro ao salvar evento: ' + r.error.message, 'erro');
+          return;
         }
 
-        var raw = document.getElementById('emails-cole').value;
-        var emails = parseEmails(raw);
+        mostrarAviso('Evento "' + nome + '" cadastrado.', 'sucesso');
+        // Limpa formulário e fecha
+        ['novo-evento-nome', 'novo-evento-inicio', 'novo-evento-fim', 'novo-evento-local', 'novo-evento-link']
+          .forEach(function (id) { document.getElementById(id).value = ''; });
+        document.getElementById('novo-evento-bloco').hidden = true;
+        await carregarEventos(r.data.id);
+      }
+
+      async function processarInscricoes() {
+        var sb = window.abenfo.sb;
+        var sel = document.getElementById('evento-id');
+        var evento_id = sel.value;
+        if (!evento_id) {
+          mostrarAviso('Selecione um evento.', 'erro');
+          return;
+        }
+
+        var emails = parseEmails(document.getElementById('emails-cole').value);
         if (emails.length === 0) {
           mostrarAviso('Cole pelo menos um e-mail válido.', 'erro');
           return;
@@ -614,7 +675,6 @@
         btn.textContent = 'Processando…';
 
         try {
-          // 1) Busca os perfis pelos e-mails
           var rPerfis = await sb.from('profiles')
             .select('id, email, nome_completo, nome_social')
             .in('email', emails);
@@ -623,19 +683,16 @@
             return;
           }
           var perfis = rPerfis.data || [];
-          var emailsEncontrados = {};
-          perfis.forEach(function (p) {
-            if (p.email) emailsEncontrados[p.email.toLowerCase()] = p;
-          });
-          var naoEncontrados = emails.filter(function (e) { return !emailsEncontrados[e]; });
+          var encontrados = {};
+          perfis.forEach(function (p) { if (p.email) encontrados[p.email.toLowerCase()] = p; });
+          var naoEncontrados = emails.filter(function (e) { return !encontrados[e]; });
 
-          // 2) Detecta quais perfis já estavam inscritos
           var idsPerfis = perfis.map(function (p) { return p.id; });
           var jaInscritos = {};
           if (idsPerfis.length > 0) {
             var rEx = await sb.from('inscricoes_evento')
               .select('profile_id')
-              .eq('evento_chave', evento_chave)
+              .eq('evento_id', evento_id)
               .in('profile_id', idsPerfis);
             if (rEx.error) {
               mostrarAviso('Erro ao verificar inscrições existentes: ' + rEx.error.message, 'erro');
@@ -644,20 +701,13 @@
             (rEx.data || []).forEach(function (x) { jaInscritos[x.profile_id] = true; });
           }
 
-          // 3) Pega quem é o admin logado (para created_by)
           var auth = await sb.auth.getUser();
           var adminUid = auth && auth.data && auth.data.user ? auth.data.user.id : null;
 
-          // 4) Insere apenas os novos
           var aInserir = perfis
             .filter(function (p) { return !jaInscritos[p.id]; })
             .map(function (p) {
-              return {
-                profile_id: p.id,
-                evento_chave: evento_chave,
-                evento_nome: evento_nome,
-                created_by: adminUid
-              };
+              return { profile_id: p.id, evento_id: evento_id, created_by: adminUid };
             });
 
           var inseridas = 0;
@@ -671,7 +721,6 @@
           }
           var jaExistiam = perfis.length - inseridas;
 
-          // 5) Relatório
           var rel = document.getElementById('relatorio-inscricoes');
           rel.hidden = false;
           var html = '';
@@ -696,7 +745,6 @@
             'sucesso'
           );
 
-          // 6) Limpa textarea e atualiza resumo
           document.getElementById('emails-cole').value = '';
           await atualizarResumoInscricoes();
         } finally {
@@ -707,7 +755,8 @@
 
       async function atualizarResumoInscricoes() {
         var sb = window.abenfo.sb;
-        var r = await sb.from('inscricoes_evento').select('evento_chave, evento_nome');
+        // Conta inscrições por evento via JOIN
+        var r = await sb.from('inscricoes_evento').select('evento_id, eventos(nome, data_inicio)');
         var alvo = document.getElementById('resumo-inscricoes');
         if (r.error) {
           alvo.innerHTML = '<div class="lista-vazia">Erro ao carregar resumo: ' + escapar(r.error.message) + '</div>';
@@ -715,25 +764,46 @@
         }
         var contagem = {};
         (r.data || []).forEach(function (i) {
-          if (!contagem[i.evento_chave]) contagem[i.evento_chave] = { nome: i.evento_nome, total: 0 };
-          contagem[i.evento_chave].total += 1;
+          var nome = i.eventos ? i.eventos.nome : '(evento removido)';
+          var data = i.eventos ? i.eventos.data_inicio : null;
+          if (!contagem[i.evento_id]) contagem[i.evento_id] = { nome: nome, data: data, total: 0 };
+          contagem[i.evento_id].total += 1;
         });
         var chaves = Object.keys(contagem);
         if (chaves.length === 0) {
           alvo.innerHTML = '<div class="lista-vazia">Sem inscrições registradas ainda.</div>';
           return;
         }
+        // Ordena por data desc (eventos sem data por último)
+        chaves.sort(function (a, b) {
+          var da = contagem[a].data, db = contagem[b].data;
+          if (!da && !db) return 0;
+          if (!da) return 1;
+          if (!db) return -1;
+          return db.localeCompare(da);
+        });
         alvo.innerHTML = chaves.map(function (k) {
+          var nome = escapar(contagem[k].nome);
+          var data = contagem[k].data ? ' · ' + fmtDataBR(contagem[k].data) : '';
           return '<div class="resumo-evento">' +
-            '<strong>' + escapar(contagem[k].nome) + '</strong>' +
+            '<strong>' + nome + '<span style="font-weight:400;color:var(--texto-suave);">' + data + '</span></strong>' +
             '<span class="count">' + contagem[k].total + ' sócia(s) inscrita(s)</span>' +
           '</div>';
         }).join('');
       }
 
       document.addEventListener('click', function (e) {
-        if (e.target && e.target.id === 'btn-processar-inscricoes') {
+        if (!e.target) return;
+        if (e.target.id === 'btn-processar-inscricoes') {
           processarInscricoes();
+        } else if (e.target.id === 'btn-novo-evento') {
+          var bloco = document.getElementById('novo-evento-bloco');
+          bloco.hidden = !bloco.hidden;
+          if (!bloco.hidden) document.getElementById('novo-evento-nome').focus();
+        } else if (e.target.id === 'btn-cancelar-evento') {
+          document.getElementById('novo-evento-bloco').hidden = true;
+        } else if (e.target.id === 'btn-salvar-evento') {
+          salvarNovoEvento();
         }
       });
 
@@ -743,6 +813,7 @@
           return;
         }
         carregar();
+        carregarEventos();
         atualizarResumoInscricoes();
       });
     })();

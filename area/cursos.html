@@ -108,11 +108,27 @@
         } catch (e) { return ''; }
       }
 
+      function formatarDataSimples(iso) {
+        // Para campos type 'date' (YYYY-MM-DD), sem timezone para evitar deslocamento
+        if (!iso) return '';
+        var p = String(iso).split('-');
+        if (p.length !== 3) return iso;
+        return p[2] + '/' + p[1] + '/' + p[0];
+      }
+
+      function formatarPeriodo(inicio, fim) {
+        if (!inicio && !fim) return '';
+        if (inicio && fim && inicio !== fim) {
+          return formatarDataSimples(inicio) + ' a ' + formatarDataSimples(fim);
+        }
+        return formatarDataSimples(inicio || fim);
+      }
+
       async function carregarInscricoes(perfil) {
         var sb = window.abenfo.sb;
         var lista = document.getElementById('lista-inscricoes-atuais');
         var r = await sb.from('inscricoes_evento')
-          .select('evento_chave, evento_nome, data_inscricao, observacao')
+          .select('data_inscricao, observacao, eventos(nome, data_inicio, data_fim, local, link_externo)')
           .eq('profile_id', perfil.id)
           .order('data_inscricao', { ascending: false });
 
@@ -139,15 +155,33 @@
         }
 
         lista.innerHTML = inscricoes.map(function (i) {
-          var detalhes = '<span>Inscrição registrada em ' + escapar(formatarData(i.data_inscricao)) + '</span>';
+          var ev = i.eventos || {};
+          var nome = ev.nome || '(evento removido)';
+          var periodo = formatarPeriodo(ev.data_inicio, ev.data_fim);
+          var detalhes = '';
+          if (periodo || ev.local) {
+            var info = [];
+            if (periodo) info.push('📅 ' + periodo);
+            if (ev.local) info.push('📍 ' + ev.local);
+            detalhes += '<span>' + escapar(info.join(' · ')) + '</span>';
+          }
+          detalhes += '<span style="color:var(--texto-suave);font-size:0.85rem;">Inscrição registrada em ' +
+            escapar(formatarData(i.data_inscricao)) + '</span>';
           if (i.observacao) {
             detalhes += '<span style="color:var(--texto-suave);font-size:0.85rem;">' + escapar(i.observacao) + '</span>';
           }
+
+          var linkExterno = '';
+          if (ev.link_externo) {
+            linkExterno = '<a href="' + escapar(ev.link_externo) + '" target="_blank" rel="noopener">Página da inscrição →</a>';
+          }
+
           return '<li>' +
             '<div class="doc-info">' +
-              '<strong>' + escapar(i.evento_nome) + '</strong>' +
+              '<strong>' + escapar(nome) + '</strong>' +
               detalhes +
             '</div>' +
+            linkExterno +
           '</li>';
         }).join('');
       }
