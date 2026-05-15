@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Escolher cursos pré-encontro — Abenfo RJ</title>
+  <meta name="description" content="Já se inscreveu no IX ENEON via Doity? Escolha aqui seus cursos pré-encontro.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/png" href="assets/logo-abenforj.png">
+  <style>
+    .escolher-hero {
+      background: var(--verde-pastel);
+      padding: 3rem 1rem 2rem;
+      text-align: center;
+    }
+    .escolher-hero h1 { color: var(--verde-escuro); margin: 0 0 0.5rem; }
+    .escolher-hero p { color: var(--texto); margin: 0 auto; max-width: 640px; }
+
+    .formulario-acesso {
+      max-width: 480px;
+      margin: 2rem auto;
+      background: var(--branco);
+      border: 1px solid var(--borda);
+      border-radius: 12px;
+      padding: 1.5rem;
+    }
+    .formulario-acesso label { display: block; font-weight: 500; margin: 0.75rem 0 0.35rem; color: var(--texto); }
+    .formulario-acesso input {
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      border: 1px solid var(--borda);
+      border-radius: 6px;
+      font: inherit;
+    }
+    .formulario-acesso .aviso-erro {
+      margin-top: 1rem;
+      padding: 0.65rem 0.85rem;
+      background: #fde8e8;
+      border-left: 4px solid #c53030;
+      color: #742020;
+      border-radius: 4px;
+      font-size: 0.9rem;
+    }
+
+    .painel-cursos { max-width: 1100px; margin: 2rem auto; padding: 0 1rem; }
+    .saudacao { font-size: 1.15rem; color: var(--texto); margin-bottom: 0.5rem; }
+    .saudacao strong { color: var(--verde-escuro); }
+
+    .turno-label {
+      margin: 1rem 0 0.5rem;
+      font-size: 0.85rem;
+      color: var(--texto-suave);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+    }
+    .grade-cursos {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+    @media (min-width: 720px) {
+      .grade-cursos { grid-template-columns: 1fr 1fr 1fr; }
+    }
+    .curso-card {
+      background: var(--branco);
+      border: 1px solid var(--borda);
+      border-radius: 10px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+    .curso-card.selecionado {
+      border-color: var(--verde);
+      box-shadow: 0 0 0 2px var(--verde-pastel) inset;
+    }
+    .curso-card.esgotado { opacity: 0.6; }
+    .curso-card .nome { font-weight: 600; color: var(--texto); line-height: 1.3; }
+    .curso-card .local { color: var(--texto-suave); font-size: 0.85rem; }
+    .curso-card .vagas { color: var(--texto-suave); font-size: 0.85rem; }
+    .curso-card .vagas.esgotado { color: #b00020; font-weight: 500; }
+    .curso-card .acao { margin-top: auto; }
+    .curso-card .acao .btn { width: 100%; min-height: 0; padding: 0.55rem 0.85rem; font-size: 0.9rem; }
+    .feedback {
+      margin: 1rem 0;
+      padding: 0.65rem 0.85rem;
+      border-radius: 4px;
+      font-size: 0.95rem;
+    }
+    .feedback.ok { background: #e6f4ea; color: #1f5d3a; border-left: 4px solid #2e7d4f; }
+    .feedback.erro { background: #fde8e8; color: #742020; border-left: 4px solid #c53030; }
+  </style>
+</head>
+<body>
+  <a href="#conteudo" class="skip-link">Pular para o conteúdo</a>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="index.html" class="logo-link" aria-label="Abenfo RJ — Página inicial">
+        <img src="assets/logo-abenforj.png" alt="Logo Abenfo RJ">
+        <div class="logo-text">Abenfo RJ<span>Enfermagem Obstétrica</span></div>
+      </a>
+      <button class="nav-toggle" aria-expanded="false" aria-label="Abrir menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+      <nav class="main-nav" aria-label="Principal">
+        <ul>
+          <li><a href="index.html">Início</a></li>
+          <li><a href="missao.html">Missão</a></li>
+          <li><a href="diretoria.html">Diretoria</a></li>
+          <li><a href="eventos-passados.html">Cursos e Eventos</a></li>
+          <li><a href="eventos.html">IX ENEON</a></li>
+          <li><a href="lai.html">Transparência</a></li>
+          <li><a href="noticias.html">Notícias</a></li>
+          <li><a href="contato.html">Contato</a></li>
+          <li><a href="/login" class="btn btn-entrar" style="padding:0.5rem 1rem;font-size:0.9rem;min-height:0;">Entrar</a></li>
+          <li><a href="associe-se.html" class="btn btn-solid" style="padding:0.5rem 1rem;font-size:0.9rem;min-height:0;">Associe-se</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="conteudo">
+    <section class="escolher-hero">
+      <div class="container">
+        <h1>Escolher cursos pré-encontro</h1>
+        <p>
+          Já se inscreveu no IX ENEON pelo Doity? Use seu e-mail e número de inscrição
+          para escolher seus cursos pré-encontro (1 por turno).
+          <strong>Sócias da ABENFO-RJ</strong> escolhem pela <a href="/login">área da associada</a>.
+        </p>
+      </div>
+    </section>
+
+    <section id="form-section">
+      <div class="container">
+        <form id="form-acesso" class="formulario-acesso" autocomplete="off">
+          <label for="email">E-mail usado no Doity</label>
+          <input id="email" type="email" required placeholder="seuemail@exemplo.com">
+
+          <label for="doity-id">Número da inscrição Doity</label>
+          <input id="doity-id" type="text" required placeholder="DOI-XXXXXXXXX">
+          <p style="font-size:0.825rem;color:var(--texto-suave);margin:0.35rem 0 0;">
+            Está no e-mail de confirmação do Doity ou no comprovante de inscrição.
+          </p>
+
+          <div style="margin-top:1.25rem;">
+            <button type="submit" class="btn btn-solid" style="width:100%;">Acessar</button>
+          </div>
+
+          <div id="erro-acesso" class="aviso-erro" hidden></div>
+        </form>
+      </div>
+    </section>
+
+    <section id="painel-section" hidden>
+      <div class="painel-cursos">
+        <p class="saudacao">Olá, <strong id="saudacao-nome"></strong>! Escolha 1 curso por turno.</p>
+        <div id="feedback"></div>
+        <div id="grade-painel"></div>
+        <div style="margin-top:1.5rem;text-align:center;">
+          <button type="button" id="btn-sair" class="btn btn-ghost">Sair</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="copyright">
+        © <span id="ano"></span> Abenfo RJ.
+      </div>
+    </div>
+  </footer>
+
+  <script>document.getElementById('ano').textContent = new Date().getFullYear();</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    (function () {
+      if (!window.SUPABASE_PRONTO) {
+        document.getElementById('form-section').innerHTML =
+          '<div class="container" style="padding:3rem 1.5rem;"><div class="aviso-erro" style="margin:0 auto;max-width:480px;">' +
+          '<strong>Em configuração:</strong> a página está sendo finalizada. Volte em breve.</div></div>';
+        return;
+      }
+
+      var sb = window.abenfo.sb;
+      var emailAtual = '';
+      var doityAtual = '';
+      var inscritoAtual = null;
+
+      function escapar(s) {
+        if (!s) return '';
+        return String(s).replace(/[&<>"']/g, function (c) {
+          return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+      }
+
+      function feedback(msg, tipo) {
+        var el = document.getElementById('feedback');
+        if (!msg) { el.innerHTML = ''; return; }
+        el.innerHTML = '<div class="feedback ' + (tipo || 'ok') + '">' + escapar(msg) + '</div>';
+        if (tipo === 'ok') setTimeout(function () { el.innerHTML = ''; }, 4000);
+      }
+
+      async function autenticar(email, doityId) {
+        var r = await sb.rpc('externo_meu_painel', { p_email: email, p_doity_id: doityId });
+        if (r.error) return { ok: false, erro: r.error.message };
+        return r.data;
+      }
+
+      async function mostrarPainel() {
+        if (!inscritoAtual) return;
+        document.getElementById('saudacao-nome').textContent = inscritoAtual.nome;
+
+        // Carrega cursos do evento da inscrição
+        var rCursos = await sb.rpc('cursos_com_vagas', { p_evento_id: inscritoAtual.evento_id });
+        if (rCursos.error) {
+          document.getElementById('grade-painel').innerHTML =
+            '<div class="feedback erro">Erro ao carregar cursos: ' + escapar(rCursos.error.message) + '</div>';
+          return;
+        }
+        var cursos = rCursos.data || [];
+        if (cursos.length === 0) {
+          document.getElementById('grade-painel').innerHTML =
+            '<p style="text-align:center;color:var(--texto-suave);">Ainda não há cursos disponíveis para este evento.</p>';
+          return;
+        }
+
+        // Recarrega painel (também atualiza cursos já escolhidos)
+        var rMeu = await sb.rpc('externo_meu_painel', { p_email: emailAtual, p_doity_id: doityAtual });
+        var meusCursosIds = {};
+        if (rMeu.data && rMeu.data.ok && Array.isArray(rMeu.data.cursos)) {
+          rMeu.data.cursos.forEach(function (c) { meusCursosIds[c.id] = true; });
+        }
+
+        // Agrupa por turno
+        var porTurno = {};
+        cursos.forEach(function (c) {
+          var t = c.turno || 'Sem turno';
+          if (!porTurno[t]) porTurno[t] = [];
+          porTurno[t].push(c);
+        });
+
+        var html = '';
+        Object.keys(porTurno).forEach(function (turno) {
+          html += '<div class="turno-label">' + escapar(turno) + '</div>';
+          html += '<div class="grade-cursos">';
+          porTurno[turno].forEach(function (c) {
+            var selecionado = !!meusCursosIds[c.id];
+            var ocupadas = Number(c.ocupadas || 0);
+            var esgotado = false;
+            var vagasInfo = '';
+            if (c.vagas != null) {
+              var rest = c.vagas - ocupadas;
+              if (rest <= 0 && !selecionado) {
+                esgotado = true;
+                vagasInfo = '<span class="vagas esgotado">Vagas esgotadas</span>';
+              } else {
+                vagasInfo = '<span class="vagas">' + rest + ' de ' + c.vagas + ' vaga(s) restantes</span>';
+              }
+            }
+            var classes = ['curso-card'];
+            if (selecionado) classes.push('selecionado');
+            if (esgotado) classes.push('esgotado');
+
+            var botao;
+            if (selecionado) {
+              botao = '<button type="button" class="btn btn-ghost" data-acao="cancelar" data-curso-id="' + c.id + '">✓ Selecionado — cancelar</button>';
+            } else if (esgotado) {
+              botao = '<button type="button" class="btn btn-ghost" disabled>Indisponível</button>';
+            } else {
+              botao = '<button type="button" class="btn btn-solid" data-acao="escolher" data-curso-id="' + c.id + '">Escolher</button>';
+            }
+
+            html += '<div class="' + classes.join(' ') + '">' +
+              '<div class="nome">' + escapar(c.nome) + '</div>' +
+              (c.local ? '<div class="local">📍 ' + escapar(c.local) + '</div>' : '') +
+              vagasInfo +
+              '<div class="acao">' + botao + '</div>' +
+            '</div>';
+          });
+          html += '</div>';
+        });
+
+        document.getElementById('grade-painel').innerHTML = html;
+      }
+
+      document.getElementById('form-acesso').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        var erro = document.getElementById('erro-acesso');
+        erro.hidden = true;
+        erro.textContent = '';
+
+        var email = document.getElementById('email').value.trim();
+        var doityId = document.getElementById('doity-id').value.trim().toUpperCase();
+        if (!email || !doityId) return;
+
+        var btn = e.target.querySelector('button[type="submit"]');
+        btn.disabled = true;
+        var textoOrig = btn.textContent;
+        btn.textContent = 'Verificando…';
+
+        try {
+          var res = await autenticar(email, doityId);
+          if (!res || !res.ok) {
+            erro.hidden = false;
+            erro.textContent = (res && res.erro) || 'Não foi possível validar sua inscrição.';
+            return;
+          }
+          emailAtual = email;
+          doityAtual = doityId;
+          inscritoAtual = res.inscrito;
+          document.getElementById('form-section').hidden = true;
+          document.getElementById('painel-section').hidden = false;
+          await mostrarPainel();
+        } finally {
+          btn.disabled = false;
+          btn.textContent = textoOrig;
+        }
+      });
+
+      document.addEventListener('click', async function (e) {
+        if (e.target.id === 'btn-sair') {
+          emailAtual = ''; doityAtual = ''; inscritoAtual = null;
+          document.getElementById('form-acesso').reset();
+          document.getElementById('form-section').hidden = false;
+          document.getElementById('painel-section').hidden = true;
+          return;
+        }
+
+        var btn = e.target.closest('button[data-acao]');
+        if (!btn) return;
+        var acao = btn.getAttribute('data-acao');
+        var cursoId = btn.getAttribute('data-curso-id');
+
+        if (acao === 'escolher') {
+          btn.disabled = true;
+          var r = await sb.rpc('externo_escolher_curso', {
+            p_email: emailAtual, p_doity_id: doityAtual, p_curso_id: cursoId
+          });
+          if (r.error) { feedback(r.error.message, 'erro'); btn.disabled = false; return; }
+          if (r.data && !r.data.ok) { feedback(r.data.erro, 'erro'); btn.disabled = false; return; }
+          feedback('Curso selecionado!', 'ok');
+          await mostrarPainel();
+        } else if (acao === 'cancelar') {
+          if (!confirm('Cancelar sua inscrição neste curso?')) return;
+          btn.disabled = true;
+          var r2 = await sb.rpc('externo_cancelar_curso', {
+            p_email: emailAtual, p_doity_id: doityAtual, p_curso_id: cursoId
+          });
+          if (r2.error) { feedback(r2.error.message, 'erro'); btn.disabled = false; return; }
+          feedback('Inscrição cancelada.', 'ok');
+          await mostrarPainel();
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

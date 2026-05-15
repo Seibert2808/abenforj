@@ -687,6 +687,25 @@
         el.style.color = tipo === 'erro' ? '#b00020' : 'var(--texto-suave)';
       }
 
+      // Armazena dados ricos da última planilha pra usar no processamento
+      // (nome, DOI, telefone, etc. — necessários para criar inscritos_externos)
+      var _ultimasLinhasParsed = {};
+
+      function acharCol(header, predicado) {
+        for (var c = 0; c < header.length; c++) {
+          if (predicado(header[c])) return c;
+        }
+        return -1;
+      }
+
+      function parseDataDoity(s) {
+        // Aceita "13/05/2026" ou "13/05/2026 às 15:10:37" — retorna ISO
+        if (!s) return null;
+        var m = String(s).match(/(\d{2})\/(\d{2})\/(\d{4})/);
+        if (!m) return null;
+        return m[3] + '-' + m[2] + '-' + m[1] + 'T00:00:00';
+      }
+
       async function processarArquivoInscritas(file) {
         statusArquivo('Lendo ' + file.name + '…');
         try {
@@ -694,39 +713,28 @@
           var buffer = await file.arrayBuffer();
           var wb = XLSX.read(buffer, { type: 'array' });
           var ws = wb.Sheets[wb.SheetNames[0]];
-          if (!ws) {
-            statusArquivo('Planilha sem abas.', 'erro');
-            return;
-          }
+          if (!ws) { statusArquivo('Planilha sem abas.', 'erro'); return; }
           var rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: false });
-          if (rows.length < 2) {
-            statusArquivo('Planilha vazia.', 'erro');
-            return;
-          }
+          if (rows.length < 2) { statusArquivo('Planilha vazia.', 'erro'); return; }
 
-          // Localiza colunas pelo cabeçalho
           var header = rows[0].map(function (h) { return String(h || '').toLowerCase().trim(); });
-          var emailCol = -1;
-          for (var c = 0; c < header.length; c++) {
-            if (/e[-\s]?mail/.test(header[c])) { emailCol = c; break; }
-          }
+          var emailCol = acharCol(header, function (h) { return /e[-\s]?mail/.test(h); });
           if (emailCol === -1) {
             statusArquivo('Não encontrei a coluna de e-mail no cabeçalho.', 'erro');
             return;
           }
+          var nomeCol = acharCol(header, function (h) { return /^nome\b/.test(h); });
+          var doityCol = acharCol(header, function (h) { return /(n[º°.]?\s*inscri|numero\s*inscri)/.test(h); });
+          var telefoneCol = acharCol(header, function (h) { return /(telefone|whats)/.test(h); });
+          var dataInscCol = acharCol(header, function (h) { return /data\s*da\s*inscri/.test(h); });
+          var statusInscCol = acharCol(header, function (h) { return h.indexOf('situa') !== -1 && h.indexOf('inscri') !== -1; });
+          var statusCompraCol = acharCol(header, function (h) { return h.indexOf('situa') !== -1 && h.indexOf('compra') !== -1; });
 
-          // Colunas de situação (opcional — só filtra se existirem)
-          var statusInscCol = -1, statusCompraCol = -1;
-          for (var k = 0; k < header.length; k++) {
-            if (statusInscCol === -1 && header[k].indexOf('situa') !== -1 && header[k].indexOf('inscri') !== -1) statusInscCol = k;
-            if (statusCompraCol === -1 && header[k].indexOf('situa') !== -1 && header[k].indexOf('compra') !== -1) statusCompraCol = k;
-          }
-
-          // Extrai e-mails
           var emails = [];
           var vistos = {};
-          var ignoradosStatus = 0;
-          var ignoradosFormato = 0;
+          var ignoradosStatus = 0, ignoradosFormato = 0;
+          _ultimasLinhasParsed = {};
+
           for (var i = 1; i < rows.length; i++) {
             var row = rows[i];
             if (!row || row.length === 0) continue;
@@ -734,22 +742,25 @@
             if (!em) continue;
             if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { ignoradosFormato++; continue; }
 
-            // Se há colunas de situação, exige confirmada/concluído
-            var passouFiltro = true;
+            var passou = true;
             if (statusInscCol !== -1) {
-              var stInsc = String(row[statusInscCol] || '').toLowerCase();
-              if (!/confirmad/.test(stInsc)) passouFiltro = false;
+              if (!/confirmad/.test(String(row[statusInscCol] || '').toLowerCase())) passou = false;
             }
-            if (passouFiltro && statusCompraCol !== -1) {
-              var stCompra = String(row[statusCompraCol] || '').toLowerCase();
-              // Aceita "Concluído", "Concluido", "Pago" etc.
-              if (!/concl|pago|aprovad/.test(stCompra)) passouFiltro = false;
+            if (passou && statusCompraCol !== -1) {
+              if (!/concl|pago|aprovad/.test(String(row[statusCompraCol] || '').toLowerCase())) passou = false;
             }
-            if (!passouFiltro) { ignoradosStatus++; continue; }
-
+            if (!passou) { ignoradosStatus++; continue; }
             if (vistos[em]) continue;
             vistos[em] = true;
             emails.push(em);
+
+            // Guarda dados ricos pra criar inscrito_externo se não for sócia
+            _ultimasLinhasParsed[em] = {
+              nome: nomeCol !== -1 ? String(row[nomeCol] || '').trim() : '',
+              doity_id: doityCol !== -1 ? String(row[doityCol] || '').trim().toUpperCase() : '',
+              telefone: telefoneCol !== -1 ? String(row[telefoneCol] || '').trim() : '',
+              data_inscricao: dataInscCol !== -1 ? parseDataDoity(row[dataInscCol]) : null
+            };
           }
 
           document.getElementById('emails-cole').value = emails.join('\n');
@@ -840,8 +851,7 @@
 
       async function processarInscricoes() {
         var sb = window.abenfo.sb;
-        var sel = document.getElementById('evento-id');
-        var evento_id = sel.value;
+        var evento_id = document.getElementById('evento-id').value;
         if (!evento_id) {
           mostrarAviso('Selecione um evento.', 'erro');
           return;
@@ -859,77 +869,126 @@
         btn.textContent = 'Processando…';
 
         try {
-          var rPerfis = await sb.from('profiles')
-            .select('id, email, nome_completo, nome_social')
-            .in('email', emails);
+          // 1) Quem é sócia? (cruza por profiles.email)
+          var rPerfis = await sb.from('profiles').select('id, email').in('email', emails);
           if (rPerfis.error) {
             mostrarAviso('Erro ao consultar perfis: ' + rPerfis.error.message, 'erro');
             return;
           }
           var perfis = rPerfis.data || [];
-          var encontrados = {};
-          perfis.forEach(function (p) { if (p.email) encontrados[p.email.toLowerCase()] = p; });
-          var naoEncontrados = emails.filter(function (e) { return !encontrados[e]; });
+          var emailParaPerfil = {};
+          perfis.forEach(function (p) { if (p.email) emailParaPerfil[p.email.toLowerCase()] = p; });
 
+          // 2) Sócias já inscritas no evento?
           var idsPerfis = perfis.map(function (p) { return p.id; });
-          var jaInscritos = {};
+          var jaInscritasSocias = {};
           if (idsPerfis.length > 0) {
             var rEx = await sb.from('inscricoes_evento')
-              .select('profile_id')
-              .eq('evento_id', evento_id)
-              .in('profile_id', idsPerfis);
+              .select('profile_id').eq('evento_id', evento_id).in('profile_id', idsPerfis);
             if (rEx.error) {
-              mostrarAviso('Erro ao verificar inscrições existentes: ' + rEx.error.message, 'erro');
+              mostrarAviso('Erro ao verificar inscrições: ' + rEx.error.message, 'erro');
               return;
             }
-            (rEx.data || []).forEach(function (x) { jaInscritos[x.profile_id] = true; });
+            (rEx.data || []).forEach(function (x) { jaInscritasSocias[x.profile_id] = true; });
+          }
+
+          // 3) Não-sócias já registradas?
+          var emailsNaoSocias = emails.filter(function (e) { return !emailParaPerfil[e]; });
+          var jaExternos = {};
+          if (emailsNaoSocias.length > 0) {
+            var rExt = await sb.from('inscritos_externos')
+              .select('email').eq('evento_id', evento_id).in('email', emailsNaoSocias);
+            if (rExt.error) {
+              mostrarAviso('Erro ao verificar não-sócias: ' + rExt.error.message, 'erro');
+              return;
+            }
+            (rExt.data || []).forEach(function (x) { jaExternos[x.email.toLowerCase()] = true; });
           }
 
           var auth = await sb.auth.getUser();
           var adminUid = auth && auth.data && auth.data.user ? auth.data.user.id : null;
 
-          var aInserir = perfis
-            .filter(function (p) { return !jaInscritos[p.id]; })
+          // 4) Insere novas sócias em inscricoes_evento
+          var aInserirSocias = perfis
+            .filter(function (p) { return !jaInscritasSocias[p.id]; })
             .map(function (p) {
               return { profile_id: p.id, evento_id: evento_id, created_by: adminUid };
             });
-
-          var inseridas = 0;
-          if (aInserir.length > 0) {
-            var rIns = await sb.from('inscricoes_evento').insert(aInserir);
+          var inseridasSocias = 0;
+          if (aInserirSocias.length > 0) {
+            var rIns = await sb.from('inscricoes_evento').insert(aInserirSocias);
             if (rIns.error) {
-              mostrarAviso('Erro ao inserir inscrições: ' + rIns.error.message, 'erro');
+              mostrarAviso('Erro ao inserir sócias: ' + rIns.error.message, 'erro');
               return;
             }
-            inseridas = aInserir.length;
+            inseridasSocias = aInserirSocias.length;
           }
-          var jaExistiam = perfis.length - inseridas;
 
+          // 5) Insere novas não-sócias em inscritos_externos (precisa dados ricos do XLSX)
+          var semDados = [];
+          var aInserirExt = [];
+          emailsNaoSocias.forEach(function (em) {
+            if (jaExternos[em]) return;
+            var dados = _ultimasLinhasParsed[em];
+            if (!dados || !dados.nome) {
+              // Sem nome/DOI não dá pra cadastrar como externo — deve ter sido colado manual
+              semDados.push(em);
+              return;
+            }
+            aInserirExt.push({
+              evento_id: evento_id,
+              nome: dados.nome,
+              email: em,
+              doity_id: dados.doity_id || null,
+              telefone: dados.telefone || null,
+              data_inscricao: dados.data_inscricao,
+              created_by: adminUid
+            });
+          });
+          var inseridosExt = 0;
+          if (aInserirExt.length > 0) {
+            var rIE = await sb.from('inscritos_externos').insert(aInserirExt);
+            if (rIE.error) {
+              mostrarAviso('Erro ao inserir não-sócias: ' + rIE.error.message, 'erro');
+              return;
+            }
+            inseridosExt = aInserirExt.length;
+          }
+
+          var sociasJaExistiam = perfis.length - inseridasSocias;
+          var externosJaExistiam = emailsNaoSocias.length - inseridosExt - semDados.length;
+
+          // 6) Relatório
           var rel = document.getElementById('relatorio-inscricoes');
           rel.hidden = false;
           var html = '';
           html += '<p><strong>E-mails recebidos:</strong> ' + emails.length + '</p>';
-          html += '<p><strong>Sócias encontradas:</strong> ' + perfis.length + '</p>';
-          html += '<p><strong>Novas inscrições registradas:</strong> ' + inseridas + '</p>';
-          if (jaExistiam > 0) {
-            html += '<p><strong>Já estavam registradas:</strong> ' + jaExistiam + '</p>';
-          }
-          html += '<p><strong>Não-sócias (sem cadastro no site):</strong> ' + naoEncontrados.length + '</p>';
-          if (naoEncontrados.length > 0) {
-            html += '<details><summary>Ver e-mails sem cadastro</summary><ul>';
-            naoEncontrados.forEach(function (e) { html += '<li>' + escapar(e) + '</li>'; });
+          html += '<p style="margin-top:0.5rem;border-top:1px solid var(--borda);padding-top:0.5rem;"><strong>Sócias</strong></p>';
+          html += '<p>· Encontradas no banco: ' + perfis.length + '</p>';
+          html += '<p>· Novas inscrições registradas: ' + inseridasSocias + '</p>';
+          if (sociasJaExistiam > 0) html += '<p>· Já estavam registradas: ' + sociasJaExistiam + '</p>';
+          html += '<p style="margin-top:0.5rem;border-top:1px solid var(--borda);padding-top:0.5rem;"><strong>Não-sócias</strong></p>';
+          html += '<p>· Detectadas na planilha: ' + (aInserirExt.length + externosJaExistiam) + '</p>';
+          html += '<p>· Novas registradas: ' + inseridosExt + '</p>';
+          if (externosJaExistiam > 0) html += '<p>· Já estavam registradas: ' + externosJaExistiam + '</p>';
+          if (semDados.length > 0) {
+            html += '<p>· Sem nome/dados (não puderam ser cadastradas): ' + semDados.length + '</p>';
+            html += '<details><summary>Ver e-mails sem dados</summary><ul>';
+            semDados.forEach(function (e) { html += '<li>' + escapar(e) + '</li>'; });
             html += '</ul></details>';
           }
           rel.innerHTML = html;
 
+          var totalNovo = inseridasSocias + inseridosExt;
           mostrarAviso(
-            inseridas > 0
-              ? inseridas + ' nova(s) inscrição(ões) registrada(s).'
-              : 'Nenhuma nova inscrição — todas já estavam no sistema.',
+            totalNovo > 0
+              ? totalNovo + ' nova(s) inscrição(ões) registrada(s) (' + inseridasSocias + ' sócia, ' + inseridosExt + ' não-sócia).'
+              : 'Nenhuma nova inscrição.',
             'sucesso'
           );
 
           document.getElementById('emails-cole').value = '';
+          _ultimasLinhasParsed = {};
           await atualizarResumoInscricoes();
         } finally {
           btn.disabled = false;
@@ -939,26 +998,35 @@
 
       async function atualizarResumoInscricoes() {
         var sb = window.abenfo.sb;
-        // Conta inscrições por evento via JOIN
-        var r = await sb.from('inscricoes_evento').select('evento_id, eventos(nome, data_inicio)');
         var alvo = document.getElementById('resumo-inscricoes');
-        if (r.error) {
-          alvo.innerHTML = '<div class="lista-vazia">Erro ao carregar resumo: ' + escapar(r.error.message) + '</div>';
+        var rSocias = await sb.from('inscricoes_evento').select('evento_id, eventos(nome, data_inicio)');
+        if (rSocias.error) {
+          alvo.innerHTML = '<div class="lista-vazia">Erro: ' + escapar(rSocias.error.message) + '</div>';
           return;
         }
+        var rExt = await sb.from('inscritos_externos').select('evento_id, eventos(nome, data_inicio)');
+        if (rExt.error) {
+          alvo.innerHTML = '<div class="lista-vazia">Erro: ' + escapar(rExt.error.message) + '</div>';
+          return;
+        }
+
         var contagem = {};
-        (r.data || []).forEach(function (i) {
-          var nome = i.eventos ? i.eventos.nome : '(evento removido)';
-          var data = i.eventos ? i.eventos.data_inicio : null;
-          if (!contagem[i.evento_id]) contagem[i.evento_id] = { nome: nome, data: data, total: 0 };
-          contagem[i.evento_id].total += 1;
-        });
+        function bump(item, campo) {
+          var nome = item.eventos ? item.eventos.nome : '(evento removido)';
+          var data = item.eventos ? item.eventos.data_inicio : null;
+          if (!contagem[item.evento_id]) {
+            contagem[item.evento_id] = { nome: nome, data: data, socias: 0, externos: 0 };
+          }
+          contagem[item.evento_id][campo] += 1;
+        }
+        (rSocias.data || []).forEach(function (i) { bump(i, 'socias'); });
+        (rExt.data || []).forEach(function (i) { bump(i, 'externos'); });
+
         var chaves = Object.keys(contagem);
         if (chaves.length === 0) {
           alvo.innerHTML = '<div class="lista-vazia">Sem inscrições registradas ainda.</div>';
           return;
         }
-        // Ordena por data desc (eventos sem data por último)
         chaves.sort(function (a, b) {
           var da = contagem[a].data, db = contagem[b].data;
           if (!da && !db) return 0;
@@ -967,11 +1035,12 @@
           return db.localeCompare(da);
         });
         alvo.innerHTML = chaves.map(function (k) {
-          var nome = escapar(contagem[k].nome);
-          var data = contagem[k].data ? ' · ' + fmtDataBR(contagem[k].data) : '';
+          var c = contagem[k];
+          var data = c.data ? ' · ' + fmtDataBR(c.data) : '';
+          var total = c.socias + c.externos;
           return '<div class="resumo-evento">' +
-            '<strong>' + nome + '<span style="font-weight:400;color:var(--texto-suave);">' + data + '</span></strong>' +
-            '<span class="count">' + contagem[k].total + ' sócia(s) inscrita(s)</span>' +
+            '<strong>' + escapar(c.nome) + '<span style="font-weight:400;color:var(--texto-suave);">' + data + '</span></strong>' +
+            '<span class="count">' + total + ' inscrita(s) — ' + c.socias + ' sócia(s) · ' + c.externos + ' não-sócia(s)</span>' +
           '</div>';
         }).join('');
       }

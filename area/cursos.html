@@ -10,6 +10,56 @@
   <link rel="stylesheet" href="../css/style.css">
   <link rel="stylesheet" href="../css/area.css">
   <link rel="icon" type="image/png" href="../assets/logo-abenforj.png">
+  <style>
+    .convite-cursos {
+      background: var(--verde-pastel);
+      border-left: 4px solid var(--verde);
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      margin: 1rem 0 1.5rem;
+    }
+    .convite-cursos h3 { margin: 0 0 0.35rem; color: var(--verde-escuro); font-size: 1.05rem; }
+    .convite-cursos p { margin: 0 0 0.75rem; color: var(--texto); font-size: 0.95rem; }
+
+    .grade-cursos {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+      margin: 0.5rem 0 1.5rem;
+    }
+    @media (min-width: 720px) {
+      .grade-cursos { grid-template-columns: 1fr 1fr 1fr; }
+    }
+    .curso-card {
+      background: var(--branco);
+      border: 1px solid var(--borda);
+      border-radius: 10px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+    .curso-card.selecionado {
+      border-color: var(--verde);
+      box-shadow: 0 0 0 2px var(--verde-pastel) inset;
+    }
+    .curso-card.esgotado { opacity: 0.6; }
+    .curso-card .nome { font-weight: 600; color: var(--texto); line-height: 1.3; }
+    .curso-card .local { color: var(--texto-suave); font-size: 0.85rem; }
+    .curso-card .vagas { color: var(--texto-suave); font-size: 0.85rem; }
+    .curso-card .vagas.esgotado { color: #b00020; font-weight: 500; }
+    .curso-card .acao { margin-top: auto; }
+    .curso-card .acao .btn { width: 100%; min-height: 0; padding: 0.55rem 0.85rem; font-size: 0.9rem; }
+
+    .turno-label {
+      margin-top: 0.5rem;
+      font-size: 0.85rem;
+      color: var(--texto-suave);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+    }
+  </style>
 </head>
 <body>
   <a href="#conteudo" class="skip-link">Pular para o conteúdo</a>
@@ -61,6 +111,9 @@
         </ul>
 
         <h2 style="margin-top:2.5rem;">Cursos em que estou inscrita</h2>
+
+        <div id="convites-cursos"></div>
+
         <ul class="doc-list" id="lista-inscricoes-cursos">
           <li><div class="doc-info"><strong>Carregando…</strong></div></li>
         </ul>
@@ -242,9 +295,187 @@
         }).join('');
       }
 
+      // ============================================================
+      // Painel de escolha de cursos pré-encontro (sócias logadas)
+      // ============================================================
+
+      // Cache: meus cursos atuais (curso_id → inscricao)
+      var _meusCursosAtuais = {};
+
+      async function carregarMeusCursos(perfil) {
+        var sb = window.abenfo.sb;
+        var r = await sb.from('inscricoes_curso')
+          .select('id, curso_id, cursos(turno, evento_id)')
+          .eq('profile_id', perfil.id);
+        _meusCursosAtuais = {};
+        (r.data || []).forEach(function (i) { _meusCursosAtuais[i.curso_id] = i; });
+      }
+
+      function renderCursoCard(curso, perfil) {
+        var selecionado = !!_meusCursosAtuais[curso.id];
+        var ocupadas = Number(curso.ocupadas || 0);
+        var vagasInfo = '';
+        var esgotado = false;
+        if (curso.vagas != null) {
+          var rest = curso.vagas - ocupadas;
+          if (rest <= 0 && !selecionado) {
+            esgotado = true;
+            vagasInfo = '<span class="vagas esgotado">Vagas esgotadas</span>';
+          } else {
+            vagasInfo = '<span class="vagas">' + rest + ' de ' + curso.vagas + ' vaga(s) restantes</span>';
+          }
+        }
+
+        var classes = ['curso-card'];
+        if (selecionado) classes.push('selecionado');
+        if (esgotado) classes.push('esgotado');
+
+        var botao;
+        if (selecionado) {
+          botao = '<button type="button" class="btn btn-ghost" data-acao="cancelar-curso" data-curso-id="' + curso.id + '">✓ Selecionado — cancelar</button>';
+        } else if (esgotado) {
+          botao = '<button type="button" class="btn btn-ghost" disabled>Indisponível</button>';
+        } else {
+          botao = '<button type="button" class="btn btn-solid" data-acao="escolher-curso" data-curso-id="' + curso.id + '" data-curso-nome="' + escapar(curso.nome) + '" data-curso-turno="' + escapar(curso.turno || '') + '" data-curso-evento="' + escapar(curso.evento_id || '') + '">Escolher</button>';
+        }
+
+        return '<div class="' + classes.join(' ') + '">' +
+          '<div class="nome">' + escapar(curso.nome) + '</div>' +
+          (curso.local ? '<div class="local">📍 ' + escapar(curso.local) + '</div>' : '') +
+          vagasInfo +
+          '<div class="acao">' + botao + '</div>' +
+        '</div>';
+      }
+
+      async function montarPainelConvites(perfil) {
+        var sb = window.abenfo.sb;
+        var alvo = document.getElementById('convites-cursos');
+        alvo.innerHTML = '';
+
+        // Eventos em que a sócia está inscrita
+        var rIns = await sb.from('inscricoes_evento')
+          .select('evento_id, eventos(id, nome)').eq('profile_id', perfil.id);
+        if (rIns.error || !rIns.data || rIns.data.length === 0) return;
+
+        await carregarMeusCursos(perfil);
+
+        for (var i = 0; i < rIns.data.length; i++) {
+          var item = rIns.data[i];
+          var ev = item.eventos;
+          if (!ev) continue;
+
+          var rCursos = await sb.rpc('cursos_com_vagas', { p_evento_id: item.evento_id });
+          if (rCursos.error) continue;
+          var cursos = rCursos.data || [];
+          if (cursos.length === 0) continue;
+
+          // Agrupa por turno
+          var porTurno = {};
+          cursos.forEach(function (c) {
+            var t = c.turno || 'Sem turno';
+            if (!porTurno[t]) porTurno[t] = [];
+            porTurno[t].push(c);
+          });
+
+          var html = '<div class="convite-cursos" data-evento-id="' + ev.id + '">';
+          html += '<h3>Escolha seus cursos pré-encontro — ' + escapar(ev.nome) + '</h3>';
+          html += '<p>Escolha 1 curso por turno. As vagas são limitadas e preenchidas por ordem de escolha. Você pode trocar enquanto houver vagas.</p>';
+
+          Object.keys(porTurno).forEach(function (turno) {
+            html += '<div class="turno-label">' + escapar(turno) + '</div>';
+            html += '<div class="grade-cursos">';
+            porTurno[turno].forEach(function (c) {
+              c.evento_id = item.evento_id;
+              html += renderCursoCard(c, perfil);
+            });
+            html += '</div>';
+          });
+
+          html += '</div>';
+          alvo.insertAdjacentHTML('beforeend', html);
+        }
+      }
+
+      async function escolherCursoSocia(perfil, cursoId, cursoNome, cursoTurno, cursoEventoId) {
+        var sb = window.abenfo.sb;
+
+        // 1) Confere vagas
+        var rOcup = await sb.from('inscricoes_curso')
+          .select('id', { count: 'exact', head: true }).eq('curso_id', cursoId);
+        if (rOcup.error) { alert('Erro ao verificar vagas: ' + rOcup.error.message); return; }
+        var rCurso = await sb.from('cursos').select('vagas').eq('id', cursoId).single();
+        if (rCurso.error) { alert('Erro ao consultar curso: ' + rCurso.error.message); return; }
+        var vagasMax = rCurso.data.vagas;
+        if (vagasMax != null && (rOcup.count || 0) >= vagasMax) {
+          alert('As vagas deste curso acabaram. Recarregue a página para ver as opções atualizadas.');
+          await montarPainelConvites(perfil);
+          await carregarInscricoesCursos(perfil);
+          return;
+        }
+
+        // 2) Se já tem curso no mesmo turno e mesmo evento, remove
+        if (cursoTurno && cursoEventoId) {
+          var rMeus = await sb.from('inscricoes_curso')
+            .select('id, cursos(id, turno, evento_id)').eq('profile_id', perfil.id);
+          var paraRemover = (rMeus.data || []).filter(function (m) {
+            return m.cursos && m.cursos.turno === cursoTurno && m.cursos.evento_id === cursoEventoId && m.cursos.id !== cursoId;
+          });
+          if (paraRemover.length > 0) {
+            var nomesTroca = paraRemover.map(function (m) { return m.cursos.id; });
+            var confirmaTroca = confirm('Você já tem outro curso escolhido para o turno "' + cursoTurno + '". Confirmar a troca para "' + cursoNome + '"?');
+            if (!confirmaTroca) return;
+            var rDel = await sb.from('inscricoes_curso').delete().in('id', paraRemover.map(function (m) { return m.id; }));
+            if (rDel.error) { alert('Erro ao remover curso anterior: ' + rDel.error.message); return; }
+          }
+        }
+
+        // 3) Insere
+        var rIns = await sb.from('inscricoes_curso').insert({ profile_id: perfil.id, curso_id: cursoId });
+        if (rIns.error) {
+          alert('Erro ao escolher curso: ' + rIns.error.message);
+          return;
+        }
+
+        await montarPainelConvites(perfil);
+        await carregarInscricoesCursos(perfil);
+      }
+
+      async function cancelarCursoSocia(perfil, cursoId) {
+        var sb = window.abenfo.sb;
+        if (!confirm('Cancelar sua inscrição neste curso?')) return;
+        var rDel = await sb.from('inscricoes_curso')
+          .delete().eq('profile_id', perfil.id).eq('curso_id', cursoId);
+        if (rDel.error) { alert('Erro: ' + rDel.error.message); return; }
+        await montarPainelConvites(perfil);
+        await carregarInscricoesCursos(perfil);
+      }
+
+      // Delegação de cliques no painel
+      document.addEventListener('click', function (e) {
+        var perfil = window.abenfo && window.abenfo.perfilAtual;
+        if (!perfil) return;
+        var btn = e.target.closest('button[data-acao]');
+        if (!btn) return;
+        var acao = btn.getAttribute('data-acao');
+        if (acao === 'escolher-curso') {
+          e.preventDefault();
+          escolherCursoSocia(
+            perfil,
+            btn.getAttribute('data-curso-id'),
+            btn.getAttribute('data-curso-nome'),
+            btn.getAttribute('data-curso-turno'),
+            btn.getAttribute('data-curso-evento')
+          );
+        } else if (acao === 'cancelar-curso') {
+          e.preventDefault();
+          cancelarCursoSocia(perfil, btn.getAttribute('data-curso-id'));
+        }
+      });
+
       document.addEventListener('perfil-pronto', function (e) {
         carregarInscricoes(e.detail);
         carregarInscricoesCursos(e.detail);
+        montarPainelConvites(e.detail);
       });
     })();
   </script>
