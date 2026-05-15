@@ -112,6 +112,50 @@
       background: var(--areia);
       border-radius: 8px;
     }
+
+    .import-card {
+      background: var(--branco);
+      border: 1px solid var(--borda);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+    .import-card label { display: block; font-weight: 500; margin: 0.75rem 0 0.35rem; color: var(--texto); }
+    .import-card select,
+    .import-card input[type="text"],
+    .import-card textarea {
+      width: 100%;
+      padding: 0.55rem 0.7rem;
+      border: 1px solid var(--borda);
+      border-radius: 6px;
+      font: inherit;
+      color: var(--texto);
+      background: var(--branco);
+    }
+    .import-card textarea { font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; font-size: 0.875rem; resize: vertical; }
+    .import-card .relatorio {
+      margin-top: 1rem;
+      padding: 0.85rem 1rem;
+      background: var(--areia);
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+    .import-card .relatorio p { margin: 0.25rem 0; }
+    .import-card .relatorio details { margin-top: 0.5rem; }
+    .import-card .relatorio ul { margin: 0.5rem 0 0; padding-left: 1.25rem; }
+
+    .resumo-evento {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.7rem 1rem;
+      background: var(--branco);
+      border: 1px solid var(--borda);
+      border-radius: 8px;
+      margin-bottom: 0.5rem;
+    }
+    .resumo-evento strong { color: var(--texto); }
+    .resumo-evento .count { color: var(--texto-suave); font-size: 0.9rem; }
   </style>
 </head>
 <body>
@@ -165,8 +209,45 @@
         </div>
 
         <h2>Inativas <span id="contador-inativos" style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;"></span></h2>
-        <div id="lista-inativos" style="display:grid;gap:0.75rem;">
+        <div id="lista-inativos" style="display:grid;gap:0.75rem;margin-bottom:2.5rem;">
           <div class="lista-vazia" id="vazio-inativos">Carregando…</div>
+        </div>
+
+        <h2>Inscrições em eventos</h2>
+        <p style="color:var(--texto-suave);max-width:680px;">
+          Importe a lista de inscritas vinda de plataformas externas (Doity, Sympla etc.)
+          para que as sócias vejam suas inscrições em <em>Meus Eventos</em>.
+          Quem se inscreveu mas não é sócia do site não aparece — só recebe a
+          confirmação por e-mail da plataforma.
+        </p>
+
+        <div class="import-card">
+          <label for="evento-chave">Evento</label>
+          <select id="evento-chave">
+            <option value="ix-eneon-2026" data-nome="IX ENEON 2026">IX ENEON 2026</option>
+            <option value="__outro__">Outro evento…</option>
+          </select>
+
+          <div id="evento-outro-bloco" hidden>
+            <label for="evento-outro-chave">Identificador único (ex.: <code>x-eneon-2027</code>)</label>
+            <input id="evento-outro-chave" type="text" placeholder="x-eneon-2027" autocomplete="off">
+            <label for="evento-outro-nome">Nome para exibição (ex.: <code>X ENEON 2027</code>)</label>
+            <input id="evento-outro-nome" type="text" placeholder="X ENEON 2027" autocomplete="off">
+          </div>
+
+          <label for="emails-cole">E-mails das inscritas</label>
+          <textarea id="emails-cole" rows="8" placeholder="Cole um e-mail por linha, ou separados por vírgula/ponto-e-vírgula."></textarea>
+
+          <div style="margin-top:1rem;">
+            <button type="button" id="btn-processar-inscricoes" class="btn btn-solid">Processar inscrições</button>
+          </div>
+
+          <div id="relatorio-inscricoes" class="relatorio" hidden></div>
+        </div>
+
+        <h3 style="font-size:1rem;color:var(--texto-suave);margin-top:1.5rem;">Resumo</h3>
+        <div id="resumo-inscricoes">
+          <div class="lista-vazia">Carregando…</div>
         </div>
 
       </div>
@@ -471,12 +552,198 @@
         await carregar();
       });
 
+      // ============================================================
+      // Inscrições em eventos: import via colagem de e-mails (CSV-like)
+      // ============================================================
+
+      // Mostra/esconde os campos de "outro evento" conforme o select
+      document.addEventListener('change', function (e) {
+        if (e.target && e.target.id === 'evento-chave') {
+          document.getElementById('evento-outro-bloco').hidden = e.target.value !== '__outro__';
+        }
+      });
+
+      function parseEmails(raw) {
+        if (!raw) return [];
+        var partes = String(raw).split(/[\s,;]+/);
+        var vistos = {};
+        var out = [];
+        partes.forEach(function (e) {
+          var x = e.trim().toLowerCase();
+          if (!x) return;
+          if (vistos[x]) return;
+          // Validação leve: tem que parecer e-mail
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(x)) return;
+          vistos[x] = true;
+          out.push(x);
+        });
+        return out;
+      }
+
+      async function processarInscricoes() {
+        var sb = window.abenfo.sb;
+        var sel = document.getElementById('evento-chave');
+        var evento_chave, evento_nome;
+        if (sel.value === '__outro__') {
+          evento_chave = document.getElementById('evento-outro-chave').value.trim().toLowerCase();
+          evento_nome = document.getElementById('evento-outro-nome').value.trim();
+          if (!evento_chave || !evento_nome) {
+            mostrarAviso('Preencha o identificador único e o nome do evento.', 'erro');
+            return;
+          }
+          // Identificador: só letras minúsculas, dígitos e hífen
+          if (!/^[a-z0-9-]+$/.test(evento_chave)) {
+            mostrarAviso('Identificador inválido. Use apenas letras minúsculas, dígitos e hífen.', 'erro');
+            return;
+          }
+        } else {
+          evento_chave = sel.value;
+          evento_nome = sel.options[sel.selectedIndex].getAttribute('data-nome');
+        }
+
+        var raw = document.getElementById('emails-cole').value;
+        var emails = parseEmails(raw);
+        if (emails.length === 0) {
+          mostrarAviso('Cole pelo menos um e-mail válido.', 'erro');
+          return;
+        }
+
+        var btn = document.getElementById('btn-processar-inscricoes');
+        btn.disabled = true;
+        var textoOriginal = btn.textContent;
+        btn.textContent = 'Processando…';
+
+        try {
+          // 1) Busca os perfis pelos e-mails
+          var rPerfis = await sb.from('profiles')
+            .select('id, email, nome_completo, nome_social')
+            .in('email', emails);
+          if (rPerfis.error) {
+            mostrarAviso('Erro ao consultar perfis: ' + rPerfis.error.message, 'erro');
+            return;
+          }
+          var perfis = rPerfis.data || [];
+          var emailsEncontrados = {};
+          perfis.forEach(function (p) {
+            if (p.email) emailsEncontrados[p.email.toLowerCase()] = p;
+          });
+          var naoEncontrados = emails.filter(function (e) { return !emailsEncontrados[e]; });
+
+          // 2) Detecta quais perfis já estavam inscritos
+          var idsPerfis = perfis.map(function (p) { return p.id; });
+          var jaInscritos = {};
+          if (idsPerfis.length > 0) {
+            var rEx = await sb.from('inscricoes_evento')
+              .select('profile_id')
+              .eq('evento_chave', evento_chave)
+              .in('profile_id', idsPerfis);
+            if (rEx.error) {
+              mostrarAviso('Erro ao verificar inscrições existentes: ' + rEx.error.message, 'erro');
+              return;
+            }
+            (rEx.data || []).forEach(function (x) { jaInscritos[x.profile_id] = true; });
+          }
+
+          // 3) Pega quem é o admin logado (para created_by)
+          var auth = await sb.auth.getUser();
+          var adminUid = auth && auth.data && auth.data.user ? auth.data.user.id : null;
+
+          // 4) Insere apenas os novos
+          var aInserir = perfis
+            .filter(function (p) { return !jaInscritos[p.id]; })
+            .map(function (p) {
+              return {
+                profile_id: p.id,
+                evento_chave: evento_chave,
+                evento_nome: evento_nome,
+                created_by: adminUid
+              };
+            });
+
+          var inseridas = 0;
+          if (aInserir.length > 0) {
+            var rIns = await sb.from('inscricoes_evento').insert(aInserir);
+            if (rIns.error) {
+              mostrarAviso('Erro ao inserir inscrições: ' + rIns.error.message, 'erro');
+              return;
+            }
+            inseridas = aInserir.length;
+          }
+          var jaExistiam = perfis.length - inseridas;
+
+          // 5) Relatório
+          var rel = document.getElementById('relatorio-inscricoes');
+          rel.hidden = false;
+          var html = '';
+          html += '<p><strong>E-mails recebidos:</strong> ' + emails.length + '</p>';
+          html += '<p><strong>Sócias encontradas:</strong> ' + perfis.length + '</p>';
+          html += '<p><strong>Novas inscrições registradas:</strong> ' + inseridas + '</p>';
+          if (jaExistiam > 0) {
+            html += '<p><strong>Já estavam registradas:</strong> ' + jaExistiam + '</p>';
+          }
+          html += '<p><strong>Não-sócias (sem cadastro no site):</strong> ' + naoEncontrados.length + '</p>';
+          if (naoEncontrados.length > 0) {
+            html += '<details><summary>Ver e-mails sem cadastro</summary><ul>';
+            naoEncontrados.forEach(function (e) { html += '<li>' + escapar(e) + '</li>'; });
+            html += '</ul></details>';
+          }
+          rel.innerHTML = html;
+
+          mostrarAviso(
+            inseridas > 0
+              ? inseridas + ' nova(s) inscrição(ões) registrada(s).'
+              : 'Nenhuma nova inscrição — todas já estavam no sistema.',
+            'sucesso'
+          );
+
+          // 6) Limpa textarea e atualiza resumo
+          document.getElementById('emails-cole').value = '';
+          await atualizarResumoInscricoes();
+        } finally {
+          btn.disabled = false;
+          btn.textContent = textoOriginal;
+        }
+      }
+
+      async function atualizarResumoInscricoes() {
+        var sb = window.abenfo.sb;
+        var r = await sb.from('inscricoes_evento').select('evento_chave, evento_nome');
+        var alvo = document.getElementById('resumo-inscricoes');
+        if (r.error) {
+          alvo.innerHTML = '<div class="lista-vazia">Erro ao carregar resumo: ' + escapar(r.error.message) + '</div>';
+          return;
+        }
+        var contagem = {};
+        (r.data || []).forEach(function (i) {
+          if (!contagem[i.evento_chave]) contagem[i.evento_chave] = { nome: i.evento_nome, total: 0 };
+          contagem[i.evento_chave].total += 1;
+        });
+        var chaves = Object.keys(contagem);
+        if (chaves.length === 0) {
+          alvo.innerHTML = '<div class="lista-vazia">Sem inscrições registradas ainda.</div>';
+          return;
+        }
+        alvo.innerHTML = chaves.map(function (k) {
+          return '<div class="resumo-evento">' +
+            '<strong>' + escapar(contagem[k].nome) + '</strong>' +
+            '<span class="count">' + contagem[k].total + ' sócia(s) inscrita(s)</span>' +
+          '</div>';
+        }).join('');
+      }
+
+      document.addEventListener('click', function (e) {
+        if (e.target && e.target.id === 'btn-processar-inscricoes') {
+          processarInscricoes();
+        }
+      });
+
       document.addEventListener('perfil-pronto', function (e) {
         if (!e.detail.is_admin) {
           window.location.href = 'index.html';
           return;
         }
         carregar();
+        atualizarResumoInscricoes();
       });
     })();
   </script>

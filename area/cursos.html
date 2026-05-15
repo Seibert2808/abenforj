@@ -50,16 +50,16 @@
       <div class="container">
 
         <h2>Inscrições atuais</h2>
-        <div class="aviso">
-          <strong>Em breve:</strong> assim que você se inscrever em um evento ou curso da Abenfo RJ, ele aparece aqui com data, local e link de acesso.
-        </div>
+        <p style="color:var(--texto-suave);">
+          Suas inscrições nos eventos da Abenfo RJ. As inscrições são feitas em
+          plataformas externas (Doity etc.) — depois que a diretoria importa a
+          lista, sua inscrição aparece aqui.
+        </p>
         <ul class="doc-list" id="lista-inscricoes-atuais">
-          <li>
+          <li id="placeholder-carregando">
             <div class="doc-info">
-              <strong>Você ainda não tem inscrições ativas</strong>
-              <span>Confira a programação no site público.</span>
+              <strong>Carregando…</strong>
             </div>
-            <a href="../eventos.html">Ver eventos →</a>
           </li>
         </ul>
 
@@ -91,5 +91,71 @@
   <script src="../js/config.js"></script>
   <script src="../js/supabase-client.js"></script>
   <script src="../js/area-comum.js"></script>
+  <script>
+    (function () {
+      function escapar(s) {
+        if (!s) return '';
+        return String(s).replace(/[&<>"']/g, function (c) {
+          return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+      }
+
+      function formatarData(iso) {
+        if (!iso) return '';
+        try {
+          var d = new Date(iso);
+          return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        } catch (e) { return ''; }
+      }
+
+      async function carregarInscricoes(perfil) {
+        var sb = window.abenfo.sb;
+        var lista = document.getElementById('lista-inscricoes-atuais');
+        var r = await sb.from('inscricoes_evento')
+          .select('evento_chave, evento_nome, data_inscricao, observacao')
+          .eq('profile_id', perfil.id)
+          .order('data_inscricao', { ascending: false });
+
+        if (r.error) {
+          lista.innerHTML =
+            '<li><div class="doc-info"><strong>Não foi possível carregar suas inscrições</strong>' +
+            '<span>' + escapar(r.error.message) + '</span></div></li>';
+          return;
+        }
+
+        var inscricoes = r.data || [];
+        if (inscricoes.length === 0) {
+          lista.innerHTML =
+            '<li>' +
+              '<div class="doc-info">' +
+                '<strong>Você ainda não tem inscrições registradas</strong>' +
+                '<span>Se já se inscreveu em algum evento e ele não aparece aqui, ' +
+                'aguarde a diretoria atualizar a lista. ' +
+                'Em caso de dúvida, entre em contato com a secretaria.</span>' +
+              '</div>' +
+              '<a href="../eventos.html">Ver eventos →</a>' +
+            '</li>';
+          return;
+        }
+
+        lista.innerHTML = inscricoes.map(function (i) {
+          var detalhes = '<span>Inscrição registrada em ' + escapar(formatarData(i.data_inscricao)) + '</span>';
+          if (i.observacao) {
+            detalhes += '<span style="color:var(--texto-suave);font-size:0.85rem;">' + escapar(i.observacao) + '</span>';
+          }
+          return '<li>' +
+            '<div class="doc-info">' +
+              '<strong>' + escapar(i.evento_nome) + '</strong>' +
+              detalhes +
+            '</div>' +
+          '</li>';
+        }).join('');
+      }
+
+      document.addEventListener('perfil-pronto', function (e) {
+        carregarInscricoes(e.detail);
+      });
+    })();
+  </script>
 </body>
 </html>
