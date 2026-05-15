@@ -27,7 +27,7 @@ begin
 
   -- Tarde, Sala 716
   update public.cursos
-    set nome = 'Termoproteção do Recém-Nascido',
+    set nome = 'Proteção Térmica do Recém-Nascido',
         descricao = 'Estratégias de termorregulação e prevenção da hipotermia no cuidado ao recém-nascido.',
         updated_at = now()
     where evento_id = v_evento_id
@@ -47,4 +47,11 @@ begin
         updated_at = now()
     where evento_id = v_evento_id
       and nome = 'Avaliação do Recém-Nascido em Sala de Parto';
+
+  -- Vagas: salas 23 e 716 sao as pequenas (30 lugares).
+  -- Espaco Raquel Haddock Lobo continua com 40 (default).
+  update public.cursos
+    set vagas = 30, updated_at = now()
+    where evento_id = v_evento_id
+      and (local ilike '%Sala 716%' or local ilike '%Sala 23%');
 end $$;
