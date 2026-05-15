@@ -11,15 +11,19 @@
   <link rel="stylesheet" href="../css/area.css">
   <link rel="icon" type="image/png" href="../assets/logo-abenforj.png">
   <style>
-    .convite-cursos {
+    .convite-cursos,
+    .convite-evento {
       background: var(--verde-pastel);
       border-left: 4px solid var(--verde);
       border-radius: 10px;
       padding: 1rem 1.25rem;
       margin: 1rem 0 1.5rem;
     }
-    .convite-cursos h3 { margin: 0 0 0.35rem; color: var(--verde-escuro); font-size: 1.05rem; }
-    .convite-cursos p { margin: 0 0 0.75rem; color: var(--texto); font-size: 0.95rem; }
+    .convite-cursos h3,
+    .convite-evento h3 { margin: 0 0 0.35rem; color: var(--verde-escuro); font-size: 1.05rem; }
+    .convite-cursos p,
+    .convite-evento p { margin: 0 0 0.75rem; color: var(--texto); font-size: 0.95rem; }
+    .convite-evento .btn { min-height: 0; padding: 0.55rem 1rem; font-size: 0.95rem; }
 
     .grade-cursos {
       display: grid;
@@ -106,6 +110,9 @@
         </p>
 
         <h2 style="margin-top:1.5rem;">Eventos em que estou inscrita</h2>
+
+        <div id="convites-eventos"></div>
+
         <ul class="doc-list" id="lista-inscricoes-atuais">
           <li><div class="doc-info"><strong>Carregando…</strong></div></li>
         </ul>
@@ -472,9 +479,50 @@
         }
       });
 
+      async function carregarConvitesEventos(perfil) {
+        var sb = window.abenfo.sb;
+        var alvo = document.getElementById('convites-eventos');
+        alvo.innerHTML = '';
+
+        var hoje = new Date().toISOString().slice(0, 10);
+        // Eventos ativos cuja data_inicio é hoje ou no futuro
+        // (eventos sem data_inicio também aparecem, são considerados sempre "abertos")
+        var rEv = await sb.from('eventos')
+          .select('id, nome, data_inicio, data_fim, local, link_externo')
+          .eq('ativo', true)
+          .or('data_inicio.is.null,data_inicio.gte.' + hoje)
+          .order('data_inicio', { ascending: true });
+        if (rEv.error || !rEv.data || rEv.data.length === 0) return;
+
+        var rIns = await sb.from('inscricoes_evento')
+          .select('evento_id').eq('profile_id', perfil.id);
+        var jaInscrita = {};
+        (rIns.data || []).forEach(function (i) { jaInscrita[i.evento_id] = true; });
+
+        var convites = rEv.data.filter(function (e) { return !jaInscrita[e.id]; });
+        if (convites.length === 0) return;
+
+        alvo.innerHTML = convites.map(function (e) {
+          var info = [];
+          var periodo = formatarPeriodo(e.data_inicio, e.data_fim);
+          if (periodo) info.push('📅 ' + periodo);
+          if (e.local) info.push('📍 ' + e.local);
+          var linha = info.length > 0 ? '<p>' + escapar(info.join(' · ')) + '</p>' : '';
+          var botao = e.link_externo
+            ? '<a href="' + escapar(e.link_externo) + '" class="btn btn-solid" target="_blank" rel="noopener">Inscreva-se no ' + escapar(e.nome) + ' →</a>'
+            : '<a href="../eventos.html" class="btn btn-solid">Saiba mais →</a>';
+          return '<div class="convite-evento">' +
+            '<h3>Você ainda não está inscrita no ' + escapar(e.nome) + '</h3>' +
+            linha +
+            botao +
+          '</div>';
+        }).join('');
+      }
+
       document.addEventListener('perfil-pronto', function (e) {
         carregarInscricoes(e.detail);
         carregarInscricoesCursos(e.detail);
+        carregarConvitesEventos(e.detail);
         montarPainelConvites(e.detail);
       });
     })();
