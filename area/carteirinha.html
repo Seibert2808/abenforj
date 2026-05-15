@@ -15,7 +15,11 @@
       .site-header, .site-footer, .area-saudacao, .actions-print { display: none !important; }
       body { background: white; }
       main { padding: 0; }
-      .carteirinha { box-shadow: none; }
+      .carteirinha {
+        box-shadow: none;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
     }
   </style>
 </head>
