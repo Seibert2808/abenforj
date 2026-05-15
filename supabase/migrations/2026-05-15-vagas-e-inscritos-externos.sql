@@ -8,7 +8,14 @@
 alter table public.cursos
   add column if not exists vagas integer;
 
-update public.cursos set vagas = 50 where vagas is null and evento_id is not null;
+-- Padrao 40 para os cursos pre-encontro existentes,
+-- exceto o de neonatal (Recem-Nascido), que tem sala menor (30).
+update public.cursos set vagas = 40 where vagas is null and evento_id is not null;
+
+update public.cursos
+  set vagas = 30
+  where evento_id = (select id from public.eventos where nome = 'IX ENEON 2026' limit 1)
+    and nome ilike '%Nascido em Sala de Parto%';
 
 -- (2) Tabela de nao-socios
 create table if not exists public.inscritos_externos (

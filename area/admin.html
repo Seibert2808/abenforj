@@ -317,6 +317,9 @@
               </div>
             </div>
 
+            <label for="novo-curso-vagas">Vagas (deixe vazio para "sem limite")</label>
+            <input id="novo-curso-vagas" type="number" min="1" placeholder="40">
+
             <label for="novo-curso-local">Local</label>
             <input id="novo-curso-local" type="text" autocomplete="off">
 
@@ -1093,11 +1096,13 @@
           mostrarAviso('Informe o nome do curso.', 'erro');
           return;
         }
+        var vagasRaw = document.getElementById('novo-curso-vagas').value;
         var dados = {
           nome: nome,
           evento_id: document.getElementById('novo-curso-evento').value || null,
           data: document.getElementById('novo-curso-data').value || null,
           turno: document.getElementById('novo-curso-turno').value.trim() || null,
+          vagas: vagasRaw ? parseInt(vagasRaw, 10) : null,
           local: document.getElementById('novo-curso-local').value.trim() || null,
           link_externo: document.getElementById('novo-curso-link').value.trim() || null,
           descricao: document.getElementById('novo-curso-descricao').value.trim() || null
@@ -1114,7 +1119,7 @@
         }
 
         mostrarAviso('Curso "' + nome + '" cadastrado.', 'sucesso');
-        ['novo-curso-nome', 'novo-curso-data', 'novo-curso-turno', 'novo-curso-local', 'novo-curso-link', 'novo-curso-descricao']
+        ['novo-curso-nome', 'novo-curso-data', 'novo-curso-turno', 'novo-curso-vagas', 'novo-curso-local', 'novo-curso-link', 'novo-curso-descricao']
           .forEach(function (id) { document.getElementById(id).value = ''; });
         document.getElementById('novo-curso-evento').value = '';
         document.getElementById('novo-curso-bloco').hidden = true;
