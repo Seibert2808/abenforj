@@ -1,20 +1,10 @@
--- ============================================================
--- Refatoração: separar eventos em sua própria tabela
---
--- Substitui o desenho de 2026-05-15-inscricoes-evento.sql, onde
--- `inscricoes_evento` carregava `evento_chave` e `evento_nome` inline.
--- Agora os eventos são entidades próprias com data, local, link, etc.,
--- e `inscricoes_evento` aponta para `eventos.id` via FK.
---
--- ATENÇÃO: este script DROPA a tabela `inscricoes_evento` antiga
--- e tudo dentro dela. Foi verificado em 2026-05-15 que estava vazia
--- (Sabrina rodou o SQL antigo mas não inseriu inscrições).
--- ============================================================
+-- Refatoracao: separar eventos em sua propria tabela.
+-- Substitui o desenho de 2026-05-15-inscricoes-evento.sql.
+-- Eventos viram entidade propria; inscricoes_evento aponta por FK.
+-- O DROP eh seguro: tabela antiga estava vazia em 2026-05-15.
 
--- 1) Apaga tabela antiga (com cascade pra remover policies dependentes)
 drop table if exists public.inscricoes_evento cascade;
 
--- 2) Nova tabela: eventos
 create table if not exists public.eventos (
   id              uuid        primary key default gen_random_uuid(),
   nome            text        not null,
@@ -32,7 +22,7 @@ create index if not exists eventos_data_inicio_idx
 
 alter table public.eventos enable row level security;
 
--- Leitura pública (cursos.html precisa do join, e eventos não são sensíveis)
+-- Leitura publica para todos (cursos.html faz join, evento nao eh sensivel).
 drop policy if exists "Eventos: leitura pública" on public.eventos;
 create policy "Eventos: leitura pública"
   on public.eventos for select
@@ -54,7 +44,6 @@ create policy "Eventos: admin exclui"
   on public.eventos for delete
   using (public.is_admin());
 
--- 3) Nova tabela: inscricoes_evento com FK para eventos
 create table public.inscricoes_evento (
   id              uuid        primary key default gen_random_uuid(),
   profile_id      uuid        not null references public.profiles(id) on delete cascade,
@@ -99,11 +88,11 @@ create policy "Inscrições: admin exclui"
   on public.inscricoes_evento for delete
   using (public.is_admin());
 
--- 4) Pré-cadastro do IX ENEON 2026
+-- Pre-cadastro do IX ENEON 2026.
 insert into public.eventos (nome, data_inicio, data_fim, local, link_externo)
 select 'IX ENEON 2026',
        '2026-07-15',
        '2026-07-17',
-       'UERJ — Rio de Janeiro',
+       'UERJ - Rio de Janeiro',
        'https://doity.com.br/ix-encontro-de-enfermagem-obsttrica-e-neonatal-do-estado-do-rio-de-janeiro'
 where not exists (select 1 from public.eventos where nome = 'IX ENEON 2026');
