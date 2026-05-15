@@ -17,8 +17,16 @@
       main { padding: 0; }
       .carteirinha {
         box-shadow: none;
+        /* iOS Safari não renderiza bem gradientes em camadas no print —
+           usa cor sólida pra garantir consistência em todos os devices */
+        background: #2f4a3a !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
+        page-break-inside: avoid;
+      }
+      .carteirinha::after { display: none !important; }
+      .carteirinha .cart-foto {
+        background: rgba(255, 255, 255, 0.18) !important;
       }
     }
   </style>
