@@ -63,6 +63,23 @@
       letter-spacing: 0.05em;
       font-weight: 600;
     }
+
+    .feedback-cursos {
+      margin: 1rem 0;
+      padding: 0.75rem 1rem;
+      border-radius: 6px;
+      font-size: 0.95rem;
+    }
+    .feedback-cursos.ok {
+      background: #e6f4ea;
+      color: #1f5d3a;
+      border-left: 4px solid #2e7d4f;
+    }
+    .feedback-cursos.erro {
+      background: #fde8e8;
+      color: #742020;
+      border-left: 4px solid #c53030;
+    }
   </style>
 </head>
 <body>
@@ -118,6 +135,8 @@
         </ul>
 
         <h2 style="margin-top:2.5rem;">Cursos em que estou inscrita</h2>
+
+        <div id="feedback-cursos" aria-live="polite"></div>
 
         <div id="convites-cursos"></div>
 
@@ -309,6 +328,18 @@
       // Cache: meus cursos atuais (curso_id → inscricao)
       var _meusCursosAtuais = {};
 
+      var _feedbackTimer = null;
+      function feedbackCursos(msg, tipo) {
+        var el = document.getElementById('feedback-cursos');
+        if (!el) return;
+        if (_feedbackTimer) { clearTimeout(_feedbackTimer); _feedbackTimer = null; }
+        if (!msg) { el.innerHTML = ''; return; }
+        el.innerHTML = '<div class="feedback-cursos ' + (tipo || 'ok') + '" role="status">' + escapar(msg) + '</div>';
+        if (tipo === 'ok') {
+          _feedbackTimer = setTimeout(function () { el.innerHTML = ''; _feedbackTimer = null; }, 5000);
+        }
+      }
+
       async function carregarMeusCursos(perfil) {
         var sb = window.abenfo.sb;
         var r = await sb.from('inscricoes_curso')
@@ -409,18 +440,19 @@
         // 1) Confere vagas
         var rOcup = await sb.from('inscricoes_curso')
           .select('id', { count: 'exact', head: true }).eq('curso_id', cursoId);
-        if (rOcup.error) { alert('Erro ao verificar vagas: ' + rOcup.error.message); return; }
+        if (rOcup.error) { feedbackCursos('Erro ao verificar vagas: ' + rOcup.error.message, 'erro'); return; }
         var rCurso = await sb.from('cursos').select('vagas').eq('id', cursoId).single();
-        if (rCurso.error) { alert('Erro ao consultar curso: ' + rCurso.error.message); return; }
+        if (rCurso.error) { feedbackCursos('Erro ao consultar curso: ' + rCurso.error.message, 'erro'); return; }
         var vagasMax = rCurso.data.vagas;
         if (vagasMax != null && (rOcup.count || 0) >= vagasMax) {
-          alert('As vagas deste curso acabaram. Recarregue a página para ver as opções atualizadas.');
+          feedbackCursos('As vagas deste curso acabaram. A lista foi atualizada com as opções disponíveis.', 'erro');
           await montarPainelConvites(perfil);
           await carregarInscricoesCursos(perfil);
           return;
         }
 
         // 2) Se já tem curso no mesmo turno e mesmo evento, remove
+        var trocou = false;
         if (cursoTurno && cursoEventoId) {
           var rMeus = await sb.from('inscricoes_curso')
             .select('id, cursos(id, turno, evento_id)').eq('profile_id', perfil.id);
@@ -428,23 +460,27 @@
             return m.cursos && m.cursos.turno === cursoTurno && m.cursos.evento_id === cursoEventoId && m.cursos.id !== cursoId;
           });
           if (paraRemover.length > 0) {
-            var nomesTroca = paraRemover.map(function (m) { return m.cursos.id; });
             var confirmaTroca = confirm('Você já tem outro curso escolhido para o turno "' + cursoTurno + '". Confirmar a troca para "' + cursoNome + '"?');
             if (!confirmaTroca) return;
             var rDel = await sb.from('inscricoes_curso').delete().in('id', paraRemover.map(function (m) { return m.id; }));
-            if (rDel.error) { alert('Erro ao remover curso anterior: ' + rDel.error.message); return; }
+            if (rDel.error) { feedbackCursos('Erro ao remover curso anterior: ' + rDel.error.message, 'erro'); return; }
+            trocou = true;
           }
         }
 
         // 3) Insere
         var rIns = await sb.from('inscricoes_curso').insert({ profile_id: perfil.id, curso_id: cursoId });
         if (rIns.error) {
-          alert('Erro ao escolher curso: ' + rIns.error.message);
+          feedbackCursos('Erro ao escolher curso: ' + rIns.error.message, 'erro');
           return;
         }
 
         await montarPainelConvites(perfil);
         await carregarInscricoesCursos(perfil);
+        feedbackCursos(
+          (trocou ? '✓ Troca confirmada: ' : '✓ Inscrição confirmada: ') + cursoNome,
+          'ok'
+        );
       }
 
       async function cancelarCursoSocia(perfil, cursoId) {
@@ -452,9 +488,10 @@
         if (!confirm('Cancelar sua inscrição neste curso?')) return;
         var rDel = await sb.from('inscricoes_curso')
           .delete().eq('profile_id', perfil.id).eq('curso_id', cursoId);
-        if (rDel.error) { alert('Erro: ' + rDel.error.message); return; }
+        if (rDel.error) { feedbackCursos('Erro ao cancelar: ' + rDel.error.message, 'erro'); return; }
         await montarPainelConvites(perfil);
         await carregarInscricoesCursos(perfil);
+        feedbackCursos('Inscrição cancelada.', 'ok');
       }
 
       // Delegação de cliques no painel
