@@ -622,10 +622,23 @@
         return false;
       }
 
+      // Regra Abenfo: Efetiva = obstetriz OU enfermeira com especialidade em
+      // Enf. Obstétrica ou Enf. Neonatal. Todo o resto é Especial.
+      function ehEfetiva(p) {
+        if (p.categoria === 'obstetriz') return true;
+        if (p.categoria === 'enfermeira' && p.especialidade) {
+          return /(obst[ée]tri|neonat)/i.test(p.especialidade);
+        }
+        return false;
+      }
+      function tipoSocioDerivado(p) {
+        return ehEfetiva(p) ? 'efetiva' : 'especial';
+      }
+
       function filtrarPorStat(stat, lista) {
         if (stat === 'total') return lista.slice();
-        if (stat === 'efetiva') return lista.filter(function (p) { return p.tipo_socio === 'efetiva'; });
-        if (stat === 'especial') return lista.filter(function (p) { return p.tipo_socio === 'especial'; });
+        if (stat === 'efetiva') return lista.filter(ehEfetiva);
+        if (stat === 'especial') return lista.filter(function (p) { return !ehEfetiva(p); });
         if (stat === 'obstetricia') return lista.filter(isObstetricia);
         return [];
       }
@@ -667,7 +680,7 @@
       function subtituloPerfil(p) {
         var partes = [];
         if (p.categoria) partes.push(ROTULOS[p.categoria] || p.categoria);
-        if (p.tipo_socio) partes.push(ROTULOS_SOCIO[p.tipo_socio] || p.tipo_socio);
+        partes.push(ROTULOS_SOCIO[tipoSocioDerivado(p)]);
         if (p.especialidade) partes.push(p.especialidade);
         return partes.join(' · ');
       }
@@ -745,7 +758,7 @@
         dl += dlLinha('E-mail', p.email ? '<a href="mailto:' + escapar(p.email) + '">' + escapar(p.email) + '</a>' : '');
         dl += dlLinha('Telefone', p.telefone ? escapar(p.telefone) : '');
         dl += dlLinha('Gênero', p.genero ? escapar(ROTULOS_GENERO[p.genero] || p.genero) : '');
-        dl += dlLinha('Tipo de sócia', p.tipo_socio ? escapar(ROTULOS_SOCIO[p.tipo_socio] || p.tipo_socio) : '');
+        dl += dlLinha('Tipo de sócia', escapar(ROTULOS_SOCIO[tipoSocioDerivado(p)]));
         dl += dlLinha('Validade da anuidade', p.ano_vigencia ? '31/12/' + p.ano_vigencia : '');
         dl += dlLinha('Cadastro criado em', p.created_at ? escapar(fmtDataHora(p.created_at)) : '');
         if (p.updated_at) dl += dlLinha('Última atualização', escapar(fmtDataHora(p.updated_at)));
@@ -890,7 +903,7 @@
         if (p.email) meta += metaLinha('E-mail', escapar(p.email));
         if (p.telefone) meta += metaLinha('Telefone', escapar(p.telefone));
         if (p.genero) meta += metaLinha('Gênero', escapar(ROTULOS_GENERO[p.genero] || p.genero));
-        if (p.tipo_socio) meta += metaLinha('Tipo de sócia', escapar(ROTULOS_SOCIO[p.tipo_socio] || p.tipo_socio));
+        meta += metaLinha('Tipo de sócia', escapar(ROTULOS_SOCIO[tipoSocioDerivado(p)]));
         if (p.ano_vigencia) meta += metaLinha('Validade', '31/12/' + p.ano_vigencia);
 
         // Ações primárias (com input de ano + botão solid) e secundária inversa
