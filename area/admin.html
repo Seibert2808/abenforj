@@ -156,6 +156,163 @@
     }
     .resumo-evento strong { color: var(--texto); }
     .resumo-evento .count { color: var(--texto-suave); font-size: 0.9rem; }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 2.5rem;
+    }
+    .stat-card {
+      background: var(--branco);
+      border: 1px solid var(--borda);
+      border-radius: 12px;
+      padding: 1.1rem 1.25rem;
+      text-align: left;
+      cursor: pointer;
+      font: inherit;
+      color: inherit;
+      transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+    }
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      border-color: var(--verde-pastel);
+    }
+    .stat-card:focus-visible {
+      outline: 2px solid var(--verde-escuro);
+      outline-offset: 2px;
+    }
+    .stat-card .stat-num {
+      font-size: 2rem;
+      font-weight: 600;
+      color: var(--verde-escuro);
+      line-height: 1;
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+    .stat-card .stat-label {
+      font-size: 0.9rem;
+      color: var(--texto);
+      display: block;
+      font-weight: 500;
+    }
+    .stat-card .stat-hint {
+      font-size: 0.75rem;
+      color: var(--texto-suave);
+      margin-top: 0.3rem;
+      display: block;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .modal-overlay[hidden] { display: none; }
+    .modal-box {
+      background: var(--branco);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 640px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    }
+    .modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.9rem 1.25rem;
+      border-bottom: 1px solid var(--borda);
+      gap: 0.5rem;
+    }
+    .modal-head h3 { margin: 0; font-size: 1.05rem; line-height: 1.3; }
+    .modal-head .btn-close {
+      background: transparent;
+      border: 0;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--texto-suave);
+      line-height: 1;
+      padding: 0;
+      width: 32px;
+      height: 32px;
+      flex-shrink: 0;
+    }
+    .modal-head .btn-close:hover { color: var(--texto); }
+    .modal-body {
+      padding: 1rem 1.25rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .lista-nomes { display: grid; gap: 0.4rem; }
+    .lista-nomes button {
+      text-align: left;
+      background: var(--branco);
+      border: 1px solid var(--borda);
+      border-radius: 8px;
+      padding: 0.65rem 0.85rem;
+      cursor: pointer;
+      font: inherit;
+      color: inherit;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      width: 100%;
+    }
+    .lista-nomes button:hover { background: var(--areia); border-color: var(--verde-pastel); }
+    .lista-nomes .mini-avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--verde-pastel); color: var(--verde-escuro);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem; font-weight: 600; flex-shrink: 0;
+      overflow: hidden;
+    }
+    .lista-nomes .mini-avatar img { width:100%; height:100%; object-fit:cover; }
+    .lista-nomes .nome-info { display: flex; flex-direction: column; min-width: 0; }
+    .lista-nomes .nome-info strong { font-size: 0.95rem; color: var(--texto); }
+    .lista-nomes .nome-info span { font-size: 0.8rem; color: var(--texto-suave); }
+
+    .detalhes-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.5rem 1.25rem;
+      margin: 0;
+    }
+    @media (min-width: 520px) {
+      .detalhes-grid { grid-template-columns: max-content 1fr; }
+    }
+    .detalhes-grid dt {
+      color: var(--texto-suave);
+      font-weight: 500;
+      font-size: 0.875rem;
+    }
+    .detalhes-grid dd {
+      margin: 0;
+      color: var(--texto);
+      font-size: 0.95rem;
+      word-break: break-word;
+    }
+    .btn-voltar {
+      margin-bottom: 1rem;
+      background: transparent;
+      border: 0;
+      color: var(--verde-escuro);
+      cursor: pointer;
+      padding: 0.35rem 0;
+      font: inherit;
+      font-size: 0.9rem;
+    }
+    .btn-voltar:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
@@ -197,6 +354,40 @@
       <div class="container">
 
         <div id="admin-aviso" hidden></div>
+
+        <h2>Estatísticas <span style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;">(sócias ativas)</span></h2>
+        <div id="stats-grid" class="stats-grid">
+          <button type="button" class="stat-card" data-stat="total" aria-label="Ver lista de todas as sócias ativas">
+            <span class="stat-num" id="stat-num-total">—</span>
+            <span class="stat-label">Total de sócias</span>
+            <span class="stat-hint">Clique para ver a lista</span>
+          </button>
+          <button type="button" class="stat-card" data-stat="efetiva" aria-label="Ver lista de sócias efetivas">
+            <span class="stat-num" id="stat-num-efetiva">—</span>
+            <span class="stat-label">Sócias Efetivas</span>
+            <span class="stat-hint" id="stat-hint-efetiva">—</span>
+          </button>
+          <button type="button" class="stat-card" data-stat="especial" aria-label="Ver lista de sócias especiais">
+            <span class="stat-num" id="stat-num-especial">—</span>
+            <span class="stat-label">Sócias Especiais</span>
+            <span class="stat-hint" id="stat-hint-especial">—</span>
+          </button>
+          <button type="button" class="stat-card" data-stat="obstetricia" aria-label="Ver lista de especialistas em enfermagem obstétrica e obstetrizes">
+            <span class="stat-num" id="stat-num-obstetricia">—</span>
+            <span class="stat-label">Enf. Obstétrica + Obstetrizes</span>
+            <span class="stat-hint">Especialistas e obstetrizes</span>
+          </button>
+        </div>
+
+        <div id="modal-overlay" class="modal-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="modal-titulo">
+          <div class="modal-box">
+            <div class="modal-head">
+              <h3 id="modal-titulo">—</h3>
+              <button type="button" class="btn-close" data-acao-modal="fechar" aria-label="Fechar">×</button>
+            </div>
+            <div class="modal-body" id="modal-body">—</div>
+          </div>
+        </div>
 
         <h2>Pendentes de aprovação <span id="contador-pendentes" style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;"></span></h2>
         <div id="lista-pendentes" style="display:grid;gap:0.75rem;margin-bottom:2.5rem;">
@@ -419,6 +610,217 @@
 
       var aviso = document.getElementById('admin-aviso');
 
+      // Estado dos perfis ativos para alimentar as estatísticas e o modal
+      var ativosAtuais = [];
+      var modalState = { titulo: '', lista: [], perfilAtual: null };
+
+      function isObstetricia(p) {
+        if (p.categoria === 'obstetriz') return true;
+        if (p.categoria === 'enfermeira' && p.especialidade) {
+          return /obst[ée]tri/i.test(p.especialidade);
+        }
+        return false;
+      }
+
+      function filtrarPorStat(stat, lista) {
+        if (stat === 'total') return lista.slice();
+        if (stat === 'efetiva') return lista.filter(function (p) { return p.tipo_socio === 'efetiva'; });
+        if (stat === 'especial') return lista.filter(function (p) { return p.tipo_socio === 'especial'; });
+        if (stat === 'obstetricia') return lista.filter(isObstetricia);
+        return [];
+      }
+
+      function tituloDoStat(stat) {
+        if (stat === 'total') return 'Sócias ativas';
+        if (stat === 'efetiva') return 'Sócias Efetivas';
+        if (stat === 'especial') return 'Sócias Especiais';
+        if (stat === 'obstetricia') return 'Especialistas em Enf. Obstétrica + Obstetrizes';
+        return '';
+      }
+
+      function pctDoTotal(parte, total) {
+        if (!total) return '0% do total';
+        return Math.round((parte / total) * 100) + '% do total';
+      }
+
+      function atualizarStats() {
+        var total = ativosAtuais.length;
+        var efetivas = filtrarPorStat('efetiva', ativosAtuais).length;
+        var especiais = filtrarPorStat('especial', ativosAtuais).length;
+        var obstet = filtrarPorStat('obstetricia', ativosAtuais).length;
+        document.getElementById('stat-num-total').textContent = total;
+        document.getElementById('stat-num-efetiva').textContent = efetivas;
+        document.getElementById('stat-num-especial').textContent = especiais;
+        document.getElementById('stat-num-obstetricia').textContent = obstet;
+        document.getElementById('stat-hint-efetiva').textContent = pctDoTotal(efetivas, total);
+        document.getElementById('stat-hint-especial').textContent = pctDoTotal(especiais, total);
+      }
+
+      function ordenarPorNome(lista) {
+        return lista.slice().sort(function (a, b) {
+          var na = (a.nome_social || a.nome_completo || '').toLowerCase();
+          var nb = (b.nome_social || b.nome_completo || '').toLowerCase();
+          return na.localeCompare(nb, 'pt-BR');
+        });
+      }
+
+      function subtituloPerfil(p) {
+        var partes = [];
+        if (p.categoria) partes.push(ROTULOS[p.categoria] || p.categoria);
+        if (p.tipo_socio) partes.push(ROTULOS_SOCIO[p.tipo_socio] || p.tipo_socio);
+        if (p.especialidade) partes.push(p.especialidade);
+        return partes.join(' · ');
+      }
+
+      function renderListaModal(perfis) {
+        if (!perfis.length) {
+          return '<div class="lista-vazia">Nenhuma sócia nesta categoria.</div>';
+        }
+        var html = '<div class="lista-nomes">';
+        perfis.forEach(function (p) {
+          var nomeBase = p.nome_social || p.nome_completo || '(sem nome)';
+          var avatar = p.foto_url
+            ? '<span class="mini-avatar"><img src="' + escapar(p.foto_url) + '" alt=""></span>'
+            : '<span class="mini-avatar">' + escapar(iniciaisDe(nomeBase)) + '</span>';
+          var sub = subtituloPerfil(p);
+          html += '<button type="button" data-acao-modal="ver-perfil" data-id="' + escapar(p.id) + '">' +
+            avatar +
+            '<span class="nome-info">' +
+              '<strong>' + escapar(nomeBase) + '</strong>' +
+              (sub ? '<span>' + escapar(sub) + '</span>' : '') +
+            '</span>' +
+          '</button>';
+        });
+        html += '</div>';
+        return html;
+      }
+
+      function dlLinha(label, valor) {
+        if (valor === null || valor === undefined || valor === '') return '';
+        return '<dt>' + escapar(label) + '</dt><dd>' + valor + '</dd>';
+      }
+
+      function fmtDataHora(iso) {
+        if (!iso) return '';
+        var d = new Date(iso);
+        if (isNaN(d.getTime())) return iso;
+        var dd = String(d.getDate()).padStart(2, '0');
+        var mm = String(d.getMonth() + 1).padStart(2, '0');
+        var yyyy = d.getFullYear();
+        var hh = String(d.getHours()).padStart(2, '0');
+        var mi = String(d.getMinutes()).padStart(2, '0');
+        return dd + '/' + mm + '/' + yyyy + ' às ' + hh + ':' + mi;
+      }
+
+      function renderDetalhesPerfil(p) {
+        var nomeBase = p.nome_social || p.nome_completo || '(sem nome)';
+        var avatar = p.foto_url
+          ? '<div class="assoc-avatar" style="width:64px;height:64px;"><img src="' + escapar(p.foto_url) + '" alt=""></div>'
+          : '<div class="assoc-avatar" style="width:64px;height:64px;font-size:1.2rem;">' + escapar(iniciaisDe(nomeBase)) + '</div>';
+
+        var badges = '<span class="badge badge-' + p.status + '">' + p.status + '</span>';
+        badges += p.cadastro_completo
+          ? '<span class="badge badge-soft">docs ✓</span>'
+          : '<span class="badge badge-soft">docs pendentes</span>';
+        if (p.is_admin) badges += '<span class="badge badge-admin">admin</span>';
+
+        var cabecalho =
+          '<div style="display:flex;gap:1rem;align-items:center;margin-bottom:1.25rem;">' +
+            avatar +
+            '<div style="min-width:0;">' +
+              '<div style="font-size:1.1rem;font-weight:600;color:var(--texto);">' + escapar(nomeBase) + '</div>' +
+              (p.nome_social && p.nome_completo
+                ? '<div style="color:var(--texto-suave);font-size:0.875rem;">Nome civil: ' + escapar(p.nome_completo) + '</div>'
+                : '') +
+              '<div style="margin-top:0.4rem;display:flex;gap:0.35rem;flex-wrap:wrap;">' + badges + '</div>' +
+            '</div>' +
+          '</div>';
+
+        var dl = '<dl class="detalhes-grid">';
+        dl += dlLinha('Categoria', p.categoria ? escapar(ROTULOS[p.categoria] || p.categoria) : '');
+        dl += dlLinha('Especialidade', p.especialidade ? escapar(p.especialidade) : '');
+        dl += dlLinha('Maior grau de formação', p.formacao ? escapar(ROTULOS_FORMACAO[p.formacao] || p.formacao) : '');
+        dl += dlLinha('Coren', p.coren ? escapar(fmtCoren(p.coren)) : '');
+        dl += dlLinha('CPF', p.cpf ? escapar(fmtCpf(p.cpf)) : '');
+        dl += dlLinha('E-mail', p.email ? '<a href="mailto:' + escapar(p.email) + '">' + escapar(p.email) + '</a>' : '');
+        dl += dlLinha('Telefone', p.telefone ? escapar(p.telefone) : '');
+        dl += dlLinha('Gênero', p.genero ? escapar(ROTULOS_GENERO[p.genero] || p.genero) : '');
+        dl += dlLinha('Tipo de sócia', p.tipo_socio ? escapar(ROTULOS_SOCIO[p.tipo_socio] || p.tipo_socio) : '');
+        dl += dlLinha('Validade da anuidade', p.ano_vigencia ? '31/12/' + p.ano_vigencia : '');
+        dl += dlLinha('Cadastro criado em', p.created_at ? escapar(fmtDataHora(p.created_at)) : '');
+        if (p.updated_at) dl += dlLinha('Última atualização', escapar(fmtDataHora(p.updated_at)));
+        dl += '</dl>';
+
+        var acoes =
+          '<div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--borda);display:flex;gap:0.5rem;flex-wrap:wrap;">' +
+            '<a class="btn btn-ghost" href="carteirinha.html?id=' + escapar(p.id) + '" target="_blank" rel="noopener" style="min-height:0;padding:0.45rem 0.85rem;font-size:0.875rem;">Ver carteirinha</a>' +
+          '</div>';
+
+        return cabecalho + dl + acoes;
+      }
+
+      function renderModal() {
+        var titulo = document.getElementById('modal-titulo');
+        var body = document.getElementById('modal-body');
+        if (modalState.perfilAtual) {
+          var nomeBase = modalState.perfilAtual.nome_social || modalState.perfilAtual.nome_completo || 'Sócia';
+          titulo.textContent = nomeBase;
+          body.innerHTML =
+            '<button type="button" class="btn-voltar" data-acao-modal="voltar">← Voltar à lista</button>' +
+            renderDetalhesPerfil(modalState.perfilAtual);
+        } else {
+          titulo.textContent = modalState.titulo + ' (' + modalState.lista.length + ')';
+          body.innerHTML = renderListaModal(modalState.lista);
+        }
+      }
+
+      function abrirModalStat(stat) {
+        var lista = ordenarPorNome(filtrarPorStat(stat, ativosAtuais));
+        modalState.titulo = tituloDoStat(stat);
+        modalState.lista = lista;
+        modalState.perfilAtual = null;
+        renderModal();
+        document.getElementById('modal-overlay').hidden = false;
+        document.body.style.overflow = 'hidden';
+      }
+
+      function fecharModal() {
+        document.getElementById('modal-overlay').hidden = true;
+        document.body.style.overflow = '';
+        modalState.perfilAtual = null;
+      }
+
+      // Click no modal: cards de stat, botões internos do modal, fechar pelo overlay
+      document.addEventListener('click', function (e) {
+        var statCard = e.target.closest('.stat-card');
+        if (statCard) {
+          e.preventDefault();
+          abrirModalStat(statCard.getAttribute('data-stat'));
+          return;
+        }
+        var btnModal = e.target.closest('[data-acao-modal]');
+        if (btnModal) {
+          e.preventDefault();
+          var acao = btnModal.getAttribute('data-acao-modal');
+          if (acao === 'fechar') return fecharModal();
+          if (acao === 'voltar') { modalState.perfilAtual = null; renderModal(); return; }
+          if (acao === 'ver-perfil') {
+            var id = btnModal.getAttribute('data-id');
+            var perfil = ativosAtuais.find(function (p) { return p.id === id; });
+            if (perfil) { modalState.perfilAtual = perfil; renderModal(); }
+            return;
+          }
+        }
+        // Clique fora do modal-box fecha
+        if (e.target.id === 'modal-overlay') fecharModal();
+      });
+
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && !document.getElementById('modal-overlay').hidden) {
+          fecharModal();
+        }
+      });
+
       function mostrarAviso(texto, tipo) {
         aviso.hidden = false;
         aviso.className = 'aviso';
@@ -572,6 +974,21 @@
         document.getElementById('contador-pendentes').textContent = '(' + pendentes.length + ')';
         document.getElementById('contador-ativos').textContent = '(' + ativos.length + ')';
         document.getElementById('contador-inativos').textContent = '(' + inativos.length + ')';
+
+        ativosAtuais = ativos;
+        atualizarStats();
+        // Se o modal de lista estiver aberto, atualiza o conteúdo (caso a admin aprove alguém com modal aberto)
+        if (!document.getElementById('modal-overlay').hidden && !modalState.perfilAtual && modalState.titulo) {
+          var statAtivo = null;
+          if (modalState.titulo === tituloDoStat('total')) statAtivo = 'total';
+          else if (modalState.titulo === tituloDoStat('efetiva')) statAtivo = 'efetiva';
+          else if (modalState.titulo === tituloDoStat('especial')) statAtivo = 'especial';
+          else if (modalState.titulo === tituloDoStat('obstetricia')) statAtivo = 'obstetricia';
+          if (statAtivo) {
+            modalState.lista = ordenarPorNome(filtrarPorStat(statAtivo, ativosAtuais));
+            renderModal();
+          }
+        }
 
         function preencher(idLista, idVazio, dados, tipo, msgVazia) {
           var el = document.getElementById(idLista);
