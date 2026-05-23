@@ -9,6 +9,32 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" type="image/png" href="assets/logo-abenforj.png">
+  <style>
+    .campo-senha { position: relative; }
+    .campo-senha input { padding-right: 2.75rem; }
+    .btn-mostrar-senha {
+      position: absolute;
+      right: 0.5rem;
+      top: 2.05rem;
+      width: 2rem;
+      height: 2rem;
+      background: transparent;
+      border: 0;
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--texto-suave);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+    .btn-mostrar-senha:hover { color: var(--texto); background: var(--areia); }
+    .btn-mostrar-senha:focus-visible {
+      outline: 2px solid var(--verde-escuro);
+      outline-offset: 2px;
+    }
+    .btn-mostrar-senha svg { width: 20px; height: 20px; }
+  </style>
 </head>
 <body>
   <a href="#conteudo" class="skip-link">Pular para o conteúdo</a>
@@ -36,14 +62,26 @@
           <div id="def-aviso" hidden></div>
 
           <form id="def-form" action="javascript:void(0)" novalidate>
-            <div class="campo">
+            <div class="campo campo-senha">
               <label for="senha">Nova senha</label>
               <input type="password" id="senha" name="senha" autocomplete="new-password" required minlength="8">
+              <button type="button" class="btn-mostrar-senha" aria-label="Mostrar senha" aria-pressed="false">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              </button>
               <small style="color:var(--texto-suave);font-size:0.85rem;">Mínimo de 8 caracteres.</small>
             </div>
-            <div class="campo">
+            <div class="campo campo-senha">
               <label for="senha2">Confirmar nova senha</label>
               <input type="password" id="senha2" name="senha2" autocomplete="new-password" required minlength="8">
+              <button type="button" class="btn-mostrar-senha" aria-label="Mostrar senha" aria-pressed="false">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              </button>
             </div>
             <button type="submit" class="btn btn-solid btn-block" id="btn-def">Salvar nova senha</button>
           </form>
@@ -74,6 +112,21 @@
       var form = document.getElementById('def-form');
       var aviso = document.getElementById('def-aviso');
       var btn = document.getElementById('btn-def');
+
+      // Mostrar/ocultar senha (em todos os campos .campo-senha)
+      var ICONE_OLHO_ABERTO = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+      var ICONE_OLHO_FECHADO = '<path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a19.77 19.77 0 0 1 4.22-5.32"/><path d="M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a19.77 19.77 0 0 1-2.16 3.19"/><path d="M9.88 9.88a3 3 0 0 0 4.24 4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
+      document.querySelectorAll('.btn-mostrar-senha').forEach(function (b) {
+        var inp = b.closest('.campo-senha').querySelector('input');
+        var icone = b.querySelector('svg');
+        b.addEventListener('click', function () {
+          var visivel = inp.type === 'text';
+          inp.type = visivel ? 'password' : 'text';
+          icone.innerHTML = visivel ? ICONE_OLHO_ABERTO : ICONE_OLHO_FECHADO;
+          b.setAttribute('aria-pressed', visivel ? 'false' : 'true');
+          b.setAttribute('aria-label', visivel ? 'Mostrar senha' : 'Ocultar senha');
+        });
+      });
 
       function mostrarAviso(texto, tipo) {
         aviso.hidden = false;

@@ -10,6 +10,32 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" type="image/png" href="assets/logo-abenforj.png">
+  <style>
+    .campo-senha { position: relative; }
+    .campo-senha input { padding-right: 2.75rem; }
+    .btn-mostrar-senha {
+      position: absolute;
+      right: 0.5rem;
+      bottom: 0.35rem;
+      width: 2rem;
+      height: 2rem;
+      background: transparent;
+      border: 0;
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--texto-suave);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+    .btn-mostrar-senha:hover { color: var(--texto); background: var(--areia); }
+    .btn-mostrar-senha:focus-visible {
+      outline: 2px solid var(--verde-escuro);
+      outline-offset: 2px;
+    }
+    .btn-mostrar-senha svg { width: 20px; height: 20px; }
+  </style>
 </head>
 <body>
   <a href="#conteudo" class="skip-link">Pular para o conteúdo</a>
@@ -60,9 +86,15 @@
               <label for="email">E-mail</label>
               <input type="email" id="email" name="email" autocomplete="email" required>
             </div>
-            <div class="campo">
+            <div class="campo campo-senha">
               <label for="senha">Senha</label>
               <input type="password" id="senha" name="senha" autocomplete="current-password" required minlength="6">
+              <button type="button" class="btn-mostrar-senha" id="btn-mostrar-senha" aria-label="Mostrar senha" aria-pressed="false">
+                <svg id="icone-olho" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              </button>
             </div>
             <button type="submit" class="btn btn-solid btn-block" id="btn-entrar">Entrar</button>
           </form>
@@ -103,6 +135,20 @@
       var form = document.getElementById('login-form');
       var aviso = document.getElementById('login-aviso');
       var btn = document.getElementById('btn-entrar');
+
+      // Mostrar/ocultar senha
+      var ICONE_OLHO_ABERTO = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+      var ICONE_OLHO_FECHADO = '<path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a19.77 19.77 0 0 1 4.22-5.32"/><path d="M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a19.77 19.77 0 0 1-2.16 3.19"/><path d="M9.88 9.88a3 3 0 0 0 4.24 4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
+      var inputSenha = document.getElementById('senha');
+      var btnMostrar = document.getElementById('btn-mostrar-senha');
+      var iconeOlho = document.getElementById('icone-olho');
+      btnMostrar.addEventListener('click', function () {
+        var visivel = inputSenha.type === 'text';
+        inputSenha.type = visivel ? 'password' : 'text';
+        iconeOlho.innerHTML = visivel ? ICONE_OLHO_ABERTO : ICONE_OLHO_FECHADO;
+        btnMostrar.setAttribute('aria-pressed', visivel ? 'false' : 'true');
+        btnMostrar.setAttribute('aria-label', visivel ? 'Mostrar senha' : 'Ocultar senha');
+      });
 
       function mostrarAviso(texto, tipo) {
         aviso.hidden = false;
