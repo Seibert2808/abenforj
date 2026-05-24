@@ -474,6 +474,20 @@
           <div class="lista-vazia">Carregando…</div>
         </div>
 
+        <h2 id="bloco-pendentes">
+          Inscrições pendentes de verificação
+          <span id="contador-inscricoes-pendentes" style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;"></span>
+        </h2>
+        <p style="color:var(--texto-suave);max-width:680px;">
+          Pessoas que pagaram inscrição como sócia/o da Abenfo-RJ no Doity mas
+          <strong>não constam como associadas cadastradas</strong> no site.
+          Notifique cada uma por e-mail para regularizar (filiar-se ou pagar a diferença
+          como não-sócia). A inscrição como sócia <em>não foi confirmada</em> até a regularização.
+        </p>
+        <div id="lista-inscricoes-pendentes" style="display:grid;gap:0.75rem;margin-bottom:2.5rem;">
+          <div class="lista-vazia">Carregando…</div>
+        </div>
+
         <h2>Inscrições em cursos</h2>
         <p style="color:var(--texto-suave);max-width:680px;">
           Cursos são unidades menores que podem pertencer a um evento (ex.: cursos pré-encontro do IX ENEON) ou ser independentes. A lógica é a mesma das inscrições em eventos.
@@ -1139,6 +1153,16 @@
         return m[3] + '-' + m[2] + '-' + m[1] + 'T00:00:00';
       }
 
+      // Lotes Doity com "sócia/o" no nome (ex.: "Profissional sócia/o da ABENFO-RJ")
+      // exigem que o e-mail esteja cadastrado em profiles. Lotes com "NÃO sócia/o" não.
+      function loteEhCotaSocia(loteTexto) {
+        if (!loteTexto) return false;
+        var s = String(loteTexto).toLowerCase()
+          .normalize('NFD').replace(/[̀-ͯ]/g, '');
+        if (/\bnao\b/.test(s)) return false;
+        return /soci[oa]/.test(s);
+      }
+
       async function processarArquivoInscritas(file) {
         statusArquivo('Lendo ' + file.name + '…');
         try {
@@ -1162,6 +1186,10 @@
           var dataInscCol = acharCol(header, function (h) { return /data\s*da\s*inscri/.test(h); });
           var statusInscCol = acharCol(header, function (h) { return h.indexOf('situa') !== -1 && h.indexOf('inscri') !== -1; });
           var statusCompraCol = acharCol(header, function (h) { return h.indexOf('situa') !== -1 && h.indexOf('compra') !== -1; });
+          var loteCol = acharCol(header, function (h) { return /^lote\b/.test(h); });
+          // Valor final (pos-cupom) tem preferencia sobre valor de tabela
+          var valorCol = acharCol(header, function (h) { return /^valor\s*final/.test(h); });
+          if (valorCol === -1) valorCol = acharCol(header, function (h) { return /^valor\b/.test(h); });
 
           var emails = [];
           var vistos = {};
@@ -1187,12 +1215,14 @@
             vistos[em] = true;
             emails.push(em);
 
-            // Guarda dados ricos pra criar inscrito_externo se não for sócia
+            // Guarda dados ricos pra criar inscrito_externo ou pendente
             _ultimasLinhasParsed[em] = {
               nome: nomeCol !== -1 ? String(row[nomeCol] || '').trim() : '',
               doity_id: doityCol !== -1 ? String(row[doityCol] || '').trim().toUpperCase() : '',
               telefone: telefoneCol !== -1 ? String(row[telefoneCol] || '').trim() : '',
-              data_inscricao: dataInscCol !== -1 ? parseDataDoity(row[dataInscCol]) : null
+              data_inscricao: dataInscCol !== -1 ? parseDataDoity(row[dataInscCol]) : null,
+              lote: loteCol !== -1 ? String(row[loteCol] || '').trim() : '',
+              valor: valorCol !== -1 ? String(row[valorCol] || '').trim() : ''
             };
           }
 
@@ -1358,8 +1388,11 @@
           }
 
           // 5) Insere novas não-sócias em inscritos_externos (precisa dados ricos do XLSX)
+          //    Quem pagou cota de sócia mas não está em profiles entra com flag
+          //    pendente_verificacao_socia = true (aparece no bloco de pendências do admin).
           var semDados = [];
           var aInserirExt = [];
+          var inseridasPendentes = 0;
           emailsNaoSocias.forEach(function (em) {
             if (jaExternos[em]) return;
             var dados = _ultimasLinhasParsed[em];
@@ -1368,6 +1401,8 @@
               semDados.push(em);
               return;
             }
+            var pendente = loteEhCotaSocia(dados.lote);
+            if (pendente) inseridasPendentes++;
             aInserirExt.push({
               evento_id: evento_id,
               nome: dados.nome,
@@ -1375,6 +1410,9 @@
               doity_id: dados.doity_id || null,
               telefone: dados.telefone || null,
               data_inscricao: dados.data_inscricao,
+              lote_doity: dados.lote || null,
+              valor_pago: dados.valor || null,
+              pendente_verificacao_socia: pendente,
               created_by: adminUid
             });
           });
@@ -1410,19 +1448,32 @@
             semDados.forEach(function (e) { html += '<li>' + escapar(e) + '</li>'; });
             html += '</ul></details>';
           }
+          if (inseridasPendentes > 0) {
+            html += '<p style="margin-top:0.5rem;border-top:1px solid var(--borda);padding-top:0.5rem;color:#9a6700;"><strong>⚠ Pendentes de verificação</strong></p>';
+            html += '<p>· Pagaram como sócia mas não estão cadastradas: ' + inseridasPendentes + '</p>';
+            html += '<p style="margin-top:0.4rem;"><a href="#bloco-pendentes">Ver lista de pendências →</a></p>';
+          }
           rel.innerHTML = html;
 
           var totalNovo = inseridasSocias + inseridosExt;
+          var partes = [];
+          if (inseridasSocias) partes.push(inseridasSocias + ' sócia');
+          if (inseridosExt) {
+            var n = inseridosExt - inseridasPendentes;
+            if (n > 0) partes.push(n + ' não-sócia');
+            if (inseridasPendentes > 0) partes.push(inseridasPendentes + ' a verificar');
+          }
           mostrarAviso(
             totalNovo > 0
-              ? totalNovo + ' nova(s) inscrição(ões) registrada(s) (' + inseridasSocias + ' sócia, ' + inseridosExt + ' não-sócia).'
+              ? totalNovo + ' nova(s) inscrição(ões) registrada(s) (' + partes.join(', ') + ').'
               : 'Nenhuma nova inscrição.',
-            'sucesso'
+            inseridasPendentes > 0 ? 'aviso' : 'sucesso'
           );
 
           document.getElementById('emails-cole').value = '';
           _ultimasLinhasParsed = {};
           await atualizarResumoInscricoes();
+          await carregarPendentes();
         } finally {
           btn.disabled = false;
           btn.textContent = textoOriginal;
@@ -1477,6 +1528,139 @@
           '</div>';
         }).join('');
       }
+
+      // ============================================================
+      // Inscrições pendentes de verificação
+      // (pagou como sócia mas não está em profiles)
+      // ============================================================
+
+      function corpoEmailRegularizacao(p) {
+        var nomeEvento = (p.eventos && p.eventos.nome) || 'IX ENEON 2026';
+        return (
+          'Olá, ' + (p.nome || '') + '!\n\n' +
+          'Identificamos sua inscrição em ' + nomeEvento + ' como sócia/o da ' +
+          'Associação Brasileira de Enfermagem Obstétrica do Estado do Rio de Janeiro (ABENFO-RJ). ' +
+          'No entanto, seu cadastro não consta em nosso sistema de associadas e, portanto, ' +
+          'sua inscrição como sócia ainda não foi confirmada.\n\n' +
+          'Para regularizar, escolha uma das opções abaixo:\n\n' +
+          '1) Filiar-se à ABENFO-RJ (anuidade)\n' +
+          'Consulte os valores em https://abenforj.org.br/associe-se e faça o pagamento. ' +
+          'Após enviar o comprovante e ser aprovada como associada, sua inscrição como sócia no evento será confirmada.\n\n' +
+          '2) Pagar a diferença para inscrição como não-sócia\n' +
+          'Entre em contato com abenforio@gmail.com para combinarmos o ajuste do valor.\n\n' +
+          'Caso já seja associada e este e-mail tenha chegado por engano, ' +
+          'responda confirmando o e-mail cadastrado conosco para regularizarmos.\n\n' +
+          'Atenciosamente,\n' +
+          'Comissão Executiva — ' + nomeEvento + '\n' +
+          'ABENFO-RJ'
+        );
+      }
+
+      function renderPendente(p) {
+        var nomeEvento = (p.eventos && p.eventos.nome) || '(evento removido)';
+        var assunto = encodeURIComponent('Inscrição ' + nomeEvento + ' — regularização necessária');
+        var corpo = encodeURIComponent(corpoEmailRegularizacao(p));
+        var mailtoHref = 'mailto:' + encodeURIComponent(p.email) + '?subject=' + assunto + '&body=' + corpo;
+
+        var avatar = '<div class="assoc-avatar">' + escapar(iniciaisDe(p.nome || '')) + '</div>';
+
+        var badges = '<span class="badge badge-pendente">aguarda regularização</span>';
+        if (p.notificado_em) {
+          badges += '<span class="badge badge-soft">notificado ' + fmtDataBR(String(p.notificado_em).slice(0, 10)) + '</span>';
+        }
+
+        var meta = '';
+        meta += metaLinha('Evento', escapar(nomeEvento));
+        meta += metaLinha('E-mail', escapar(p.email));
+        if (p.telefone) meta += metaLinha('Telefone', escapar(p.telefone));
+        if (p.lote_doity) meta += metaLinha('Lote (Doity)', escapar(p.lote_doity));
+        if (p.valor_pago) meta += metaLinha('Valor pago', 'R$ ' + escapar(p.valor_pago));
+        if (p.doity_id) meta += metaLinha('Nº Doity', escapar(p.doity_id));
+        if (p.data_inscricao) meta += metaLinha('Data', fmtDataBR(String(p.data_inscricao).slice(0, 10)));
+
+        var btnNotificar =
+          '<a class="btn btn-solid" href="' + mailtoHref + '" data-pend-acao="notificar" data-pend-id="' + p.id + '">' +
+          (p.notificado_em ? 'Notificar novamente' : 'Notificar inscrito') + '</a>';
+        var btnResolver =
+          '<button class="btn btn-ghost" data-pend-acao="resolver" data-pend-id="' + p.id + '" data-pend-nome="' + escapar(p.nome) + '">Marcar regularizada</button>';
+
+        return (
+          '<div class="assoc-card" data-pend-id="' + p.id + '">' +
+            avatar +
+            '<div class="assoc-body">' +
+              '<div class="assoc-head"><strong>' + escapar(p.nome) + '</strong>' + badges + '</div>' +
+              '<div class="assoc-meta">' + meta + '</div>' +
+            '</div>' +
+            '<div class="assoc-acoes">' +
+              btnNotificar +
+              btnResolver +
+            '</div>' +
+          '</div>'
+        );
+      }
+
+      async function carregarPendentes() {
+        var sb = window.abenfo.sb;
+        var alvo = document.getElementById('lista-inscricoes-pendentes');
+        var contador = document.getElementById('contador-inscricoes-pendentes');
+        var r = await sb.from('inscritos_externos')
+          .select('*, eventos(nome, data_inicio)')
+          .eq('pendente_verificacao_socia', true)
+          .order('created_at', { ascending: false });
+        if (r.error) {
+          alvo.innerHTML = '<div class="lista-vazia">Erro: ' + escapar(r.error.message) + '</div>';
+          contador.textContent = '';
+          return;
+        }
+        var dados = r.data || [];
+        contador.textContent = dados.length > 0 ? '(' + dados.length + ')' : '';
+        if (dados.length === 0) {
+          alvo.innerHTML = '<div class="lista-vazia">Nenhuma pendência aberta — todas as inscrições como sócia foram verificadas.</div>';
+          return;
+        }
+        alvo.innerHTML = dados.map(renderPendente).join('');
+      }
+
+      // Handler dedicado pras ações de pendentes (não conflita com perfis)
+      document.addEventListener('click', async function (e) {
+        var el = e.target.closest('[data-pend-acao]');
+        if (!el) return;
+        var acao = el.getAttribute('data-pend-acao');
+        var id = el.getAttribute('data-pend-id');
+        var sb = window.abenfo.sb;
+
+        if (acao === 'notificar') {
+          // O mailto: abre via href padrão (não prevenir). Marca notificado_em em background.
+          try {
+            await sb.from('inscritos_externos')
+              .update({ notificado_em: new Date().toISOString() })
+              .eq('id', id);
+            await carregarPendentes();
+          } catch (err) {
+            // não bloqueia o usuário se o registro falhar
+          }
+          return;
+        }
+
+        e.preventDefault();
+        var nome = el.getAttribute('data-pend-nome') || '(sem nome)';
+
+        if (acao === 'resolver') {
+          if (!confirm(
+            'Marcar a inscrição de ' + nome + ' como regularizada?\n\n' +
+            'A pessoa continua na lista de inscritos externos do evento (como não-sócia regular). ' +
+            'Use esta opção quando ela tiver pago a diferença, se filiado à Abenfo, ou quando ' +
+            'você decidir aceitar a inscrição como sócia mesmo sem cadastro.'
+          )) return;
+          var r = await sb.from('inscritos_externos').update({
+            pendente_verificacao_socia: false
+          }).eq('id', id);
+          if (r.error) { mostrarAviso('Erro: ' + r.error.message, 'erro'); return; }
+          mostrarAviso('Pendência marcada como regularizada.', 'sucesso');
+          await carregarPendentes();
+          return;
+        }
+      });
 
       // ============================================================
       // Inscrições em CURSOS (lógica paralela à de eventos)
@@ -1805,6 +1989,7 @@
         carregar();
         carregarEventos();
         atualizarResumoInscricoes();
+        carregarPendentes();
         carregarCursos();
         carregarEventosParaSelectCurso();
         atualizarResumoCursos();
