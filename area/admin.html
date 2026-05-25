@@ -278,14 +278,41 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 0.7rem 1rem;
+      gap: 1rem;
+      padding: 0.85rem 1rem;
       background: var(--branco);
       border: 1px solid var(--borda);
       border-radius: 8px;
       margin-bottom: 0.5rem;
+      flex-wrap: wrap;
     }
     .resumo-evento strong { color: var(--texto); }
     .resumo-evento .count { color: var(--texto-suave); font-size: 0.9rem; }
+    .resumo-evento .resumo-acoes {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+    .resumo-link {
+      background: var(--verde-pastel);
+      color: var(--verde-escuro);
+      border: 1px solid transparent;
+      border-radius: 999px;
+      padding: 0.3rem 0.75rem;
+      font: inherit;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+    .resumo-link:hover {
+      background: var(--branco);
+      border-color: var(--verde-claro);
+    }
+    .resumo-link:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
 
     .stats-grid {
       display: grid;
@@ -411,6 +438,17 @@
     .lista-nomes .nome-info { display: flex; flex-direction: column; min-width: 0; }
     .lista-nomes .nome-info strong { font-size: 0.95rem; color: var(--texto); }
     .lista-nomes .nome-info span { font-size: 0.8rem; color: var(--texto-suave); }
+
+    /* Item não-clicável (não-sócias inscritas — só visualização) */
+    .lista-nomes .lista-item-info {
+      background: var(--branco);
+      border: 1px solid var(--borda);
+      border-radius: 8px;
+      padding: 0.65rem 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
 
     .detalhes-grid {
       display: grid;
@@ -768,7 +806,7 @@
 
       // Estado dos perfis ativos para alimentar as estatísticas e o modal
       var ativosAtuais = [];
-      var modalState = { titulo: '', lista: [], perfilAtual: null };
+      var modalState = { titulo: '', lista: [], perfilAtual: null, tipoLista: 'socias' };
 
       function isObstetricia(p) {
         if (p.categoria === 'obstetriz') return true;
@@ -940,7 +978,11 @@
             renderDetalhesPerfil(modalState.perfilAtual);
         } else {
           titulo.textContent = modalState.titulo + ' (' + modalState.lista.length + ')';
-          body.innerHTML = renderListaModal(modalState.lista);
+          if (modalState.tipoLista === 'nao_socias') {
+            body.innerHTML = renderListaNaoSocias(modalState.lista);
+          } else {
+            body.innerHTML = renderListaModal(modalState.lista);
+          }
         }
       }
 
@@ -949,9 +991,78 @@
         modalState.titulo = tituloDoStat(stat);
         modalState.lista = lista;
         modalState.perfilAtual = null;
+        modalState.tipoLista = 'socias';
         renderModal();
         document.getElementById('modal-overlay').hidden = false;
         document.body.style.overflow = 'hidden';
+      }
+
+      function renderListaNaoSocias(itens) {
+        if (!itens.length) return '<p class="lista-vazia">Sem inscritas não-sócias neste evento.</p>';
+        var html = '<div class="lista-nomes">';
+        itens.forEach(function (p) {
+          var nome = p.nome || '(sem nome)';
+          var avatar = '<div class="mini-avatar">' + escapar(iniciaisDe(nome)) + '</div>';
+          var partes = [];
+          if (p.email) partes.push(p.email);
+          if (p.telefone) partes.push(p.telefone);
+          if (p.lote_doity) partes.push(p.lote_doity);
+          if (p.valor_pago) partes.push('R$ ' + p.valor_pago);
+          // Item nao clicavel — usa div em vez de button
+          html += '<div class="lista-item-info">' +
+            avatar +
+            '<span class="nome-info">' +
+              '<strong>' + escapar(nome) + '</strong>' +
+              (partes.length ? '<span>' + escapar(partes.join(' · ')) + '</span>' : '') +
+            '</span>' +
+          '</div>';
+        });
+        html += '</div>';
+        return html;
+      }
+
+      async function abrirModalSociasInscritas(eventoId, eventoNome) {
+        var sb = window.abenfo.sb;
+        modalState.titulo = 'Sócias inscritas — ' + eventoNome;
+        modalState.lista = [];
+        modalState.perfilAtual = null;
+        modalState.tipoLista = 'socias';
+        renderModal();
+        document.getElementById('modal-overlay').hidden = false;
+        document.body.style.overflow = 'hidden';
+        document.getElementById('modal-body').innerHTML = '<p class="lista-vazia">Carregando…</p>';
+
+        var r = await sb.from('inscricoes_evento')
+          .select('profiles(*)').eq('evento_id', eventoId);
+        if (r.error) {
+          document.getElementById('modal-body').innerHTML =
+            '<p class="lista-vazia">Erro: ' + escapar(r.error.message) + '</p>';
+          return;
+        }
+        var perfis = (r.data || []).map(function (x) { return x.profiles; }).filter(Boolean);
+        modalState.lista = ordenarPorNome(perfis);
+        renderModal();
+      }
+
+      async function abrirModalNaoSociasInscritas(eventoId, eventoNome) {
+        var sb = window.abenfo.sb;
+        modalState.titulo = 'Não-sócias inscritas — ' + eventoNome;
+        modalState.lista = [];
+        modalState.perfilAtual = null;
+        modalState.tipoLista = 'nao_socias';
+        renderModal();
+        document.getElementById('modal-overlay').hidden = false;
+        document.body.style.overflow = 'hidden';
+        document.getElementById('modal-body').innerHTML = '<p class="lista-vazia">Carregando…</p>';
+
+        var r = await sb.from('inscritos_externos').select('*').eq('evento_id', eventoId);
+        if (r.error) {
+          document.getElementById('modal-body').innerHTML =
+            '<p class="lista-vazia">Erro: ' + escapar(r.error.message) + '</p>';
+          return;
+        }
+        modalState.lista = ordenarPorNome(r.data || [], 'nome');
+        renderModal();
       }
 
       function fecharModal() {
@@ -976,10 +1087,24 @@
           if (acao === 'voltar') { modalState.perfilAtual = null; renderModal(); return; }
           if (acao === 'ver-perfil') {
             var id = btnModal.getAttribute('data-id');
-            var perfil = ativosAtuais.find(function (p) { return p.id === id; });
+            // Procura primeiro na lista atual do modal (que pode ter perfis nao-ativos),
+            // depois no cache de ativos como fallback.
+            var perfil = modalState.lista.find(function (p) { return p && p.id === id; })
+                      || ativosAtuais.find(function (p) { return p.id === id; });
             if (perfil) { modalState.perfilAtual = perfil; renderModal(); }
             return;
           }
+        }
+        // Botoes do resumo de inscricoes (Sócias / Não-sócias por evento)
+        var btnRes = e.target.closest('button[data-acao-resumo]');
+        if (btnRes) {
+          e.preventDefault();
+          var acaoRes = btnRes.getAttribute('data-acao-resumo');
+          var evId = btnRes.getAttribute('data-evento-id');
+          var evNome = btnRes.getAttribute('data-evento-nome') || '(sem nome)';
+          if (acaoRes === 'ver-socias') abrirModalSociasInscritas(evId, evNome);
+          else if (acaoRes === 'ver-nao-socias') abrirModalNaoSociasInscritas(evId, evNome);
+          return;
         }
         // Clique fora do modal-box fecha
         if (e.target.id === 'modal-overlay') fecharModal();
@@ -1740,9 +1865,21 @@
           var c = contagem[k];
           var data = c.data ? ' · ' + fmtDataBR(c.data) : '';
           var total = c.socias + c.externos;
+          var nomeAttr = escapar(c.nome);
+          var btnSocias = '<button type="button" class="resumo-link" ' +
+            'data-acao-resumo="ver-socias" data-evento-id="' + k + '" data-evento-nome="' + nomeAttr + '"' +
+            (c.socias === 0 ? ' disabled' : '') + '>' +
+            c.socias + ' sócia(s)</button>';
+          var btnExt = '<button type="button" class="resumo-link" ' +
+            'data-acao-resumo="ver-nao-socias" data-evento-id="' + k + '" data-evento-nome="' + nomeAttr + '"' +
+            (c.externos === 0 ? ' disabled' : '') + '>' +
+            c.externos + ' não-sócia(s)</button>';
           return '<div class="resumo-evento">' +
-            '<strong>' + escapar(c.nome) + '<span style="font-weight:400;color:var(--texto-suave);">' + data + '</span></strong>' +
-            '<span class="count">' + total + ' inscrita(s) — ' + c.socias + ' sócia(s) · ' + c.externos + ' não-sócia(s)</span>' +
+            '<div>' +
+              '<strong>' + escapar(c.nome) + '<span style="font-weight:400;color:var(--texto-suave);">' + data + '</span></strong>' +
+              '<div class="count" style="margin-top:0.2rem;">' + total + ' inscrita(s) no total</div>' +
+            '</div>' +
+            '<div class="resumo-acoes">' + btnSocias + btnExt + '</div>' +
           '</div>';
         }).join('');
       }
