@@ -89,6 +89,47 @@
     .assoc-acoes .btn-excluir { color: #b00020; border-color: transparent; }
     .assoc-acoes .btn-excluir:hover { background: #fdecef; color: #8a0019; }
 
+    /* Histórico de e-mails enviados (só em pendentes de aprovação) */
+    .emails-log {
+      margin-top: 0.6rem;
+      padding-top: 0.5rem;
+      border-top: 1px dashed var(--borda);
+      font-size: 0.825rem;
+      color: var(--texto-suave);
+    }
+    .emails-log strong {
+      display: block;
+      font-weight: 500;
+      margin-bottom: 0.25rem;
+      color: var(--texto);
+    }
+    .emails-log ul {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 0.2rem;
+    }
+    .emails-log li {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .emails-log .btn-rm-email {
+      background: transparent;
+      border: 0;
+      color: var(--texto-suave);
+      cursor: pointer;
+      padding: 0 0.3rem;
+      font-size: 0.9rem;
+      line-height: 1;
+      border-radius: 4px;
+    }
+    .emails-log .btn-rm-email:hover {
+      background: #fdecef;
+      color: #b00020;
+    }
+
     /* Seções recolhíveis (Pendentes, Ativas, Inativas, Eventos, Cursos) */
     .secao { margin-bottom: 1rem; }
     .secao > summary {
@@ -715,10 +756,11 @@
         document.getElementById('stat-hint-especial').textContent = pctDoTotal(especiais, total);
       }
 
-      function ordenarPorNome(lista) {
+      function ordenarPorNome(lista, campoFallback) {
+        var fb = campoFallback || 'nome_completo';
         return lista.slice().sort(function (a, b) {
-          var na = (a.nome_social || a.nome_completo || '').toLowerCase();
-          var nb = (b.nome_social || b.nome_completo || '').toLowerCase();
+          var na = (a.nome_social || a[fb] || '').toLowerCase();
+          var nb = (b.nome_social || b[fb] || '').toLowerCase();
           return na.localeCompare(nb, 'pt-BR');
         });
       }
@@ -994,10 +1036,15 @@
 
         // E-mail livre (sem template) para associadas pendentes e ativas.
         // Inativas já têm o "Enviar lembrete" próprio com template de renovação.
-        var btnEmail = (p.email && (tipo === 'pendente' || tipo === 'ativo'))
-          ? '<a class="btn btn-ghost" href="https://mail.google.com/mail/?view=cm&fs=1&to=' +
-            encodeURIComponent(p.email) + '" target="_blank" rel="noopener">Enviar e-mail</a>'
-          : '';
+        // Pendentes registram cada clique em emails_enviados (historico de cobrança).
+        var btnEmail = '';
+        if (p.email && (tipo === 'pendente' || tipo === 'ativo')) {
+          var atrLog = (tipo === 'pendente')
+            ? ' data-log-email data-profile-id="' + p.id + '"'
+            : '';
+          btnEmail = '<a class="btn btn-ghost" href="https://mail.google.com/mail/?view=cm&fs=1&to=' +
+            encodeURIComponent(p.email) + '" target="_blank" rel="noopener"' + atrLog + '>Enviar e-mail</a>';
+        }
 
         var btnCarteirinha =
           '<a class="btn btn-ghost" href="carteirinha.html?id=' + p.id + '" target="_blank" rel="noopener">Ver carteirinha</a>';
@@ -1005,12 +1052,28 @@
         var btnExcluir =
           '<button class="btn btn-ghost btn-excluir" data-acao="excluir" data-id="' + p.id + '" data-nome="' + escapar(p.nome_completo || '(sem nome)') + '" data-email="' + escapar(p.email || '') + '">Excluir</button>';
 
+        // Histórico de e-mails (só para pendentes — cobrança em andamento)
+        var historicoEmails = '';
+        if (tipo === 'pendente' && p._emails_enviados && p._emails_enviados.length > 0) {
+          historicoEmails =
+            '<div class="emails-log">' +
+              '<strong>E-mails enviados:</strong>' +
+              '<ul>' +
+                p._emails_enviados.map(function (em) {
+                  return '<li>' + escapar(fmtDataHoraBR(em.enviado_em)) +
+                    ' <button class="btn-rm-email" data-acao="excluir-email" data-id="' + em.id + '" title="Excluir registro">✕</button></li>';
+                }).join('') +
+              '</ul>' +
+            '</div>';
+        }
+
         return (
           '<div class="assoc-card" data-id="' + p.id + '">' +
             avatar +
             '<div class="assoc-body">' +
               '<div class="assoc-head"><strong>' + nomeExibido + '</strong>' + badges + '</div>' +
               '<div class="assoc-meta">' + meta + '</div>' +
+              historicoEmails +
             '</div>' +
             '<div class="assoc-acoes">' +
               acoesPrim +
@@ -1025,14 +1088,14 @@
         );
       }
 
-      // Ordena pessoas alfabeticamente pelo nome exibido (nome_social tem prioridade)
-      function ordenarPorNome(lista, campoFallback) {
-        var fb = campoFallback || 'nome_completo';
-        return lista.slice().sort(function (a, b) {
-          var na = (a.nome_social || a[fb] || '').toLowerCase();
-          var nb = (b.nome_social || b[fb] || '').toLowerCase();
-          return na.localeCompare(nb, 'pt-BR');
-        });
+      // Formata timestamptz como "DD/MM/AAAA HH:MM" (hora local)
+      function fmtDataHoraBR(ts) {
+        if (!ts) return '';
+        var d = new Date(ts);
+        if (isNaN(d)) return String(ts);
+        var pad = function (n) { return n < 10 ? '0' + n : n; };
+        return pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear() +
+          ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
       }
 
       async function carregar() {
@@ -1049,6 +1112,21 @@
           else if (p.status === 'ativo') ativos.push(p);
           else inativos.push(p);
         });
+
+        // Busca historico de e-mails enviados pras pendentes (uma cobranca pode ter varios)
+        if (pendentes.length > 0) {
+          var idsPend = pendentes.map(function (p) { return p.id; });
+          var rEm = await sb.from('emails_enviados')
+            .select('id, profile_id, enviado_em')
+            .in('profile_id', idsPend)
+            .order('enviado_em', { ascending: false });
+          var porProfile = {};
+          (rEm.data || []).forEach(function (e) {
+            (porProfile[e.profile_id] = porProfile[e.profile_id] || []).push(e);
+          });
+          pendentes.forEach(function (p) { p._emails_enviados = porProfile[p.id] || []; });
+        }
+
         pendentes = ordenarPorNome(pendentes);
         ativos = ordenarPorNome(ativos);
         inativos = ordenarPorNome(inativos);
@@ -1094,6 +1172,20 @@
         var acao = btn.getAttribute('data-acao');
         var id = btn.getAttribute('data-id');
         var sb = window.abenfo.sb;
+
+        // Excluir registro de e-mail enviado (fluxo proprio — DELETE em outra tabela)
+        if (acao === 'excluir-email') {
+          if (!confirm('Excluir esse registro de envio?')) return;
+          btn.disabled = true;
+          var delEm = await sb.from('emails_enviados').delete().eq('id', id);
+          if (delEm.error) {
+            mostrarAviso('Erro: ' + delEm.error.message, 'erro');
+            btn.disabled = false;
+            return;
+          }
+          await carregar();
+          return;
+        }
 
         // Exclusão definitiva é fluxo à parte (DELETE, não UPDATE)
         if (acao === 'excluir') {
@@ -1679,6 +1771,24 @@
         }
         alvo.innerHTML = dados.map(renderPendente).join('');
       }
+
+      // Registra clique no botão "Enviar e-mail" (só pendentes de aprovação)
+      // Nao previne o clique — o link abre o Gmail normalmente em aba nova.
+      document.addEventListener('click', async function (e) {
+        var el = e.target.closest('a[data-log-email]');
+        if (!el) return;
+        var profileId = el.getAttribute('data-profile-id');
+        if (!profileId) return;
+        var sb = window.abenfo.sb;
+        try {
+          var auth = await sb.auth.getUser();
+          var uid = auth && auth.data && auth.data.user ? auth.data.user.id : null;
+          await sb.from('emails_enviados').insert({ profile_id: profileId, enviado_por: uid });
+          await carregar();
+        } catch (err) {
+          // silencioso — não bloqueia o usuário se o registro falhar
+        }
+      });
 
       // Handler dedicado pras ações de pendentes (não conflita com perfis)
       document.addEventListener('click', async function (e) {
