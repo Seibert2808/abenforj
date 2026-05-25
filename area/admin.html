@@ -958,6 +958,13 @@
           ? '<button class="btn btn-ghost" data-acao="docs-pendente" data-id="' + p.id + '">Reabrir docs</button>'
           : '<button class="btn btn-ghost" data-acao="docs-completo" data-id="' + p.id + '">Marcar docs ✓</button>';
 
+        // E-mail livre (sem template) para associadas pendentes e ativas.
+        // Inativas já têm o "Enviar lembrete" próprio com template de renovação.
+        var btnEmail = (p.email && (tipo === 'pendente' || tipo === 'ativo'))
+          ? '<a class="btn btn-ghost" href="https://mail.google.com/mail/?view=cm&fs=1&to=' +
+            encodeURIComponent(p.email) + '" target="_blank" rel="noopener">Enviar e-mail</a>'
+          : '';
+
         var btnCarteirinha =
           '<a class="btn btn-ghost" href="carteirinha.html?id=' + p.id + '" target="_blank" rel="noopener">Ver carteirinha</a>';
 
@@ -975,6 +982,7 @@
               acoesPrim +
               acoesSec +
               btnDocs +
+              btnEmail +
               btnCarteirinha +
               '<span class="sep"></span>' +
               btnExcluir +
