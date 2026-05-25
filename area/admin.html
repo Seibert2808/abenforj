@@ -89,6 +89,29 @@
     .assoc-acoes .btn-excluir { color: #b00020; border-color: transparent; }
     .assoc-acoes .btn-excluir:hover { background: #fdecef; color: #8a0019; }
 
+    /* Seções recolhíveis (Pendentes, Ativas, Inativas, Eventos, Cursos) */
+    .secao { margin-bottom: 1rem; }
+    .secao > summary {
+      cursor: pointer;
+      list-style: none;
+      padding: 0.4rem 0;
+      user-select: none;
+      display: flex;
+      align-items: baseline;
+      gap: 0.5rem;
+    }
+    .secao > summary::-webkit-details-marker { display: none; }
+    .secao > summary::before {
+      content: "▸";
+      color: var(--texto-suave);
+      font-size: 0.85em;
+      transition: transform 0.15s ease;
+      flex-shrink: 0;
+    }
+    .secao[open] > summary::before { transform: rotate(90deg); }
+    .secao > summary > h2 { display: inline; margin: 0; }
+    .secao > summary:hover h2 { color: var(--verde-escuro); }
+
     .badge {
       display: inline-flex;
       align-items: center;
@@ -389,22 +412,29 @@
           </div>
         </div>
 
-        <h2>Pendentes de aprovação <span id="contador-pendentes" style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;"></span></h2>
-        <div id="lista-pendentes" style="display:grid;gap:0.75rem;margin-bottom:2.5rem;">
-          <div class="lista-vazia" id="vazio-pendentes">Carregando…</div>
-        </div>
+        <details class="secao" open>
+          <summary><h2>Pendentes de aprovação <span id="contador-pendentes" style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;"></span></h2></summary>
+          <div id="lista-pendentes" style="display:grid;gap:0.75rem;margin-bottom:1.5rem;">
+            <div class="lista-vazia" id="vazio-pendentes">Carregando…</div>
+          </div>
+        </details>
 
-        <h2>Associadas ativas <span id="contador-ativos" style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;"></span></h2>
-        <div id="lista-ativos" style="display:grid;gap:0.75rem;margin-bottom:2.5rem;">
-          <div class="lista-vazia" id="vazio-ativos">Carregando…</div>
-        </div>
+        <details class="secao">
+          <summary><h2>Associadas ativas <span id="contador-ativos" style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;"></span></h2></summary>
+          <div id="lista-ativos" style="display:grid;gap:0.75rem;margin-bottom:1.5rem;">
+            <div class="lista-vazia" id="vazio-ativos">Carregando…</div>
+          </div>
+        </details>
 
-        <h2>Inativas <span id="contador-inativos" style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;"></span></h2>
-        <div id="lista-inativos" style="display:grid;gap:0.75rem;margin-bottom:2.5rem;">
-          <div class="lista-vazia" id="vazio-inativos">Carregando…</div>
-        </div>
+        <details class="secao">
+          <summary><h2>Inativas <span id="contador-inativos" style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;"></span></h2></summary>
+          <div id="lista-inativos" style="display:grid;gap:0.75rem;margin-bottom:1.5rem;">
+            <div class="lista-vazia" id="vazio-inativos">Carregando…</div>
+          </div>
+        </details>
 
-        <h2>Inscrições em eventos</h2>
+        <details class="secao">
+          <summary><h2>Inscrições em eventos</h2></summary>
         <p style="color:var(--texto-suave);max-width:680px;">
           Importe a lista de inscritas vinda de plataformas externas (Doity, Sympla etc.)
           para que as sócias vejam suas inscrições em <em>Meus Eventos</em>.
@@ -470,28 +500,29 @@
         </div>
 
         <h3 style="font-size:1rem;color:var(--texto-suave);margin-top:1.5rem;">Resumo</h3>
-        <div id="resumo-inscricoes" style="margin-bottom:2.5rem;">
+        <div id="resumo-inscricoes" style="margin-bottom:1rem;">
           <div class="lista-vazia">Carregando…</div>
         </div>
+        </details>
 
-        <h2 id="bloco-pendentes">
-          Inscrições pendentes de verificação
-          <span id="contador-inscricoes-pendentes" style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;"></span>
-        </h2>
-        <p style="color:var(--texto-suave);max-width:680px;">
-          Pessoas que pagaram inscrição como sócia/o da Abenfo-RJ no Doity mas
-          <strong>não constam como associadas cadastradas</strong> no site.
-          Notifique cada uma por e-mail para regularizar (filiar-se ou pagar a diferença
-          como não-sócia). A inscrição como sócia <em>não foi confirmada</em> até a regularização.
-        </p>
-        <div id="lista-inscricoes-pendentes" style="display:grid;gap:0.75rem;margin-bottom:2.5rem;">
-          <div class="lista-vazia">Carregando…</div>
-        </div>
+        <details class="secao" open id="bloco-pendentes">
+          <summary><h2>Inscrições pendentes de verificação <span id="contador-inscricoes-pendentes" style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;"></span></h2></summary>
+          <p style="color:var(--texto-suave);max-width:680px;">
+            Pessoas que pagaram inscrição como sócia/o da Abenfo-RJ no Doity mas
+            <strong>não constam como associadas cadastradas</strong> no site.
+            Notifique cada uma por e-mail para regularizar (filiar-se ou pagar a diferença
+            como não-sócia). A inscrição como sócia <em>não foi confirmada</em> até a regularização.
+          </p>
+          <div id="lista-inscricoes-pendentes" style="display:grid;gap:0.75rem;margin-bottom:1rem;">
+            <div class="lista-vazia">Carregando…</div>
+          </div>
+        </details>
 
-        <h2>Inscrições em cursos</h2>
-        <p style="color:var(--texto-suave);max-width:680px;">
-          Cursos são unidades menores que podem pertencer a um evento (ex.: cursos pré-encontro do IX ENEON) ou ser independentes. A lógica é a mesma das inscrições em eventos.
-        </p>
+        <details class="secao">
+          <summary><h2>Inscrições em cursos</h2></summary>
+          <p style="color:var(--texto-suave);max-width:680px;">
+            Cursos são unidades menores que podem pertencer a um evento (ex.: cursos pré-encontro do IX ENEON) ou ser independentes. A lógica é a mesma das inscrições em eventos.
+          </p>
 
         <div class="import-card">
           <label for="curso-id">Curso</label>
@@ -564,6 +595,7 @@
         <div id="resumo-cursos">
           <div class="lista-vazia">Carregando…</div>
         </div>
+        </details>
 
       </div>
     </section>
