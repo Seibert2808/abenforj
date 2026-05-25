@@ -1560,7 +1560,10 @@
         var nomeEvento = (p.eventos && p.eventos.nome) || '(evento removido)';
         var assunto = encodeURIComponent('Inscrição ' + nomeEvento + ' — regularização necessária');
         var corpo = encodeURIComponent(corpoEmailRegularizacao(p));
-        var mailtoHref = 'mailto:' + encodeURIComponent(p.email) + '?subject=' + assunto + '&body=' + corpo;
+        // Abre direto o compositor do Gmail web na conta logada.
+        // Mais robusto que mailto: — nao depende de cliente configurado no SO.
+        var mailtoHref = 'https://mail.google.com/mail/?view=cm&fs=1&to=' + encodeURIComponent(p.email) +
+                         '&su=' + assunto + '&body=' + corpo;
 
         var avatar = '<div class="assoc-avatar">' + escapar(iniciaisDe(p.nome || '')) + '</div>';
 
@@ -1579,7 +1582,7 @@
         if (p.data_inscricao) meta += metaLinha('Data', fmtDataBR(String(p.data_inscricao).slice(0, 10)));
 
         var btnNotificar =
-          '<a class="btn btn-solid" href="' + mailtoHref + '" data-pend-acao="notificar" data-pend-id="' + p.id + '">' +
+          '<a class="btn btn-solid" href="' + mailtoHref + '" target="_blank" rel="noopener" data-pend-acao="notificar" data-pend-id="' + p.id + '">' +
           (p.notificado_em ? 'Notificar novamente' : 'Notificar inscrito') + '</a>';
         var btnResolver =
           '<button class="btn btn-ghost" data-pend-acao="resolver" data-pend-id="' + p.id + '" data-pend-nome="' + escapar(p.nome) + '">Marcar regularizada</button>';
