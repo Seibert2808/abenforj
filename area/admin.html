@@ -20,6 +20,11 @@
       grid-template-columns: 56px 1fr;
       gap: 1rem;
       align-items: start;
+      transition: border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+    .assoc-card:hover {
+      border-color: var(--verde-pastel);
+      box-shadow: 0 2px 10px rgba(63, 95, 77, 0.06);
     }
 
     .assoc-avatar {
@@ -66,10 +71,10 @@
     .assoc-acoes {
       grid-column: 1 / -1;
       display: flex;
-      gap: 0.45rem;
+      gap: 0.5rem;
       flex-wrap: wrap;
       align-items: center;
-      padding-top: 0.75rem;
+      padding-top: 0.9rem;
       border-top: 1px solid var(--borda);
     }
     .assoc-acoes input[type="number"] {
@@ -77,13 +82,22 @@
       padding: 0.45rem 0.5rem;
       min-height: 0;
       font-size: 0.875rem;
+      border: 1px solid var(--borda);
+      border-radius: 6px;
+    }
+    .assoc-acoes input[type="number"]:focus {
+      outline: 0;
+      border-color: var(--verde-claro);
+      box-shadow: 0 0 0 3px var(--verde-pastel);
     }
     .assoc-acoes .btn,
     .assoc-acoes a.btn {
       min-height: 0;
-      padding: 0.45rem 0.85rem;
+      padding: 0.48rem 0.9rem;
       font-size: 0.875rem;
       text-decoration: none;
+      border-radius: 6px;
+      transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
     }
     .assoc-acoes .sep { flex: 1; }
     .assoc-acoes .btn-excluir { color: #b00020; border-color: transparent; }
@@ -91,67 +105,119 @@
 
     /* Histórico de e-mails enviados (só em pendentes de aprovação) */
     .emails-log {
-      margin-top: 0.6rem;
-      padding-top: 0.5rem;
+      margin-top: 0.75rem;
+      padding-top: 0.65rem;
       border-top: 1px dashed var(--borda);
-      font-size: 0.825rem;
-      color: var(--texto-suave);
     }
     .emails-log strong {
       display: block;
       font-weight: 500;
-      margin-bottom: 0.25rem;
-      color: var(--texto);
+      margin-bottom: 0.45rem;
+      color: var(--texto-suave);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
     }
     .emails-log ul {
       margin: 0;
       padding: 0;
       list-style: none;
-      display: grid;
-      gap: 0.2rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
     }
     .emails-log li {
-      display: flex;
+      display: inline-flex;
       align-items: center;
-      gap: 0.4rem;
+      gap: 0.3rem;
+      background: var(--verde-pastel);
+      color: var(--verde-escuro);
+      padding: 0.25rem 0.35rem 0.25rem 0.65rem;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 500;
     }
     .emails-log .btn-rm-email {
       background: transparent;
       border: 0;
-      color: var(--texto-suave);
+      color: var(--verde-escuro);
       cursor: pointer;
-      padding: 0 0.3rem;
+      padding: 0;
       font-size: 0.9rem;
       line-height: 1;
-      border-radius: 4px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.55;
+      transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease;
     }
     .emails-log .btn-rm-email:hover {
       background: #fdecef;
       color: #b00020;
+      opacity: 1;
     }
 
     /* Seções recolhíveis (Pendentes, Ativas, Inativas, Eventos, Cursos) */
-    .secao { margin-bottom: 1rem; }
+    .secao {
+      margin-bottom: 1.5rem;
+      border: 1px solid var(--borda);
+      border-radius: 12px;
+      background: var(--branco);
+      overflow: hidden;
+      transition: border-color 0.18s ease;
+    }
+    .secao[open] { border-color: var(--verde-pastel); }
     .secao > summary {
       cursor: pointer;
       list-style: none;
-      padding: 0.4rem 0;
+      padding: 1rem 1.25rem;
       user-select: none;
       display: flex;
-      align-items: baseline;
-      gap: 0.5rem;
+      align-items: center;
+      gap: 0.7rem;
+      transition: background 0.15s ease;
+    }
+    .secao > summary:hover { background: var(--areia); }
+    .secao[open] > summary {
+      border-bottom: 1px solid var(--borda);
+      background: var(--verde-pastel);
     }
     .secao > summary::-webkit-details-marker { display: none; }
     .secao > summary::before {
       content: "▸";
-      color: var(--texto-suave);
+      color: var(--verde-escuro);
       font-size: 0.85em;
-      transition: transform 0.15s ease;
+      transition: transform 0.18s ease;
       flex-shrink: 0;
     }
     .secao[open] > summary::before { transform: rotate(90deg); }
-    .secao > summary > h2 { display: inline; margin: 0; }
-    .secao > summary:hover h2 { color: var(--verde-escuro); }
+    .secao > summary > h2 {
+      display: inline;
+      margin: 0;
+      font-size: 1.1rem;
+      color: var(--verde-escuro);
+      font-weight: 600;
+    }
+    /* Padding interno automático em tudo que está dentro de uma seção (exceto o summary) */
+    .secao[open] > *:not(summary) {
+      padding-left: 1.25rem;
+      padding-right: 1.25rem;
+    }
+    .secao[open] > summary + * { padding-top: 1.25rem; }
+    .secao[open] > *:last-child:not(summary) { padding-bottom: 1.25rem; }
+
+    /* Descrição/legenda no topo de uma seção */
+    .descricao-secao {
+      color: var(--texto-suave);
+      max-width: 720px;
+      line-height: 1.55;
+      text-align: justify;
+      hyphens: auto;
+      margin: 0 0 1.25rem;
+    }
 
     .badge {
       display: inline-flex;
@@ -410,7 +476,7 @@
     <section class="area-saudacao">
       <div class="container">
         <h1>Painel administrativo</h1>
-        <p>Aprove novas associadas, atualize vigências e gerencie o quadro associativo.</p>
+        <p>Aprove novas associadas, mantenha as vigências em dia e acompanhe as inscrições nos eventos e cursos.</p>
       </div>
     </section>
 
@@ -476,12 +542,12 @@
 
         <details class="secao">
           <summary><h2>Inscrições em eventos</h2></summary>
-        <p style="color:var(--texto-suave);max-width:680px;">
-          Importe a lista de inscritas vinda de plataformas externas (Doity, Sympla etc.)
-          para que as sócias vejam suas inscrições em <em>Meus Eventos</em>.
-          Quem se inscreveu mas não é sócia do site não aparece — só recebe a
-          confirmação por e-mail da plataforma.
-        </p>
+          <p class="descricao-secao">
+            Importe a lista de inscritas vinda do Doity (ou de outra plataforma externa)
+            para que cada sócia veja sua inscrição em <em>Meus Eventos</em>.
+            Quem não é sócia cadastrada no site não aparece — recebe apenas
+            a confirmação por e-mail da própria plataforma.
+          </p>
 
         <div class="import-card">
           <label for="evento-id">Evento</label>
@@ -548,11 +614,12 @@
 
         <details class="secao" open id="bloco-pendentes">
           <summary><h2>Inscrições pendentes de verificação <span id="contador-inscricoes-pendentes" style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;"></span></h2></summary>
-          <p style="color:var(--texto-suave);max-width:680px;">
-            Pessoas que pagaram inscrição como sócia/o da Abenfo-RJ no Doity mas
+          <p class="descricao-secao">
+            Pessoas que escolheram a cota de sócia da Abenfo-RJ no Doity mas
             <strong>não constam como associadas cadastradas</strong> no site.
-            Notifique cada uma por e-mail para regularizar (filiar-se ou pagar a diferença
-            como não-sócia). A inscrição como sócia <em>não foi confirmada</em> até a regularização.
+            Notifique cada uma por e-mail para regularizar — filiando-se à Abenfo
+            ou pagando a diferença como não-sócia. A inscrição como sócia
+            <em>não está confirmada</em> até a regularização.
           </p>
           <div id="lista-inscricoes-pendentes" style="display:grid;gap:0.75rem;margin-bottom:1rem;">
             <div class="lista-vazia">Carregando…</div>
@@ -561,8 +628,10 @@
 
         <details class="secao">
           <summary><h2>Inscrições em cursos</h2></summary>
-          <p style="color:var(--texto-suave);max-width:680px;">
-            Cursos são unidades menores que podem pertencer a um evento (ex.: cursos pré-encontro do IX ENEON) ou ser independentes. A lógica é a mesma das inscrições em eventos.
+          <p class="descricao-secao">
+            Cursos são unidades menores. Podem pertencer a um evento (como os
+            cursos pré-encontro do IX ENEON) ou existir de forma independente.
+            A mecânica do import é a mesma das inscrições em eventos.
           </p>
 
         <div class="import-card">
