@@ -950,7 +950,9 @@
               '3. Envie o comprovante para abenforio@gmail.com.\n\n' +
               'Atenciosamente,\nDiretoria da ABENFO-RJ'
             );
-            acoesSec = '<a class="btn btn-ghost" href="mailto:' + p.email + '?subject=' + assunto + '&body=' + corpo + '">Enviar lembrete</a>';
+            acoesSec = '<a class="btn btn-ghost" href="https://mail.google.com/mail/?view=cm&fs=1&to=' +
+              encodeURIComponent(p.email) + '&su=' + assunto + '&body=' + corpo +
+              '" target="_blank" rel="noopener">Enviar lembrete</a>';
           }
         }
 
