@@ -209,12 +209,12 @@
     .secao[open] > summary + * { padding-top: 1.25rem; }
     .secao[open] > *:last-child:not(summary) { padding-bottom: 1.25rem; }
 
-    /* Descrição/legenda no topo de uma seção */
+    /* Descrição/legenda no topo de uma seção (texto largo, justificado) */
     .descricao-secao {
       color: var(--texto-suave);
-      max-width: 720px;
       line-height: 1.55;
       text-align: justify;
+      text-justify: inter-word;
       hyphens: auto;
       margin: 0 0 1.25rem;
     }
