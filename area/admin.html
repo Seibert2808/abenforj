@@ -1025,9 +1025,19 @@
         );
       }
 
+      // Ordena pessoas alfabeticamente pelo nome exibido (nome_social tem prioridade)
+      function ordenarPorNome(lista, campoFallback) {
+        var fb = campoFallback || 'nome_completo';
+        return lista.slice().sort(function (a, b) {
+          var na = (a.nome_social || a[fb] || '').toLowerCase();
+          var nb = (b.nome_social || b[fb] || '').toLowerCase();
+          return na.localeCompare(nb, 'pt-BR');
+        });
+      }
+
       async function carregar() {
         var sb = window.abenfo.sb;
-        var r = await sb.from('profiles').select('*').order('created_at', { ascending: false });
+        var r = await sb.from('profiles').select('*');
         if (r.error) {
           mostrarAviso('Erro ao carregar associadas: ' + r.error.message, 'erro');
           return;
@@ -1039,6 +1049,9 @@
           else if (p.status === 'ativo') ativos.push(p);
           else inativos.push(p);
         });
+        pendentes = ordenarPorNome(pendentes);
+        ativos = ordenarPorNome(ativos);
+        inativos = ordenarPorNome(inativos);
 
         document.getElementById('contador-pendentes').textContent = '(' + pendentes.length + ')';
         document.getElementById('contador-ativos').textContent = '(' + ativos.length + ')';
@@ -1652,14 +1665,13 @@
         var contador = document.getElementById('contador-inscricoes-pendentes');
         var r = await sb.from('inscritos_externos')
           .select('*, eventos(nome, data_inicio)')
-          .eq('pendente_verificacao_socia', true)
-          .order('created_at', { ascending: false });
+          .eq('pendente_verificacao_socia', true);
         if (r.error) {
           alvo.innerHTML = '<div class="lista-vazia">Erro: ' + escapar(r.error.message) + '</div>';
           contador.textContent = '';
           return;
         }
-        var dados = r.data || [];
+        var dados = ordenarPorNome(r.data || [], 'nome');
         contador.textContent = dados.length > 0 ? '(' + dados.length + ')' : '';
         if (dados.length === 0) {
           alvo.innerHTML = '<div class="lista-vazia">Nenhuma pendência aberta — todas as inscrições como sócia foram verificadas.</div>';
