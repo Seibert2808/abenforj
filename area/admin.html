@@ -1252,7 +1252,9 @@
             btn.disabled = false;
             return;
           }
-          await carregar();
+          // O registro pode ter sido de associada (pendente de aprovação) ou de inscrito externo.
+          // Recarrega ambos pra cobrir os dois casos sem precisar inferir.
+          await Promise.all([carregar(), carregarPendentes()]);
           return;
         }
 
@@ -1786,9 +1788,6 @@
         var avatar = '<div class="assoc-avatar">' + escapar(iniciaisDe(p.nome || '')) + '</div>';
 
         var badges = '<span class="badge badge-pendente">aguarda regularização</span>';
-        if (p.notificado_em) {
-          badges += '<span class="badge badge-soft">notificado ' + fmtDataBR(String(p.notificado_em).slice(0, 10)) + '</span>';
-        }
 
         var meta = '';
         meta += metaLinha('Evento', escapar(nomeEvento));
@@ -1799,11 +1798,27 @@
         if (p.doity_id) meta += metaLinha('Nº Doity', escapar(p.doity_id));
         if (p.data_inscricao) meta += metaLinha('Data', fmtDataBR(String(p.data_inscricao).slice(0, 10)));
 
+        var jaNotificou = p._emails_enviados && p._emails_enviados.length > 0;
         var btnNotificar =
           '<a class="btn btn-solid" href="' + mailtoHref + '" target="_blank" rel="noopener" data-pend-acao="notificar" data-pend-id="' + p.id + '">' +
-          (p.notificado_em ? 'Notificar novamente' : 'Notificar inscrito') + '</a>';
+          (jaNotificou ? 'Notificar novamente' : 'Notificar inscrito') + '</a>';
         var btnResolver =
           '<button class="btn btn-ghost" data-pend-acao="resolver" data-pend-id="' + p.id + '" data-pend-nome="' + escapar(p.nome) + '">Marcar regularizada</button>';
+
+        // Histórico de notificações (chips, igual ao das associadas pendentes)
+        var historicoEmails = '';
+        if (p._emails_enviados && p._emails_enviados.length > 0) {
+          historicoEmails =
+            '<div class="emails-log">' +
+              '<strong>Notificações enviadas:</strong>' +
+              '<ul>' +
+                p._emails_enviados.map(function (em) {
+                  return '<li>' + escapar(fmtDataHoraBR(em.enviado_em)) +
+                    ' <button class="btn-rm-email" data-acao="excluir-email" data-id="' + em.id + '" title="Excluir registro">✕</button></li>';
+                }).join('') +
+              '</ul>' +
+            '</div>';
+        }
 
         return (
           '<div class="assoc-card" data-pend-id="' + p.id + '">' +
@@ -1811,6 +1826,7 @@
             '<div class="assoc-body">' +
               '<div class="assoc-head"><strong>' + escapar(p.nome) + '</strong>' + badges + '</div>' +
               '<div class="assoc-meta">' + meta + '</div>' +
+              historicoEmails +
             '</div>' +
             '<div class="assoc-acoes">' +
               btnNotificar +
@@ -1833,6 +1849,20 @@
           return;
         }
         var dados = ordenarPorNome(r.data || [], 'nome');
+
+        // Histórico de notificações enviadas pra cada inscrito externo
+        if (dados.length > 0) {
+          var ids = dados.map(function (p) { return p.id; });
+          var rEm = await sb.from('emails_enviados')
+            .select('id, inscrito_externo_id, enviado_em')
+            .in('inscrito_externo_id', ids)
+            .order('enviado_em', { ascending: false });
+          var porInscrito = {};
+          (rEm.data || []).forEach(function (e) {
+            (porInscrito[e.inscrito_externo_id] = porInscrito[e.inscrito_externo_id] || []).push(e);
+          });
+          dados.forEach(function (p) { p._emails_enviados = porInscrito[p.id] || []; });
+        }
         contador.textContent = dados.length > 0 ? '(' + dados.length + ')' : '';
         if (dados.length === 0) {
           alvo.innerHTML = '<div class="lista-vazia">Nenhuma pendência aberta — todas as inscrições como sócia foram verificadas.</div>';
@@ -1868,14 +1898,15 @@
         var sb = window.abenfo.sb;
 
         if (acao === 'notificar') {
-          // O mailto: abre via href padrão (não prevenir). Marca notificado_em em background.
+          // Não previne o clique — o link abre o Gmail normalmente em aba nova.
+          // Em paralelo, registra um novo INSERT em emails_enviados (histórico).
           try {
-            await sb.from('inscritos_externos')
-              .update({ notificado_em: new Date().toISOString() })
-              .eq('id', id);
+            var auth = await sb.auth.getUser();
+            var uid = auth && auth.data && auth.data.user ? auth.data.user.id : null;
+            await sb.from('emails_enviados').insert({ inscrito_externo_id: id, enviado_por: uid });
             await carregarPendentes();
           } catch (err) {
-            // não bloqueia o usuário se o registro falhar
+            // silencioso — não bloqueia o usuário se o registro falhar
           }
           return;
         }
