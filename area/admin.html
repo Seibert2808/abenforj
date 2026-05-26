@@ -1820,7 +1820,7 @@
         btn.textContent = 'Processando…';
 
         try {
-          // 1) Quem é sócia? (cruza por profiles.email)
+          // 1a) Quem é sócia? (cruza por profiles.email)
           var rPerfis = await sb.from('profiles').select('id, email').in('email', emails);
           if (rPerfis.error) {
             mostrarAviso('Erro ao consultar perfis: ' + rPerfis.error.message, 'erro');
@@ -1829,6 +1829,24 @@
           var perfis = rPerfis.data || [];
           var emailParaPerfil = {};
           perfis.forEach(function (p) { if (p.email) emailParaPerfil[p.email.toLowerCase()] = p; });
+
+          // 1b) Alem do email principal, tambem cruza por emails_alternativos
+          //     (caso onde a socia usa email diferente no Doity, mapeado por
+          //     "Associar a socia cadastrada" em imports anteriores).
+          var rAlts = await sb.from('emails_alternativos')
+            .select('email, profile_id, profiles(id, email)').in('email', emails);
+          if (!rAlts.error) {
+            (rAlts.data || []).forEach(function (a) {
+              if (!a.profiles) return;
+              if (!emailParaPerfil[a.email.toLowerCase()]) {
+                emailParaPerfil[a.email.toLowerCase()] = a.profiles;
+                // Garante que o perfil esta na lista de perfis encontrados
+                if (!perfis.some(function (p) { return p.id === a.profiles.id; })) {
+                  perfis.push(a.profiles);
+                }
+              }
+            });
+          }
 
           // 2) Sócias já inscritas no evento?
           var idsPerfis = perfis.map(function (p) { return p.id; });
@@ -2330,6 +2348,10 @@
         var auth = await sb.auth.getUser();
         var uid = auth && auth.data && auth.data.user ? auth.data.user.id : null;
 
+        // 0) Le o email do inscrito antes de deletar — vai ser salvo como alternativo
+        var rGet = await sb.from('inscritos_externos').select('email').eq('id', ctx.id).maybeSingle();
+        var emailAlternativo = rGet && rGet.data ? rGet.data.email : null;
+
         // 1) Cria inscricoes_evento (se ainda nao existe)
         var rIns = await sb.from('inscricoes_evento').insert({
           profile_id: profileId,
@@ -2343,7 +2365,18 @@
           return;
         }
 
-        // 2) Remove o registro pendente (cascade deleta emails_enviados associados)
+        // 2) Registra o email do Doity como email alternativo do perfil
+        //    (assim proximos imports cruzam corretamente e nao geram pendente de novo)
+        if (emailAlternativo) {
+          await sb.from('emails_alternativos').upsert({
+            profile_id: profileId,
+            email: emailAlternativo.toLowerCase().trim(),
+            observacao: 'E-mail usado no Doity por "' + ctx.nome + '"',
+            created_by: uid
+          }, { onConflict: 'email' });
+        }
+
+        // 3) Remove o registro pendente (cascade deleta emails_enviados associados)
         var rDel = await sb.from('inscritos_externos').delete().eq('id', ctx.id);
         if (rDel.error) {
           mostrarAviso('Inscrição criada, mas erro ao remover pendente: ' + rDel.error.message, 'erro');
