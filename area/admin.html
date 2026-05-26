@@ -1830,17 +1830,18 @@
             (rEx.data || []).forEach(function (x) { jaInscritasSocias[x.profile_id] = true; });
           }
 
-          // 3) Não-sócias já registradas?
+          // 3) Não-sócias já registradas? (busca todos os campos pra detectar dados faltantes)
           var emailsNaoSocias = emails.filter(function (e) { return !emailParaPerfil[e]; });
           var jaExternos = {};
           if (emailsNaoSocias.length > 0) {
             var rExt = await sb.from('inscritos_externos')
-              .select('email').eq('evento_id', evento_id).in('email', emailsNaoSocias);
+              .select('id, email, lote_doity, valor_pago, doity_id, telefone, data_inscricao')
+              .eq('evento_id', evento_id).in('email', emailsNaoSocias);
             if (rExt.error) {
               mostrarAviso('Erro ao verificar não-sócias: ' + rExt.error.message, 'erro');
               return;
             }
-            (rExt.data || []).forEach(function (x) { jaExternos[x.email.toLowerCase()] = true; });
+            (rExt.data || []).forEach(function (x) { jaExternos[x.email.toLowerCase()] = x; });
           }
 
           var auth = await sb.auth.getUser();
@@ -1867,16 +1868,29 @@
           //    pendente_verificacao_socia = true (aparece no bloco de pendências do admin).
           var semDados = [];
           var aInserirExt = [];
+          var aAtualizarExt = [];   // re-importacao: preenche campos que estavam vazios
           var inseridasPendentes = 0;
           emailsNaoSocias.forEach(function (em) {
-            if (jaExternos[em]) return;
             var dados = _ultimasLinhasParsed[em];
             if (!dados || !dados.nome) {
-              // Sem nome/DOI não dá pra cadastrar como externo — deve ter sido colado manual
-              semDados.push(em);
+              if (!jaExternos[em]) semDados.push(em);
               return;
             }
             var pendente = loteEhCotaSocia(dados.lote);
+            var jaReg = jaExternos[em];
+            if (jaReg) {
+              // Existe: atualiza campos faltantes (lote/valor/telefone/etc) sem mexer no resto
+              var patch = {};
+              if (!jaReg.lote_doity && dados.lote) patch.lote_doity = dados.lote;
+              if (!jaReg.valor_pago && dados.valor) patch.valor_pago = dados.valor;
+              if (!jaReg.doity_id && dados.doity_id) patch.doity_id = dados.doity_id;
+              if (!jaReg.telefone && dados.telefone) patch.telefone = dados.telefone;
+              if (!jaReg.data_inscricao && dados.data_inscricao) patch.data_inscricao = dados.data_inscricao;
+              if (Object.keys(patch).length > 0) {
+                aAtualizarExt.push({ id: jaReg.id, patch: patch });
+              }
+              return;
+            }
             if (pendente) inseridasPendentes++;
             aInserirExt.push({
               evento_id: evento_id,
@@ -1891,6 +1905,15 @@
               created_by: adminUid
             });
           });
+
+          // Aplica os updates em paralelo (campos faltantes)
+          var atualizadosExt = 0;
+          if (aAtualizarExt.length > 0) {
+            var resultados = await Promise.all(aAtualizarExt.map(function (item) {
+              return sb.from('inscritos_externos').update(item.patch).eq('id', item.id);
+            }));
+            atualizadosExt = resultados.filter(function (r) { return !r.error; }).length;
+          }
           var inseridosExt = 0;
           if (aInserirExt.length > 0) {
             var rIE = await sb.from('inscritos_externos').insert(aInserirExt);
@@ -1917,6 +1940,7 @@
           html += '<p>· Detectadas na planilha: ' + (aInserirExt.length + externosJaExistiam) + '</p>';
           html += '<p>· Novas registradas: ' + inseridosExt + '</p>';
           if (externosJaExistiam > 0) html += '<p>· Já estavam registradas: ' + externosJaExistiam + '</p>';
+          if (atualizadosExt > 0) html += '<p>· Dados completados (lote, valor, telefone): ' + atualizadosExt + '</p>';
           if (semDados.length > 0) {
             html += '<p>· Sem nome/dados (não puderam ser cadastradas): ' + semDados.length + '</p>';
             html += '<details><summary>Ver e-mails sem dados</summary><ul>';
