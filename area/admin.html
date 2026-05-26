@@ -439,15 +439,41 @@
     .lista-nomes .nome-info strong { font-size: 0.95rem; color: var(--texto); }
     .lista-nomes .nome-info span { font-size: 0.8rem; color: var(--texto-suave); }
 
-    /* Item não-clicável (não-sócias inscritas — só visualização) */
+    /* Item não-clicável (não-sócias inscritas — só visualização + botão de instruções) */
     .lista-nomes .lista-item-info {
       background: var(--branco);
       border: 1px solid var(--borda);
       border-radius: 8px;
-      padding: 0.65rem 0.85rem;
+      padding: 0.75rem 0.85rem;
       display: flex;
       align-items: center;
       gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .lista-nomes .lista-item-info .nome-info { flex: 1; min-width: 180px; }
+    .lista-nomes .btn-instrucoes {
+      min-height: 0;
+      padding: 0.4rem 0.8rem;
+      font-size: 0.825rem;
+      text-decoration: none;
+      flex-shrink: 0;
+    }
+    .emails-log-compacto {
+      margin-top: 0.35rem;
+      padding-top: 0;
+      border-top: 0;
+    }
+    .emails-log-compacto strong {
+      display: inline;
+      margin-right: 0.3rem;
+    }
+    .emails-log-compacto ul {
+      display: inline-flex;
+      vertical-align: middle;
+    }
+    .emails-log-compacto li {
+      padding: 0.15rem 0.25rem 0.15rem 0.5rem;
+      font-size: 0.72rem;
     }
 
     .detalhes-grid {
@@ -1005,8 +1031,35 @@
         document.body.style.overflow = 'hidden';
       }
 
+      function corpoEmailInstrucoesCursos(nome, eventoNome) {
+        var ev = eventoNome || 'IX ENEON 2026';
+        return (
+          'Olá, ' + (nome || '') + '!\n\n' +
+          'Sua inscrição como não-sócia no ' + ev + ' — Encontro de Enfermagem ' +
+          'Obstétrica e Neonatal do Estado do Rio de Janeiro está confirmada. Seja muito bem-vinda!\n\n' +
+          'O próximo passo é escolher seus cursos pré-encontro, que acontecem no dia ' +
+          '15 de julho de 2026, na Faculdade de Enfermagem da UERJ. Você pode escolher ' +
+          'um curso de manhã (8h–12h) e um curso de tarde (13h–17h) — total de até dois cursos.\n\n' +
+          'Para escolher, acesse:\n' +
+          'https://abenforj.org.br/escolher-cursos\n\n' +
+          'Você vai precisar de:\n' +
+          '- E-mail que usou na sua inscrição do Doity\n' +
+          '- Número da sua inscrição no Doity (formato DOI-XXXXXXXXX), ' +
+          'que está no e-mail de confirmação que você recebeu da plataforma\n\n' +
+          'As vagas são limitadas e atribuídas por ordem de chegada. Você pode trocar ' +
+          'de curso a qualquer momento enquanto houver vagas disponíveis.\n\n' +
+          'Em caso de dúvidas, escreva para abenforio@gmail.com.\n\n' +
+          'Aguardamos você em julho!\n\n' +
+          'Atenciosamente,\n' +
+          'Comissão Executiva — ' + ev + '\n' +
+          'ABENFO-RJ'
+        );
+      }
+
       function renderListaNaoSocias(itens) {
         if (!itens.length) return '<p class="lista-vazia">Sem inscritas não-sócias neste evento.</p>';
+        var eventoNome = modalState.eventoNome || '';
+        var assunto = encodeURIComponent('Sua inscrição no ' + (eventoNome || 'IX ENEON 2026') + ' — escolha agora seus cursos pré-encontro');
         var html = '<div class="lista-nomes">';
         itens.forEach(function (p) {
           var nome = p.nome || '(sem nome)';
@@ -1016,13 +1069,40 @@
           if (p.telefone) partes.push(p.telefone);
           if (p.lote_doity) partes.push(p.lote_doity);
           if (p.valor_pago) partes.push('R$ ' + p.valor_pago);
-          // Item nao clicavel — usa div em vez de button
+
+          var btnEnviar = '';
+          if (p.email) {
+            var corpo = encodeURIComponent(corpoEmailInstrucoesCursos(nome, eventoNome));
+            var gmailHref = 'https://mail.google.com/mail/?view=cm&fs=1&to=' +
+              encodeURIComponent(p.email) + '&su=' + assunto + '&body=' + corpo;
+            var jaEnviou = p._emails_enviados && p._emails_enviados.length > 0;
+            btnEnviar = '<a class="btn btn-ghost btn-instrucoes" href="' + gmailHref + '" target="_blank" rel="noopener" ' +
+              'data-log-instrucoes data-inscrito-id="' + p.id + '">' +
+              (jaEnviou ? 'Enviar novamente' : 'Enviar instruções') + '</a>';
+          }
+
+          var historicoChips = '';
+          if (p._emails_enviados && p._emails_enviados.length > 0) {
+            historicoChips =
+              '<div class="emails-log emails-log-compacto">' +
+                '<strong>Notificações:</strong>' +
+                '<ul>' +
+                  p._emails_enviados.map(function (em) {
+                    return '<li>' + escapar(fmtDataHoraBR(em.enviado_em)) +
+                      ' <button class="btn-rm-email" data-acao="excluir-email" data-id="' + em.id + '" title="Excluir registro">✕</button></li>';
+                  }).join('') +
+                '</ul>' +
+              '</div>';
+          }
+
           html += '<div class="lista-item-info">' +
             avatar +
             '<span class="nome-info">' +
               '<strong>' + escapar(nome) + '</strong>' +
               (partes.length ? '<span>' + escapar(partes.join(' · ')) + '</span>' : '') +
+              historicoChips +
             '</span>' +
+            btnEnviar +
           '</div>';
         });
         html += '</div>';
@@ -1062,6 +1142,7 @@
         modalState.lista = [];
         modalState.perfilAtual = null;
         modalState.tipoLista = 'nao_socias';
+        modalState.eventoNome = eventoNome;
         renderModal();
         mostrarModal();
         document.getElementById('modal-body').innerHTML = '<p class="lista-vazia">Carregando…</p>';
@@ -1072,7 +1153,22 @@
             '<p class="lista-vazia">Erro: ' + escapar(r.error.message) + '</p>';
           return;
         }
-        modalState.lista = ordenarPorNome(r.data || [], 'nome');
+        var lista = ordenarPorNome(r.data || [], 'nome');
+
+        // Historico de instrucoes/notificacoes enviadas pra cada inscrita externa
+        if (lista.length > 0) {
+          var ids = lista.map(function (p) { return p.id; });
+          var rEm = await sb.from('emails_enviados')
+            .select('id, inscrito_externo_id, enviado_em')
+            .in('inscrito_externo_id', ids)
+            .order('enviado_em', { ascending: false });
+          var porInscrito = {};
+          (rEm.data || []).forEach(function (e) {
+            (porInscrito[e.inscrito_externo_id] = porInscrito[e.inscrito_externo_id] || []).push(e);
+          });
+          lista.forEach(function (p) { p._emails_enviados = porInscrito[p.id] || []; });
+        }
+        modalState.lista = lista;
         renderModal();
       }
 
@@ -2036,6 +2132,33 @@
           await carregar();
         } catch (err) {
           // silencioso — não bloqueia o usuário se o registro falhar
+        }
+      });
+
+      // Registra clique no botão "Enviar instruções" (não-sócias inscritas)
+      // Mesma logica do data-log-email mas usando inscrito_externo_id.
+      document.addEventListener('click', async function (e) {
+        var el = e.target.closest('a[data-log-instrucoes]');
+        if (!el) return;
+        var inscritoId = el.getAttribute('data-inscrito-id');
+        if (!inscritoId) return;
+        var sb = window.abenfo.sb;
+        try {
+          var auth = await sb.auth.getUser();
+          var uid = auth && auth.data && auth.data.user ? auth.data.user.id : null;
+          await sb.from('emails_enviados').insert({ inscrito_externo_id: inscritoId, enviado_por: uid });
+          // Recarrega a lista do modal atual pra refletir o novo chip
+          var rEm = await sb.from('emails_enviados')
+            .select('id, inscrito_externo_id, enviado_em')
+            .eq('inscrito_externo_id', inscritoId)
+            .order('enviado_em', { ascending: false });
+          var registrosAtualizados = rEm.data || [];
+          modalState.lista.forEach(function (p) {
+            if (p.id === inscritoId) p._emails_enviados = registrosAtualizados;
+          });
+          renderModal();
+        } catch (err) {
+          // silencioso
         }
       });
 
