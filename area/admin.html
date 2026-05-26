@@ -993,14 +993,16 @@
         modalState.perfilAtual = null;
         modalState.tipoLista = 'socias';
         renderModal();
+        mostrarModal();
+      }
+
+      // Reusa o padrao global: classe .open ativa opacity 1 e pointer-events auto.
+      // Sem ela, o CSS de style.css mantem o overlay invisivel mesmo com hidden=false.
+      function mostrarModal() {
         var ov = document.getElementById('modal-overlay');
         ov.hidden = false;
+        ov.classList.add('open');
         document.body.style.overflow = 'hidden';
-        var cs = getComputedStyle(ov);
-        var rect = ov.getBoundingClientRect();
-        console.log('>>> overlay hidden=' + ov.hidden + ' display=' + cs.display + ' visibility=' + cs.visibility + ' opacity=' + cs.opacity + ' z=' + cs.zIndex + ' position=' + cs.position);
-        console.log('>>> overlay rect: top=' + rect.top + ' left=' + rect.left + ' w=' + rect.width + ' h=' + rect.height);
-        console.log('>>> body.scroll y=' + window.scrollY + ' viewport h=' + window.innerHeight);
       }
 
       function renderListaNaoSocias(itens) {
@@ -1034,13 +1036,7 @@
         modalState.perfilAtual = null;
         modalState.tipoLista = 'socias';
         renderModal();
-        var ov = document.getElementById('modal-overlay');
-        ov.hidden = false;
-        document.body.style.overflow = 'hidden';
-        var cs = getComputedStyle(ov);
-        var rect = ov.getBoundingClientRect();
-        console.log('>>> SOCIAS overlay hidden=' + ov.hidden + ' display=' + cs.display + ' visibility=' + cs.visibility + ' opacity=' + cs.opacity + ' z=' + cs.zIndex + ' position=' + cs.position);
-        console.log('>>> SOCIAS rect top=' + rect.top + ' left=' + rect.left + ' w=' + rect.width + ' h=' + rect.height);
+        mostrarModal();
         document.getElementById('modal-body').innerHTML = '<p class="lista-vazia">Carregando…</p>';
 
         // FK explicita pra evitar ambiguidade do PostgREST quando ha multiplas relacoes
@@ -1067,8 +1063,7 @@
         modalState.perfilAtual = null;
         modalState.tipoLista = 'nao_socias';
         renderModal();
-        document.getElementById('modal-overlay').hidden = false;
-        document.body.style.overflow = 'hidden';
+        mostrarModal();
         document.getElementById('modal-body').innerHTML = '<p class="lista-vazia">Carregando…</p>';
 
         var r = await sb.from('inscritos_externos').select('*').eq('evento_id', eventoId);
@@ -1082,7 +1077,9 @@
       }
 
       function fecharModal() {
-        document.getElementById('modal-overlay').hidden = true;
+        var ov = document.getElementById('modal-overlay');
+        ov.classList.remove('open');
+        ov.hidden = true;
         document.body.style.overflow = '';
         modalState.perfilAtual = null;
       }
@@ -1091,14 +1088,8 @@
       document.addEventListener('click', function (e) {
         var statCard = e.target.closest('.stat-card');
         if (statCard) {
-          console.log('>>> CLICK stat-card:', statCard.getAttribute('data-stat'));
           e.preventDefault();
-          try { abrirModalStat(statCard.getAttribute('data-stat')); }
-          catch (err) {
-            console.error('>>> ERRO abrirModalStat:', err);
-            document.body.style.overflow = '';
-            alert('Erro: ' + err.message);
-          }
+          abrirModalStat(statCard.getAttribute('data-stat'));
           return;
         }
         var btnModal = e.target.closest('[data-acao-modal]');
@@ -1120,19 +1111,12 @@
         // Botoes do resumo de inscricoes (Sócias / Não-sócias por evento)
         var btnRes = e.target.closest('button[data-acao-resumo]');
         if (btnRes) {
-          console.log('>>> CLICK resumo:', btnRes.getAttribute('data-acao-resumo'));
           e.preventDefault();
           var acaoRes = btnRes.getAttribute('data-acao-resumo');
           var evId = btnRes.getAttribute('data-evento-id');
           var evNome = btnRes.getAttribute('data-evento-nome') || '(sem nome)';
-          try {
-            if (acaoRes === 'ver-socias') abrirModalSociasInscritas(evId, evNome);
-            else if (acaoRes === 'ver-nao-socias') abrirModalNaoSociasInscritas(evId, evNome);
-          } catch (err) {
-            console.error('>>> ERRO:', err);
-            document.body.style.overflow = '';
-            alert('Erro: ' + err.message);
-          }
+          if (acaoRes === 'ver-socias') abrirModalSociasInscritas(evId, evNome);
+          else if (acaoRes === 'ver-nao-socias') abrirModalNaoSociasInscritas(evId, evNome);
           return;
         }
         // Clique fora do modal-box fecha
