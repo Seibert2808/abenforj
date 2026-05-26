@@ -1683,7 +1683,9 @@
               if (!/confirmad/.test(String(row[statusInscCol] || '').toLowerCase())) passou = false;
             }
             if (passou && statusCompraCol !== -1) {
-              if (!/concl|pago|aprovad/.test(String(row[statusCompraCol] || '').toLowerCase())) passou = false;
+              // Aceita qualquer status exceto cancelamento/recusa/reembolso.
+              // Doity usa: concluido, pago, aprovado, autorizado, gratuito, cancelado, recusado, reembolsado…
+              if (/cancel|recusad|reembols/.test(String(row[statusCompraCol] || '').toLowerCase())) passou = false;
             }
             if (!passou) { ignoradosStatus++; continue; }
             if (vistos[em]) continue;
@@ -2462,7 +2464,9 @@
               if (!/confirmad/.test(String(row[statusInscCol] || '').toLowerCase())) passou = false;
             }
             if (passou && statusCompraCol !== -1) {
-              if (!/concl|pago|aprovad/.test(String(row[statusCompraCol] || '').toLowerCase())) passou = false;
+              // Aceita qualquer status exceto cancelamento/recusa/reembolso.
+              // Doity usa: concluido, pago, aprovado, autorizado, gratuito, cancelado, recusado, reembolsado…
+              if (/cancel|recusad|reembols/.test(String(row[statusCompraCol] || '').toLowerCase())) passou = false;
             }
             if (!passou) { ignoradosStatus++; continue; }
             if (vistos[em]) continue;
