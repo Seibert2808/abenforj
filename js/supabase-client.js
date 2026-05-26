@@ -37,6 +37,25 @@
   window.abenfo.sb = sb;
 
   // ============================================================
+  // Utilities compartilhadas
+  // ============================================================
+
+  // Normaliza nome próprio em portugues — "ANA SOUZA" / "ana souza" -> "Ana Souza".
+  // Mantem preposicoes/artigos comuns em minusculo (exceto se forem a primeira palavra).
+  function tituloPt(s) {
+    if (!s) return s;
+    var pequenas = ['de','da','do','das','dos','e'];
+    var partes = String(s).toLowerCase().trim().split(/\s+/);
+    return partes.map(function (w, i) {
+      if (!w) return w;
+      if (i > 0 && pequenas.indexOf(w) !== -1) return w;
+      return w.charAt(0).toUpperCase() + w.slice(1);
+    }).join(' ');
+  }
+  window.abenfo.utils = window.abenfo.utils || {};
+  window.abenfo.utils.tituloPt = tituloPt;
+
+  // ============================================================
   // Helpers de auth
   // ============================================================
 
@@ -48,8 +67,8 @@
       var email = dados.email;
       var senha = dados.senha;
       var meta = {
-        nome_completo: dados.nome_completo,
-        nome_social: dados.nome_social || null,
+        nome_completo: tituloPt(dados.nome_completo),
+        nome_social: dados.nome_social ? tituloPt(dados.nome_social) : null,
         genero: dados.genero || null,
         categoria: dados.categoria || null,
         especialidade: dados.especialidade || null,

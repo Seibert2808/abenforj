@@ -428,9 +428,10 @@
           var especialidade = selEsp.value === '__outra'
             ? (inpEspOutra.value.trim() || null)
             : (selEsp.value || null);
+          var tituloPt = (window.abenfo.utils && window.abenfo.utils.tituloPt) || function (s) { return s; };
           var dados = {
-            nome_completo: document.getElementById('nome').value.trim(),
-            nome_social: document.getElementById('nome_social').value.trim() || null,
+            nome_completo: tituloPt(document.getElementById('nome').value.trim()),
+            nome_social: tituloPt(document.getElementById('nome_social').value.trim()) || null,
             genero: document.getElementById('genero').value || null,
             categoria: categoria,
             especialidade: especialidade,
