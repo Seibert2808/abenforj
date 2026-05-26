@@ -1006,6 +1006,8 @@
           titulo.textContent = modalState.titulo + ' (' + modalState.lista.length + ')';
           if (modalState.tipoLista === 'nao_socias') {
             body.innerHTML = renderListaNaoSocias(modalState.lista);
+          } else if (modalState.tipoLista === 'selecionar-socia') {
+            body.innerHTML = renderListaSelecionarSocia(modalState.lista);
           } else {
             body.innerHTML = renderListaModal(modalState.lista);
           }
@@ -1203,6 +1205,11 @@
             var perfil = modalState.lista.find(function (p) { return p && p.id === id; })
                       || ativosAtuais.find(function (p) { return p.id === id; });
             if (perfil) { modalState.perfilAtual = perfil; renderModal(); }
+            return;
+          }
+          if (acao === 'confirmar-associacao') {
+            var profileId = btnModal.getAttribute('data-id');
+            executarAssociacao(profileId);
             return;
           }
         }
@@ -2054,6 +2061,9 @@
         var btnNotificar =
           '<a class="btn btn-solid" href="' + mailtoHref + '" target="_blank" rel="noopener" data-pend-acao="notificar" data-pend-id="' + p.id + '">' +
           (jaNotificou ? 'Notificar novamente' : 'Notificar inscrito') + '</a>';
+        var btnAssociar =
+          '<button class="btn btn-ghost" data-pend-acao="associar" data-pend-id="' + p.id + '" ' +
+          'data-pend-nome="' + escapar(p.nome) + '" data-pend-evento-id="' + escapar(p.evento_id || '') + '">Associar a sócia cadastrada</button>';
         var btnResolver =
           '<button class="btn btn-ghost" data-pend-acao="resolver" data-pend-id="' + p.id + '" data-pend-nome="' + escapar(p.nome) + '">Marcar regularizada</button>';
 
@@ -2082,6 +2092,7 @@
             '</div>' +
             '<div class="assoc-acoes">' +
               btnNotificar +
+              btnAssociar +
               btnResolver +
             '</div>' +
           '</div>'
@@ -2208,7 +2219,90 @@
           await carregarPendentes();
           return;
         }
+
+        if (acao === 'associar') {
+          var evId = el.getAttribute('data-pend-evento-id') || '';
+          abrirModalSelecionarSocia(id, nome, evId);
+          return;
+        }
       });
+
+      // Abre modal pra Sabrina escolher qual associada cadastrada
+      // corresponde a uma inscrição pendente (caso de email diferente no Doity).
+      function abrirModalSelecionarSocia(pendenteId, pendenteNome, eventoId) {
+        modalState.titulo = 'Associar "' + pendenteNome + '" a uma sócia cadastrada';
+        modalState.lista = ordenarPorNome(ativosAtuais);
+        modalState.perfilAtual = null;
+        modalState.tipoLista = 'selecionar-socia';
+        modalState.associarPendente = { id: pendenteId, nome: pendenteNome, evento_id: eventoId };
+        renderModal();
+        mostrarModal();
+      }
+
+      function renderListaSelecionarSocia(perfis) {
+        var ctx = modalState.associarPendente || {};
+        var intro =
+          '<p style="margin:0 0 1rem;color:var(--texto-suave);font-size:0.875rem;">' +
+            'Clique na associada que corresponde a <strong>' + escapar(ctx.nome || '') + '</strong>. ' +
+            'A inscrição vai ser transferida para o cadastro escolhido (registro pendente é removido).' +
+          '</p>';
+        if (!perfis.length) return intro + '<p class="lista-vazia">Nenhuma associada ativa cadastrada.</p>';
+        var html = intro + '<div class="lista-nomes">';
+        perfis.forEach(function (p) {
+          var nomeBase = p.nome_social || p.nome_completo || '(sem nome)';
+          var avatar = p.foto_url
+            ? '<span class="mini-avatar"><img src="' + escapar(p.foto_url) + '" alt=""></span>'
+            : '<span class="mini-avatar">' + escapar(iniciaisDe(nomeBase)) + '</span>';
+          var sub = subtituloPerfil(p);
+          html += '<button type="button" class="btn-selecionar-socia" data-acao-modal="confirmar-associacao" data-id="' + escapar(p.id) + '">' +
+            avatar +
+            '<span class="nome-info">' +
+              '<strong>' + escapar(nomeBase) + '</strong>' +
+              (sub ? '<span>' + escapar(sub) + '</span>' : '') +
+              (p.email ? '<span style="font-size:0.75rem;">' + escapar(p.email) + '</span>' : '') +
+            '</span>' +
+          '</button>';
+        });
+        html += '</div>';
+        return html;
+      }
+
+      async function executarAssociacao(profileId) {
+        var sb = window.abenfo.sb;
+        var ctx = modalState.associarPendente;
+        if (!ctx) return;
+        if (!confirm(
+          'Confirmar: registrar a inscrição de "' + ctx.nome + '" como sendo da associada selecionada?\n\n' +
+          'Isso cria a inscrição em "Sócias inscritas" e remove o registro de pendente.'
+        )) return;
+
+        var auth = await sb.auth.getUser();
+        var uid = auth && auth.data && auth.data.user ? auth.data.user.id : null;
+
+        // 1) Cria inscricoes_evento (se ainda nao existe)
+        var rIns = await sb.from('inscricoes_evento').insert({
+          profile_id: profileId,
+          evento_id: ctx.evento_id,
+          observacao: 'Migrado de inscrito externo "' + ctx.nome + '" (e-mail diferente no Doity)',
+          created_by: uid
+        });
+        if (rIns.error && rIns.error.code !== '23505') {
+          // 23505 = unique violation (ja inscrita) — ignora e segue pra deletar o pendente
+          mostrarAviso('Erro ao criar inscrição: ' + rIns.error.message, 'erro');
+          return;
+        }
+
+        // 2) Remove o registro pendente (cascade deleta emails_enviados associados)
+        var rDel = await sb.from('inscritos_externos').delete().eq('id', ctx.id);
+        if (rDel.error) {
+          mostrarAviso('Inscrição criada, mas erro ao remover pendente: ' + rDel.error.message, 'erro');
+          return;
+        }
+
+        mostrarAviso('Inscrição associada com sucesso.', 'sucesso');
+        fecharModal();
+        await Promise.all([carregarPendentes(), atualizarResumoInscricoes()]);
+      }
 
       // ============================================================
       // Inscrições em CURSOS (lógica paralela à de eventos)
