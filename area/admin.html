@@ -1080,8 +1080,14 @@
       document.addEventListener('click', function (e) {
         var statCard = e.target.closest('.stat-card');
         if (statCard) {
+          console.log('>>> CLICK stat-card:', statCard.getAttribute('data-stat'));
           e.preventDefault();
-          abrirModalStat(statCard.getAttribute('data-stat'));
+          try { abrirModalStat(statCard.getAttribute('data-stat')); }
+          catch (err) {
+            console.error('>>> ERRO abrirModalStat:', err);
+            document.body.style.overflow = '';
+            alert('Erro: ' + err.message);
+          }
           return;
         }
         var btnModal = e.target.closest('[data-acao-modal]');
@@ -1103,12 +1109,19 @@
         // Botoes do resumo de inscricoes (Sócias / Não-sócias por evento)
         var btnRes = e.target.closest('button[data-acao-resumo]');
         if (btnRes) {
+          console.log('>>> CLICK resumo:', btnRes.getAttribute('data-acao-resumo'));
           e.preventDefault();
           var acaoRes = btnRes.getAttribute('data-acao-resumo');
           var evId = btnRes.getAttribute('data-evento-id');
           var evNome = btnRes.getAttribute('data-evento-nome') || '(sem nome)';
-          if (acaoRes === 'ver-socias') abrirModalSociasInscritas(evId, evNome);
-          else if (acaoRes === 'ver-nao-socias') abrirModalNaoSociasInscritas(evId, evNome);
+          try {
+            if (acaoRes === 'ver-socias') abrirModalSociasInscritas(evId, evNome);
+            else if (acaoRes === 'ver-nao-socias') abrirModalNaoSociasInscritas(evId, evNome);
+          } catch (err) {
+            console.error('>>> ERRO:', err);
+            document.body.style.overflow = '';
+            alert('Erro: ' + err.message);
+          }
           return;
         }
         // Clique fora do modal-box fecha
