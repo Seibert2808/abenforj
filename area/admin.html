@@ -1083,6 +1083,12 @@
               (jaEnviou ? 'Enviar novamente' : 'Enviar instruções') + '</a>';
           }
 
+          // Caso a inscrita seja, na verdade, uma sócia cadastrada que usou
+          // e-mail diferente no Doity — botão pra ligar manualmente.
+          var btnAssociar = '<button type="button" class="btn btn-ghost btn-instrucoes" ' +
+            'data-acao-modal="abrir-associar" data-id="' + escapar(p.id) + '" ' +
+            'data-nome="' + escapar(nome) + '" data-evento-id="' + escapar(p.evento_id || '') + '">É sócia cadastrada</button>';
+
           var historicoChips = '';
           if (p._emails_enviados && p._emails_enviados.length > 0) {
             historicoChips =
@@ -1105,6 +1111,7 @@
               historicoChips +
             '</span>' +
             btnEnviar +
+            btnAssociar +
           '</div>';
         });
         html += '</div>';
@@ -1210,6 +1217,13 @@
           if (acao === 'confirmar-associacao') {
             var profileId = btnModal.getAttribute('data-id');
             executarAssociacao(profileId);
+            return;
+          }
+          if (acao === 'abrir-associar') {
+            var pendId = btnModal.getAttribute('data-id');
+            var pendNome = btnModal.getAttribute('data-nome') || '';
+            var pendEvento = btnModal.getAttribute('data-evento-id') || '';
+            abrirModalSelecionarSocia(pendId, pendNome, pendEvento);
             return;
           }
         }
