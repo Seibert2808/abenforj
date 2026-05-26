@@ -1022,7 +1022,6 @@
       }
 
       async function abrirModalSociasInscritas(eventoId, eventoNome) {
-        console.log('[modal] abrirModalSociasInscritas', eventoId, eventoNome);
         var sb = window.abenfo.sb;
         modalState.titulo = 'Sócias inscritas — ' + eventoNome;
         modalState.lista = [];
@@ -1033,17 +1032,21 @@
         document.body.style.overflow = 'hidden';
         document.getElementById('modal-body').innerHTML = '<p class="lista-vazia">Carregando…</p>';
 
+        // FK explicita pra evitar ambiguidade do PostgREST quando ha multiplas relacoes
         var r = await sb.from('inscricoes_evento')
-          .select('profiles(*)').eq('evento_id', eventoId);
-        console.log('[modal] resposta socias:', r);
+          .select('profile:profile_id(*)')
+          .eq('evento_id', eventoId);
         if (r.error) {
           document.getElementById('modal-body').innerHTML =
             '<p class="lista-vazia">Erro: ' + escapar(r.error.message) + '</p>';
           return;
         }
-        var perfis = (r.data || []).map(function (x) { return x.profiles; }).filter(Boolean);
+        var perfis = (r.data || []).map(function (x) { return x.profile; }).filter(Boolean);
         modalState.lista = ordenarPorNome(perfis);
-        renderModal();
+        try { renderModal(); } catch (err) {
+          document.getElementById('modal-body').innerHTML =
+            '<p class="lista-vazia">Erro ao renderizar: ' + escapar(String(err && err.message || err)) + '</p>';
+        }
       }
 
       async function abrirModalNaoSociasInscritas(eventoId, eventoNome) {
@@ -1104,7 +1107,6 @@
           var acaoRes = btnRes.getAttribute('data-acao-resumo');
           var evId = btnRes.getAttribute('data-evento-id');
           var evNome = btnRes.getAttribute('data-evento-nome') || '(sem nome)';
-          console.log('[resumo] clique:', acaoRes, 'evento=', evId, evNome);
           if (acaoRes === 'ver-socias') abrirModalSociasInscritas(evId, evNome);
           else if (acaoRes === 'ver-nao-socias') abrirModalNaoSociasInscritas(evId, evNome);
           return;
