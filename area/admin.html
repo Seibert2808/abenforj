@@ -993,8 +993,14 @@
         modalState.perfilAtual = null;
         modalState.tipoLista = 'socias';
         renderModal();
-        document.getElementById('modal-overlay').hidden = false;
+        var ov = document.getElementById('modal-overlay');
+        ov.hidden = false;
         document.body.style.overflow = 'hidden';
+        var cs = getComputedStyle(ov);
+        var rect = ov.getBoundingClientRect();
+        console.log('>>> overlay hidden=' + ov.hidden + ' display=' + cs.display + ' visibility=' + cs.visibility + ' opacity=' + cs.opacity + ' z=' + cs.zIndex + ' position=' + cs.position);
+        console.log('>>> overlay rect: top=' + rect.top + ' left=' + rect.left + ' w=' + rect.width + ' h=' + rect.height);
+        console.log('>>> body.scroll y=' + window.scrollY + ' viewport h=' + window.innerHeight);
       }
 
       function renderListaNaoSocias(itens) {
