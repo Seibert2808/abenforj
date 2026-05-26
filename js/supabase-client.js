@@ -66,9 +66,15 @@
     async cadastrar(dados) {
       var email = dados.email;
       var senha = dados.senha;
+      var nomeCompletoNorm = tituloPt(dados.nome_completo);
+      var nomeSocialNorm = dados.nome_social ? tituloPt(dados.nome_social) : null;
+      // Se preencheram igual ao nome completo, ignora — nome social so faz sentido se for diferente
+      if (nomeSocialNorm && nomeCompletoNorm && nomeSocialNorm.toLowerCase() === nomeCompletoNorm.toLowerCase()) {
+        nomeSocialNorm = null;
+      }
       var meta = {
-        nome_completo: tituloPt(dados.nome_completo),
-        nome_social: dados.nome_social ? tituloPt(dados.nome_social) : null,
+        nome_completo: nomeCompletoNorm,
+        nome_social: nomeSocialNorm,
         genero: dados.genero || null,
         categoria: dados.categoria || null,
         especialidade: dados.especialidade || null,

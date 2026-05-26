@@ -106,9 +106,12 @@
             <input type="text" id="nome" name="nome_completo" autocomplete="name">
           </div>
           <div class="campo">
-            <label for="nome_social">Nome social</label>
-            <input type="text" id="nome_social" name="nome_social">
-            <small style="color:var(--texto-suave);font-size:0.85rem;">Se preenchido, aparece na sua carteirinha em vez do nome de registro.</small>
+            <label for="nome_social">Nome social (opcional)</label>
+            <input type="text" id="nome_social" name="nome_social" placeholder="Ex.: Zezé, Drica, Ana Paula…" autocomplete="off">
+            <small style="color:var(--texto-suave);font-size:0.85rem;display:block;line-height:1.5;">
+              Preencha <strong>apenas se</strong> você é chamada por um nome diferente do nome de registro acima — por exemplo, um apelido habitual ou um nome que você usa profissionalmente.
+              <strong>Deixe em branco</strong> se você usa o nome de registro normalmente.
+            </small>
           </div>
           <div class="campo">
             <label for="email">E-mail</label>
@@ -429,9 +432,14 @@
             ? (inpEspOutra.value.trim() || null)
             : (selEsp.value || null);
           var tituloPt = (window.abenfo.utils && window.abenfo.utils.tituloPt) || function (s) { return s; };
+          var nomeCompletoNorm = tituloPt(document.getElementById('nome').value.trim());
+          var nomeSocialNorm = tituloPt(document.getElementById('nome_social').value.trim()) || null;
+          if (nomeSocialNorm && nomeSocialNorm.toLowerCase() === (nomeCompletoNorm || '').toLowerCase()) {
+            nomeSocialNorm = null;
+          }
           var dados = {
-            nome_completo: tituloPt(document.getElementById('nome').value.trim()),
-            nome_social: tituloPt(document.getElementById('nome_social').value.trim()) || null,
+            nome_completo: nomeCompletoNorm,
+            nome_social: nomeSocialNorm,
             genero: document.getElementById('genero').value || null,
             categoria: categoria,
             especialidade: especialidade,
