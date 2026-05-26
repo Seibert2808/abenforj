@@ -1147,7 +1147,9 @@
         mostrarModal();
         document.getElementById('modal-body').innerHTML = '<p class="lista-vazia">Carregando…</p>';
 
-        var r = await sb.from('inscritos_externos').select('*').eq('evento_id', eventoId);
+        var r = await sb.from('inscritos_externos').select('*')
+          .eq('evento_id', eventoId)
+          .eq('pendente_verificacao_socia', false);
         if (r.error) {
           document.getElementById('modal-body').innerHTML =
             '<p class="lista-vazia">Erro: ' + escapar(r.error.message) + '</p>';
@@ -1940,7 +1942,11 @@
           alvo.innerHTML = '<div class="lista-vazia">Erro: ' + escapar(rSocias.error.message) + '</div>';
           return;
         }
-        var rExt = await sb.from('inscritos_externos').select('evento_id, eventos(nome, data_inicio)');
+        // Conta apenas nao-socias confirmadas — quem pagou como socia sem cadastro
+        // (pendente_verificacao_socia=true) aparece no bloco proprio de pendentes.
+        var rExt = await sb.from('inscritos_externos')
+          .select('evento_id, eventos(nome, data_inicio)')
+          .eq('pendente_verificacao_socia', false);
         if (rExt.error) {
           alvo.innerHTML = '<div class="lista-vazia">Erro: ' + escapar(rExt.error.message) + '</div>';
           return;
