@@ -1238,6 +1238,17 @@
           else if (acaoRes === 'ver-nao-socias') abrirModalNaoSociasInscritas(evId, evNome);
           return;
         }
+        // Botoes do resumo de inscricoes em cursos
+        var btnResC = e.target.closest('button[data-acao-resumo-curso]');
+        if (btnResC) {
+          e.preventDefault();
+          var acaoResC = btnResC.getAttribute('data-acao-resumo-curso');
+          var curId = btnResC.getAttribute('data-curso-id');
+          var curNome = btnResC.getAttribute('data-curso-nome') || '(sem nome)';
+          if (acaoResC === 'ver-socias') abrirModalSociasCurso(curId, curNome);
+          else if (acaoResC === 'ver-nao-socias') abrirModalNaoSociasCurso(curId, curNome);
+          return;
+        }
         // Clique fora do modal-box fecha
         if (e.target.id === 'modal-overlay') fecharModal();
       });
@@ -2584,7 +2595,8 @@
 
       async function atualizarResumoCursos() {
         var sb = window.abenfo.sb;
-        var r = await sb.from('inscricoes_curso').select('curso_id, cursos(nome, turno, data, eventos(nome))');
+        var r = await sb.from('inscricoes_curso')
+          .select('curso_id, profile_id, inscrito_externo_id, cursos(nome, turno, data, eventos(nome))');
         var alvo = document.getElementById('resumo-cursos');
         if (r.error) {
           alvo.innerHTML = '<div class="lista-vazia">Erro ao carregar resumo: ' + escapar(r.error.message) + '</div>';
@@ -2598,8 +2610,11 @@
           if (c.eventos && c.eventos.nome) meta.push(c.eventos.nome);
           if (c.turno) meta.push(c.turno);
           if (c.data) meta.push(fmtDataBR(c.data));
-          if (!contagem[i.curso_id]) contagem[i.curso_id] = { nome: nome, meta: meta.join(' · '), data: c.data, total: 0 };
-          contagem[i.curso_id].total += 1;
+          if (!contagem[i.curso_id]) {
+            contagem[i.curso_id] = { nome: nome, meta: meta.join(' · '), data: c.data, socias: 0, externos: 0 };
+          }
+          if (i.profile_id) contagem[i.curso_id].socias += 1;
+          else if (i.inscrito_externo_id) contagem[i.curso_id].externos += 1;
         });
         var chaves = Object.keys(contagem);
         if (chaves.length === 0) {
@@ -2616,11 +2631,76 @@
         alvo.innerHTML = chaves.map(function (k) {
           var c = contagem[k];
           var meta = c.meta ? '<span style="font-weight:400;color:var(--texto-suave);"> · ' + escapar(c.meta) + '</span>' : '';
+          var total = c.socias + c.externos;
+          var nomeAttr = escapar(c.nome);
+          var btnSoc = '<button type="button" class="resumo-link" ' +
+            'data-acao-resumo-curso="ver-socias" data-curso-id="' + k + '" data-curso-nome="' + nomeAttr + '"' +
+            (c.socias === 0 ? ' disabled' : '') + '>' +
+            c.socias + ' sócia(s)</button>';
+          var btnExt = '<button type="button" class="resumo-link" ' +
+            'data-acao-resumo-curso="ver-nao-socias" data-curso-id="' + k + '" data-curso-nome="' + nomeAttr + '"' +
+            (c.externos === 0 ? ' disabled' : '') + '>' +
+            c.externos + ' não-sócia(s)</button>';
           return '<div class="resumo-evento">' +
-            '<strong>' + escapar(c.nome) + meta + '</strong>' +
-            '<span class="count">' + c.total + ' sócia(s)</span>' +
+            '<div>' +
+              '<strong>' + escapar(c.nome) + meta + '</strong>' +
+              '<div class="count" style="margin-top:0.2rem;">' + total + ' inscrita(s) no total</div>' +
+            '</div>' +
+            '<div class="resumo-acoes">' + btnSoc + btnExt + '</div>' +
           '</div>';
         }).join('');
+      }
+
+      async function abrirModalSociasCurso(cursoId, cursoNome) {
+        var sb = window.abenfo.sb;
+        modalState.titulo = 'Sócias inscritas — ' + cursoNome;
+        modalState.lista = [];
+        modalState.perfilAtual = null;
+        modalState.tipoLista = 'socias';
+        renderModal();
+        mostrarModal();
+        document.getElementById('modal-body').innerHTML = '<p class="lista-vazia">Carregando…</p>';
+
+        var r = await sb.from('inscricoes_curso')
+          .select('profile:profile_id(*)')
+          .eq('curso_id', cursoId)
+          .not('profile_id', 'is', null);
+        if (r.error) {
+          document.getElementById('modal-body').innerHTML =
+            '<p class="lista-vazia">Erro: ' + escapar(r.error.message) + '</p>';
+          return;
+        }
+        var perfis = (r.data || []).map(function (x) { return x.profile; }).filter(Boolean);
+        modalState.lista = ordenarPorNome(perfis);
+        try { renderModal(); } catch (err) {
+          document.getElementById('modal-body').innerHTML =
+            '<p class="lista-vazia">Erro ao renderizar: ' + escapar(String(err && err.message || err)) + '</p>';
+        }
+      }
+
+      async function abrirModalNaoSociasCurso(cursoId, cursoNome) {
+        var sb = window.abenfo.sb;
+        modalState.titulo = 'Não-sócias inscritas — ' + cursoNome;
+        modalState.lista = [];
+        modalState.perfilAtual = null;
+        modalState.tipoLista = 'nao_socias';
+        modalState.eventoNome = cursoNome; // o template do email usa este campo
+        renderModal();
+        mostrarModal();
+        document.getElementById('modal-body').innerHTML = '<p class="lista-vazia">Carregando…</p>';
+
+        var r = await sb.from('inscricoes_curso')
+          .select('externo:inscrito_externo_id(*)')
+          .eq('curso_id', cursoId)
+          .not('inscrito_externo_id', 'is', null);
+        if (r.error) {
+          document.getElementById('modal-body').innerHTML =
+            '<p class="lista-vazia">Erro: ' + escapar(r.error.message) + '</p>';
+          return;
+        }
+        var externos = (r.data || []).map(function (x) { return x.externo; }).filter(Boolean);
+        modalState.lista = ordenarPorNome(externos, 'nome');
+        renderModal();
       }
 
       document.addEventListener('click', function (e) {
