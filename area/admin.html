@@ -772,6 +772,45 @@
         </div>
         </details>
 
+        <details class="secao">
+          <summary><h2>Trabalhos científicos <span id="contador-trabalhos-admin" style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;"></span></h2></summary>
+          <p class="descricao-secao">
+            Trabalhos submetidos para o IX ENEON 2026. Use os filtros para localizar,
+            baixe PDFs individualmente ou em lote (ZIP), mude o status e bloqueie a edição
+            quando a comissão científica iniciar a avaliação.
+          </p>
+
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;align-items:center;">
+            <select id="filtro-trab-area" style="padding:0.45rem 0.6rem;border:1px solid var(--borda);border-radius:6px;min-height:0;">
+              <option value="">Todas as áreas</option>
+              <option value="neonatal">Enfermagem Neonatal</option>
+              <option value="obstetrica">Enfermagem Obstétrica</option>
+              <option value="saude_coletiva">Enfermagem em Saúde Coletiva</option>
+            </select>
+            <select id="filtro-trab-eixo" style="padding:0.45rem 0.6rem;border:1px solid var(--borda);border-radius:6px;min-height:0;">
+              <option value="">Todos os eixos</option>
+              <option value="ensino_formacao_regulacao">Ensino, Formação e Regulação</option>
+              <option value="cenario_politico">Cenário Político</option>
+              <option value="protagonismo_social">Protagonismo social</option>
+              <option value="cuidado_qualificado">Cuidado qualificado</option>
+            </select>
+            <select id="filtro-trab-status" style="padding:0.45rem 0.6rem;border:1px solid var(--borda);border-radius:6px;min-height:0;">
+              <option value="">Todos os status</option>
+              <option value="submetido">Submetido</option>
+              <option value="em_avaliacao">Em avaliação</option>
+              <option value="aceito">Aceito</option>
+              <option value="recusado">Recusado</option>
+            </select>
+            <span style="flex:1;"></span>
+            <button type="button" id="btn-baixar-todos-trabs" class="btn btn-ghost" style="min-height:0;padding:0.5rem 0.9rem;font-size:0.875rem;">Baixar PDFs (ZIP)</button>
+            <button type="button" id="btn-bloquear-todos-trabs" class="btn btn-ghost" style="min-height:0;padding:0.5rem 0.9rem;font-size:0.875rem;">Iniciar avaliação (bloquear edições)</button>
+          </div>
+
+          <div id="lista-trabalhos-admin" style="display:grid;gap:0.75rem;margin-bottom:1.5rem;">
+            <div class="lista-vazia">Carregando…</div>
+          </div>
+        </details>
+
       </div>
     </section>
   </main>
@@ -2779,6 +2818,324 @@
         }
       });
 
+      // ============================================================
+      // Trabalhos científicos (admin)
+      // ============================================================
+      var ROTULOS_AREA_TRAB = {
+        neonatal: 'Enf. Neonatal',
+        obstetrica: 'Enf. Obstétrica',
+        saude_coletiva: 'Enf. Saúde Coletiva'
+      };
+      var ROTULOS_EIXO_TRAB = {
+        ensino_formacao_regulacao: 'Ensino, Formação e Regulação',
+        cenario_politico: 'Cenário Político',
+        protagonismo_social: 'Protagonismo social',
+        cuidado_qualificado: 'Cuidado qualificado'
+      };
+      var ROTULOS_TIPO_TRAB = {
+        pesquisa_original: 'Pesquisa original',
+        revisao_sistematizada: 'Revisão sistematizada',
+        ensaio_reflexao: 'Ensaio / reflexão',
+        relato_experiencia: 'Relato de experiência',
+        nota_previa: 'Nota prévia',
+        revisao_narrativa: 'Revisão narrativa / caso',
+        projeto_pesquisa: 'Projeto de pesquisa'
+      };
+      var trabalhosCache = [];
+
+      async function carregarTrabalhosAdmin() {
+        var sb = window.abenfo.sb;
+        var r = await sb.from('trabalhos_cientificos')
+          .select('*')
+          .order('submetido_em', { ascending: false });
+        if (r.error) {
+          document.getElementById('lista-trabalhos-admin').innerHTML =
+            '<div class="lista-vazia">Erro: ' + escapar(r.error.message) + '</div>';
+          return;
+        }
+        trabalhosCache = r.data || [];
+        renderTrabalhosAdmin();
+      }
+
+      function trabalhosFiltrados() {
+        var fa = document.getElementById('filtro-trab-area').value;
+        var fe = document.getElementById('filtro-trab-eixo').value;
+        var fs = document.getElementById('filtro-trab-status').value;
+        return trabalhosCache.filter(function (t) {
+          if (fa && t.area !== fa) return false;
+          if (fe && t.eixo_tematico !== fe) return false;
+          if (fs && t.status !== fs) return false;
+          return true;
+        });
+      }
+
+      function renderTrabalhosAdmin() {
+        var alvo = document.getElementById('lista-trabalhos-admin');
+        var contador = document.getElementById('contador-trabalhos-admin');
+        var dados = trabalhosFiltrados();
+        contador.textContent = '(' + dados.length + (dados.length !== trabalhosCache.length ? ' de ' + trabalhosCache.length : '') + ')';
+        if (dados.length === 0) {
+          alvo.innerHTML = '<div class="lista-vazia">Nenhum trabalho.</div>';
+          return;
+        }
+        alvo.innerHTML = dados.map(function (t) {
+          var statusOpts = ['submetido','em_avaliacao','aceito','recusado'].map(function (s) {
+            return '<option value="' + s + '"' + (t.status === s ? ' selected' : '') + '>' + s.replace('_',' ') + '</option>';
+          }).join('');
+          var qtdAutores = Array.isArray(t.autores) ? t.autores.length : 0;
+          var nomeArquivo = (t.relator_nome + ' - ' + t.titulo).replace(/[\\/:"*?<>|]/g, '-');
+          return '<div class="assoc-card" data-trab-id="' + t.id + '">' +
+            '<div class="assoc-avatar">' + escapar(iniciaisDe(t.relator_nome || '')) + '</div>' +
+            '<div class="assoc-body">' +
+              '<div class="assoc-head">' +
+                '<strong>' + escapar(t.titulo) + '</strong>' +
+                '<span class="badge badge-soft">' + escapar(ROTULOS_AREA_TRAB[t.area] || t.area) + '</span>' +
+                '<span class="badge badge-' + t.status + '">' + t.status.replace('_',' ') + '</span>' +
+                (t.bloqueado ? '<span class="badge badge-soft">bloqueado</span>' : '') +
+              '</div>' +
+              '<div class="assoc-meta">' +
+                metaLinha('Relator(a)', escapar(t.relator_nome) + ' &lt;' + escapar(t.relator_email) + '&gt;') +
+                metaLinha('Eixo', escapar(ROTULOS_EIXO_TRAB[t.eixo_tematico] || t.eixo_tematico)) +
+                metaLinha('Tipo', escapar(ROTULOS_TIPO_TRAB[t.tipo_trabalho] || t.tipo_trabalho)) +
+                metaLinha('Autores', qtdAutores + (qtdAutores === 1 ? ' pessoa' : ' pessoas')) +
+                metaLinha('Descritores', escapar((t.descritores || []).join(', '))) +
+                metaLinha('Submetido em', fmtDataBR(String(t.submetido_em).slice(0, 10))) +
+              '</div>' +
+            '</div>' +
+            '<div class="assoc-acoes">' +
+              '<select data-trab-acao="status" data-id="' + t.id + '" style="min-height:0;padding:0.4rem 0.5rem;font-size:0.825rem;border-radius:6px;border:1px solid var(--borda);">' + statusOpts + '</select>' +
+              '<button class="btn btn-ghost" data-trab-acao="ver" data-id="' + t.id + '">Ver detalhes</button>' +
+              '<button class="btn btn-ghost" data-trab-acao="baixar-pdf" data-id="' + t.id + '" data-path="' + escapar(t.pdf_path) + '" data-nome="' + escapar(nomeArquivo) + '">Baixar PDF</button>' +
+              '<button class="btn btn-ghost" data-trab-acao="' + (t.bloqueado ? 'desbloquear' : 'bloquear') + '" data-id="' + t.id + '">' + (t.bloqueado ? 'Desbloquear' : 'Bloquear edição') + '</button>' +
+              '<span class="sep"></span>' +
+              '<button class="btn btn-ghost btn-excluir" data-trab-acao="excluir" data-id="' + t.id + '" data-titulo="' + escapar(t.titulo) + '">Excluir</button>' +
+            '</div>' +
+          '</div>';
+        }).join('');
+      }
+
+      function carregarJsZip() {
+        if (window.JSZip) return Promise.resolve(window.JSZip);
+        return new Promise(function (resolve, reject) {
+          var s = document.createElement('script');
+          s.src = 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
+          s.onload = function () { resolve(window.JSZip); };
+          s.onerror = function () { reject(new Error('Falha ao baixar JSZip.')); };
+          document.head.appendChild(s);
+        });
+      }
+
+      async function baixarTrabalhosZip() {
+        var btn = document.getElementById('btn-baixar-todos-trabs');
+        var sb = window.abenfo.sb;
+        var dados = trabalhosFiltrados();
+        if (dados.length === 0) {
+          mostrarAviso('Nenhum trabalho para baixar nos filtros atuais.', 'aviso');
+          return;
+        }
+        btn.disabled = true;
+        var textoOriginal = btn.textContent;
+        btn.textContent = 'Preparando ZIP (0/' + dados.length + ')…';
+        try {
+          var JSZip = await carregarJsZip();
+          var zip = new JSZip();
+          for (var i = 0; i < dados.length; i++) {
+            var t = dados[i];
+            btn.textContent = 'Preparando ZIP (' + (i + 1) + '/' + dados.length + ')…';
+            var dl = await sb.storage.from('trabalhos-cientificos').download(t.pdf_path);
+            if (dl.error) {
+              console.error('Erro ao baixar ' + t.titulo + ':', dl.error);
+              continue;
+            }
+            var nome = (t.relator_nome + ' - ' + t.titulo).replace(/[\\/:"*?<>|]/g, '-') + '.pdf';
+            zip.file(nome, dl.data);
+          }
+          var blob = await zip.generateAsync({ type: 'blob' });
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement('a');
+          a.href = url;
+          a.download = 'Trabalhos IX ENEON 2026 - ' + new Date().toISOString().slice(0, 10) + '.zip';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          mostrarAviso(dados.length + ' trabalho(s) baixado(s) em ZIP.', 'sucesso');
+        } catch (err) {
+          mostrarAviso('Erro: ' + (err.message || err), 'erro');
+        } finally {
+          btn.disabled = false;
+          btn.textContent = textoOriginal;
+        }
+      }
+
+      async function baixarTrabalhoIndividual(path, nomeAmigavel) {
+        var sb = window.abenfo.sb;
+        var r = await sb.storage.from('trabalhos-cientificos').download(path);
+        if (r.error) {
+          mostrarAviso('Erro ao baixar: ' + r.error.message, 'erro');
+          return;
+        }
+        var url = URL.createObjectURL(r.data);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = nomeAmigavel + '.pdf';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+
+      function abrirDetalhesTrabalho(id) {
+        var t = trabalhosCache.find(function (x) { return x.id === id; });
+        if (!t) return;
+        modalState.titulo = t.titulo;
+        modalState.perfilAtual = null;
+        modalState.lista = [];
+        modalState.tipoLista = 'trab-detalhes';
+        modalState.trabalho = t;
+        renderModal();
+        mostrarModal();
+      }
+
+      function renderDetalhesTrabalho(t) {
+        var autoresHtml = '';
+        if (Array.isArray(t.autores) && t.autores.length > 0) {
+          autoresHtml = '<ol style="margin:0.25rem 0 0;padding-left:1.25rem;">' +
+            t.autores.map(function (a) {
+              return '<li>' + escapar(a.nome) +
+                (a.info ? ' — <span style="color:var(--texto-suave);">' + escapar(a.info) + '</span>' : '') +
+                (a.eh_relator ? ' <strong style="color:var(--verde-escuro);">(relator)</strong>' : '') +
+              '</li>';
+            }).join('') +
+          '</ol>';
+        }
+        var dl = '<dl class="detalhes-grid">';
+        dl += dlLinha('Relator(a)', escapar(t.relator_nome) + ' &lt;' + escapar(t.relator_email) + '&gt;');
+        dl += dlLinha('Área', escapar(ROTULOS_AREA_TRAB[t.area] || t.area));
+        dl += dlLinha('Eixo', escapar(ROTULOS_EIXO_TRAB[t.eixo_tematico] || t.eixo_tematico));
+        dl += dlLinha('Tipo', escapar(ROTULOS_TIPO_TRAB[t.tipo_trabalho] || t.tipo_trabalho));
+        if (t.cep_caae) dl += dlLinha('CEP/CAAE', escapar(t.cep_caae));
+        if (t.ceua) dl += dlLinha('CEUA', escapar(t.ceua));
+        dl += dlLinha('Descritores', escapar((t.descritores || []).join(', ')));
+        dl += dlLinha('Submetido em', fmtDataHora(t.submetido_em));
+        if (t.atualizado_em) dl += dlLinha('Atualizado em', fmtDataHora(t.atualizado_em));
+        dl += '</dl>';
+
+        var nomeArquivo = (t.relator_nome + ' - ' + t.titulo).replace(/[\\/:"*?<>|]/g, '-');
+        return '<button type="button" class="btn-voltar" data-acao-modal="fechar">← Fechar</button>' +
+          dl +
+          '<h4 style="margin:1.25rem 0 0.4rem;color:var(--verde-escuro);">Autores</h4>' +
+          (autoresHtml || '<p style="color:var(--texto-suave);">Sem autores cadastrados.</p>') +
+          '<h4 style="margin:1.25rem 0 0.4rem;color:var(--verde-escuro);">Resumo</h4>' +
+          '<div style="background:var(--areia);padding:1rem;border-radius:8px;white-space:pre-wrap;font-size:0.9rem;line-height:1.55;">' + escapar(t.resumo) + '</div>' +
+          '<h4 style="margin:1.25rem 0 0.4rem;color:var(--verde-escuro);">Referências</h4>' +
+          '<div style="background:var(--areia);padding:1rem;border-radius:8px;white-space:pre-wrap;font-size:0.85rem;line-height:1.55;">' + escapar(t.referencias) + '</div>' +
+          '<div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--borda);display:flex;gap:0.5rem;flex-wrap:wrap;">' +
+            '<button type="button" class="btn btn-solid" data-trab-acao="baixar-pdf" data-id="' + t.id + '" data-path="' + escapar(t.pdf_path) + '" data-nome="' + escapar(nomeArquivo) + '" style="min-height:0;padding:0.55rem 0.9rem;font-size:0.875rem;">Baixar PDF</button>' +
+            '<label style="display:flex;align-items:center;gap:0.5rem;font-size:0.875rem;flex:1;">Observação para a relatora:</label>' +
+          '</div>' +
+          '<textarea id="obs-avaliacao-input" rows="3" style="width:100%;margin-top:0.4rem;padding:0.6rem;border:1px solid var(--borda);border-radius:6px;font:inherit;" placeholder="Comentário visível pra relatora">' + escapar(t.observacao_avaliacao || '') + '</textarea>' +
+          '<button type="button" class="btn btn-ghost" data-trab-acao="salvar-obs" data-id="' + t.id + '" style="min-height:0;padding:0.5rem 0.9rem;margin-top:0.5rem;">Salvar observação</button>';
+      }
+
+      // Estende renderModal pra entender o tipo 'trab-detalhes'
+      var renderModalOriginal = renderModal;
+      renderModal = function () {
+        if (modalState.tipoLista === 'trab-detalhes' && modalState.trabalho) {
+          document.getElementById('modal-titulo').textContent = modalState.trabalho.titulo;
+          document.getElementById('modal-body').innerHTML = renderDetalhesTrabalho(modalState.trabalho);
+          return;
+        }
+        renderModalOriginal();
+      };
+
+      // Handler dedicado pras ações de trabalhos
+      document.addEventListener('click', async function (e) {
+        var sel = e.target.closest('select[data-trab-acao="status"]');
+        if (sel) return; // mudança de status tem listener próprio
+        var btn = e.target.closest('[data-trab-acao]');
+        if (!btn) return;
+        var acao = btn.getAttribute('data-trab-acao');
+        if (acao === 'status') return;
+        var id = btn.getAttribute('data-id');
+        var sb = window.abenfo.sb;
+
+        if (acao === 'ver') { abrirDetalhesTrabalho(id); return; }
+        if (acao === 'baixar-pdf') {
+          await baixarTrabalhoIndividual(btn.getAttribute('data-path'), btn.getAttribute('data-nome'));
+          return;
+        }
+        if (acao === 'bloquear' || acao === 'desbloquear') {
+          var r = await sb.from('trabalhos_cientificos')
+            .update({ bloqueado: acao === 'bloquear' })
+            .eq('id', id);
+          if (r.error) { mostrarAviso('Erro: ' + r.error.message, 'erro'); return; }
+          mostrarAviso(acao === 'bloquear' ? 'Edição bloqueada.' : 'Edição liberada.', 'sucesso');
+          await carregarTrabalhosAdmin();
+          return;
+        }
+        if (acao === 'salvar-obs') {
+          var obs = document.getElementById('obs-avaliacao-input').value;
+          var ro = await sb.from('trabalhos_cientificos')
+            .update({ observacao_avaliacao: obs || null })
+            .eq('id', id);
+          if (ro.error) { mostrarAviso('Erro: ' + ro.error.message, 'erro'); return; }
+          mostrarAviso('Observação salva.', 'sucesso');
+          await carregarTrabalhosAdmin();
+          var t = trabalhosCache.find(function (x) { return x.id === id; });
+          if (t) modalState.trabalho = t;
+          return;
+        }
+        if (acao === 'excluir') {
+          var titulo = btn.getAttribute('data-titulo') || '(sem título)';
+          if (!confirm('Excluir o trabalho "' + titulo + '"?\n\nO PDF também será removido. Esta ação não pode ser desfeita.')) return;
+          var t = trabalhosCache.find(function (x) { return x.id === id; });
+          if (t && t.pdf_path) {
+            await sb.storage.from('trabalhos-cientificos').remove([t.pdf_path]);
+          }
+          var rd = await sb.from('trabalhos_cientificos').delete().eq('id', id);
+          if (rd.error) { mostrarAviso('Erro: ' + rd.error.message, 'erro'); return; }
+          mostrarAviso('Trabalho excluído.', 'sucesso');
+          await carregarTrabalhosAdmin();
+          return;
+        }
+      });
+
+      // Mudança de status via <select>
+      document.addEventListener('change', async function (e) {
+        var sel = e.target.closest('select[data-trab-acao="status"]');
+        if (!sel) return;
+        var id = sel.getAttribute('data-id');
+        var novoStatus = sel.value;
+        var sb = window.abenfo.sb;
+        var r = await sb.from('trabalhos_cientificos').update({ status: novoStatus }).eq('id', id);
+        if (r.error) { mostrarAviso('Erro: ' + r.error.message, 'erro'); return; }
+        mostrarAviso('Status atualizado para "' + novoStatus.replace('_',' ') + '".', 'sucesso');
+        await carregarTrabalhosAdmin();
+      });
+
+      // Filtros
+      ['filtro-trab-area','filtro-trab-eixo','filtro-trab-status'].forEach(function (id) {
+        document.getElementById(id).addEventListener('change', renderTrabalhosAdmin);
+      });
+
+      // Botões de topo
+      document.getElementById('btn-baixar-todos-trabs').addEventListener('click', baixarTrabalhosZip);
+      document.getElementById('btn-bloquear-todos-trabs').addEventListener('click', async function () {
+        var dados = trabalhosFiltrados().filter(function (t) { return !t.bloqueado; });
+        if (dados.length === 0) {
+          mostrarAviso('Não há trabalhos para bloquear nos filtros atuais.', 'aviso');
+          return;
+        }
+        if (!confirm('Bloquear edição de ' + dados.length + ' trabalho(s)? Apenas os trabalhos que correspondem aos filtros atuais serão afetados.')) return;
+        var sb = window.abenfo.sb;
+        var ids = dados.map(function (t) { return t.id; });
+        var r = await sb.from('trabalhos_cientificos').update({ bloqueado: true, status: 'em_avaliacao' }).in('id', ids);
+        if (r.error) { mostrarAviso('Erro: ' + r.error.message, 'erro'); return; }
+        mostrarAviso(dados.length + ' trabalho(s) marcado(s) como "em avaliação".', 'sucesso');
+        await carregarTrabalhosAdmin();
+      });
+
       document.addEventListener('perfil-pronto', function (e) {
         if (!e.detail.is_admin) {
           window.location.href = 'index.html';
@@ -2791,6 +3148,7 @@
         carregarCursos();
         carregarEventosParaSelectCurso();
         atualizarResumoCursos();
+        carregarTrabalhosAdmin();
       });
     })();
   </script>
