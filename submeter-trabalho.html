@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Submeter trabalho científico — IX ENEON 2026</title>
+  <meta name="description" content="Já se inscreveu no IX ENEON via Doity? Submeta seu trabalho científico aqui.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/png" href="assets/logo-abenforj.png">
+  <style>
+    .hero-trab {
+      background: var(--verde-pastel);
+      padding: 3rem 1rem 2rem;
+      text-align: center;
+    }
+    .hero-trab h1 { color: var(--verde-escuro); margin: 0 0 0.5rem; }
+    .hero-trab p { color: var(--texto); margin: 0 auto; max-width: 700px; line-height: 1.55; }
+
+    .formulario-acesso {
+      max-width: 480px;
+      margin: 2rem auto;
+      background: var(--branco);
+      border: 1px solid var(--borda);
+      border-radius: 12px;
+      padding: 1.5rem;
+    }
+    .formulario-acesso label { display: block; font-weight: 500; margin: 0.75rem 0 0.35rem; color: var(--texto); }
+    .formulario-acesso input {
+      width: 100%; padding: 0.6rem 0.75rem;
+      border: 1px solid var(--borda); border-radius: 6px; font: inherit;
+    }
+    .aviso-erro {
+      margin-top: 1rem; padding: 0.65rem 0.85rem;
+      background: #fde8e8; border-left: 4px solid #c53030;
+      color: #742020; border-radius: 4px; font-size: 0.9rem;
+    }
+
+    .painel-trabalhos {
+      max-width: 900px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+    .saudacao { font-size: 1.15rem; color: var(--texto); margin-bottom: 1rem; }
+    .saudacao strong { color: var(--verde-escuro); }
+
+    .trabalhos-intro {
+      background: var(--verde-pastel);
+      border-left: 4px solid var(--verde);
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      margin: 1rem 0 1.5rem;
+    }
+    .trabalhos-intro h3 { margin: 0 0 0.35rem; color: var(--verde-escuro); font-size: 1.05rem; }
+    .trabalhos-intro p { margin: 0 0 0.5rem; color: var(--texto); font-size: 0.95rem; line-height: 1.55; }
+    .trabalhos-intro p:last-child { margin-bottom: 0; }
+
+    .lista-trabalhos { display: grid; gap: 0.85rem; margin: 1.5rem 0; }
+    .trabalho-card {
+      background: var(--branco);
+      border: 1px solid var(--borda);
+      border-radius: 10px;
+      padding: 1.1rem 1.25rem;
+    }
+    .trabalho-card h3 { margin: 0 0 0.4rem; font-size: 1rem; color: var(--texto); line-height: 1.3; }
+    .trabalho-card .meta { color: var(--texto-suave); font-size: 0.85rem; margin-bottom: 0.6rem; }
+    .trabalho-card .meta strong { color: var(--texto); }
+    .status-row { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; margin-bottom: 0.75rem; }
+    .badge-status {
+      display: inline-flex; padding: 0.18rem 0.55rem; border-radius: 999px;
+      font-size: 0.72rem; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase;
+    }
+    .badge-status.submetido    { background: #ecf2ee; color: #3f5f4d; }
+    .badge-status.em_avaliacao { background: #fff8e1; color: #856404; }
+    .badge-status.aceito       { background: #e6f4ea; color: #1f5d3a; }
+    .badge-status.recusado     { background: #fde8e8; color: #742020; }
+    .badge-bloq { background: var(--areia); color: var(--texto-suave); }
+    .trabalho-acoes { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+    .trabalho-acoes .btn { min-height: 0; padding: 0.45rem 0.85rem; font-size: 0.875rem; }
+    .observacao {
+      margin-top: 0.75rem; padding: 0.6rem 0.85rem;
+      background: var(--areia); border-radius: 6px;
+      font-size: 0.875rem; color: var(--texto-suave);
+    }
+
+    .form-card {
+      background: var(--branco);
+      border: 1px solid var(--borda);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-top: 1rem;
+    }
+    .form-card h3 { margin: 0 0 0.85rem; color: var(--verde-escuro); }
+    .form-card label { display: block; font-weight: 500; margin: 0.85rem 0 0.35rem; color: var(--texto); }
+    .form-card label .req { color: #b00020; }
+    .form-card input[type="text"],
+    .form-card input[type="email"],
+    .form-card select,
+    .form-card textarea {
+      width: 100%; padding: 0.6rem 0.75rem;
+      border: 1px solid var(--borda); border-radius: 6px;
+      font: inherit; background: var(--branco);
+    }
+    .form-card input:focus,
+    .form-card select:focus,
+    .form-card textarea:focus {
+      outline: 0; border-color: var(--verde-claro);
+      box-shadow: 0 0 0 3px var(--verde-pastel);
+    }
+    .form-card textarea { font-family: inherit; resize: vertical; min-height: 100px; }
+    .form-card .hint { font-size: 0.8rem; color: var(--texto-suave); margin: 0.3rem 0 0; line-height: 1.45; }
+    .contador { font-size: 0.8rem; color: var(--texto-suave); margin-top: 0.2rem; }
+    .contador.invalido { color: #b00020; font-weight: 500; }
+    .duas-colunas { display: grid; grid-template-columns: 1fr; gap: 0.75rem; }
+    @media (min-width: 640px) {
+      .duas-colunas { grid-template-columns: 1fr 1fr; }
+    }
+    .autor-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+      align-items: end;
+    }
+    @media (max-width: 640px) {
+      .autor-row { grid-template-columns: 1fr; }
+    }
+    .autor-row .remover {
+      background: transparent; border: 1px solid var(--borda);
+      border-radius: 6px; padding: 0.5rem 0.7rem; cursor: pointer;
+      color: var(--texto-suave); font-size: 0.85rem;
+    }
+    .autor-row .remover:hover { background: #fdecef; color: #b00020; border-color: #fdecef; }
+
+    .upload-area {
+      border: 2px dashed var(--borda);
+      border-radius: 8px;
+      padding: 1.25rem;
+      text-align: center;
+      background: var(--areia);
+    }
+    .upload-area.tem-arquivo { background: var(--verde-pastel); border-color: var(--verde-claro); border-style: solid; }
+    .upload-area .arquivo-nome { font-weight: 500; color: var(--verde-escuro); margin-top: 0.4rem; }
+    .upload-area .arquivo-tamanho { color: var(--texto-suave); font-size: 0.85rem; }
+    .upload-area .btn { min-height: 0; padding: 0.5rem 1rem; font-size: 0.9rem; }
+
+    .acoes-form { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--borda); display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+    .feedback {
+      margin: 1rem 0;
+      padding: 0.85rem 1rem;
+      border-radius: 6px;
+      font-size: 0.95rem;
+    }
+    .feedback.ok    { background: #e6f4ea; color: #1f5d3a; border-left: 4px solid #2e7d4f; }
+    .feedback.erro  { background: #fde8e8; color: #742020; border-left: 4px solid #c53030; }
+    .feedback.aviso { background: #fdf6e3; color: #5a4a10; border-left: 4px solid #d4a72c; }
+
+    .bloqueio-prazo {
+      background: #fde8e8; border-left: 4px solid #c53030;
+      padding: 1rem 1.25rem; border-radius: 6px; margin: 1rem 0 1.5rem;
+      color: #742020;
+    }
+    .bloqueio-prazo h3 { margin: 0 0 0.3rem; color: #742020; }
+
+    .lista-vazia {
+      padding: 1.5rem; text-align: center;
+      color: var(--texto-suave);
+      background: var(--branco); border: 1px dashed var(--borda); border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+  <a href="#conteudo" class="skip-link">Pular para o conteúdo</a>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="/" class="logo-link" aria-label="Página inicial">
+        <img src="assets/logo-abenforj.png" alt="Logo Abenfo RJ">
+        <div class="logo-text">Abenfo RJ<span>Submissão de trabalhos</span></div>
+      </a>
+      <button class="nav-toggle" aria-expanded="false" aria-label="Abrir menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+      <nav class="main-nav" aria-label="Principal">
+        <ul>
+          <li><a href="/">Início</a></li>
+          <li><a href="missao.html">Missão</a></li>
+          <li><a href="diretoria.html">Diretoria</a></li>
+          <li><a href="eventos.html">Eventos</a></li>
+          <li><a href="contato.html">Contato</a></li>
+          <li><a href="/login" class="btn btn-entrar" style="padding:0.5rem 1rem;font-size:0.9rem;min-height:0;">Entrar</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="conteudo">
+    <section class="hero-trab">
+      <div class="container">
+        <h1>Submeter trabalho científico</h1>
+        <p>
+          Já se inscreveu no IX ENEON pelo Doity? Use seu e-mail e número de inscrição para submeter seus trabalhos.
+          <strong>Sócias da ABENFO-RJ</strong> submetem pela <a href="/login">área da associada</a>.
+        </p>
+      </div>
+    </section>
+
+    <section id="form-section">
+      <div class="container">
+        <form id="form-acesso" class="formulario-acesso" autocomplete="off">
+          <label for="email">E-mail usado no Doity</label>
+          <input id="email" type="email" required placeholder="seuemail@exemplo.com">
+
+          <label for="doity-id">Número da inscrição Doity</label>
+          <input id="doity-id" type="text" required placeholder="DOI-XXXXXXXXX">
+          <p style="font-size:0.825rem;color:var(--texto-suave);margin:0.35rem 0 0;">
+            Está no e-mail de confirmação do Doity ou no comprovante de inscrição.
+          </p>
+
+          <div style="margin-top:1.25rem;">
+            <button type="submit" class="btn btn-solid" style="width:100%;">Acessar</button>
+          </div>
+
+          <div id="erro-acesso" class="aviso-erro" hidden></div>
+        </form>
+      </div>
+    </section>
+
+    <section id="painel-section" hidden>
+      <div class="painel-trabalhos">
+        <p class="saudacao">Olá, <strong id="saudacao-nome"></strong>! Submeta seus trabalhos para o IX ENEON 2026.</p>
+
+        <div id="feedback" class="feedback" hidden></div>
+
+        <div id="estado-prazo"></div>
+
+        <div class="trabalhos-intro">
+          <h3>Como submeter</h3>
+          <p>
+            O resumo deve ser estruturado em <strong>Introdução, Objetivos, Métodos, Resultados, Conclusões e Implicações</strong>,
+            com 1.500 a 3.000 caracteres. Título em CAIXA ALTA até 150 caracteres. Indique de 3 a 5 referências
+            (formato Vancouver) e de 3 a 5 descritores (DeCS). Até 6 autores por trabalho.
+          </p>
+          <p>
+            Você pode submeter até <strong>2 trabalhos</strong> como relatora principal.
+            Após a inscrição entrar em avaliação, não será mais possível editar.
+          </p>
+        </div>
+
+        <h2 id="titulo-lista">Meus trabalhos <span id="contador-trabalhos" style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;"></span></h2>
+        <div id="lista-trabalhos" class="lista-trabalhos">
+          <div class="lista-vazia">Carregando…</div>
+        </div>
+
+        <div id="bloco-form" hidden>
+          <h2 id="titulo-form">Novo trabalho</h2>
+          <form id="form-trabalho" class="form-card" action="javascript:void(0)" novalidate>
+            <input type="hidden" id="trabalho-id">
+
+            <label for="titulo">Título do trabalho <span class="req">*</span></label>
+            <input type="text" id="titulo" maxlength="150" required style="text-transform:uppercase;">
+            <p class="contador" id="contador-titulo">0/150 caracteres</p>
+
+            <div class="duas-colunas">
+              <div>
+                <label for="area">Área <span class="req">*</span></label>
+                <select id="area" required>
+                  <option value="" disabled selected>Selecione…</option>
+                  <option value="neonatal">Enfermagem Neonatal</option>
+                  <option value="obstetrica">Enfermagem Obstétrica</option>
+                  <option value="saude_coletiva">Enfermagem em Saúde Coletiva</option>
+                </select>
+              </div>
+              <div>
+                <label for="eixo_tematico">Eixo Temático <span class="req">*</span></label>
+                <select id="eixo_tematico" required>
+                  <option value="" disabled selected>Selecione…</option>
+                  <option value="ensino_formacao_regulacao">Ensino, Formação e Regulação</option>
+                  <option value="cenario_politico">Cenário Político</option>
+                  <option value="protagonismo_social">Protagonismo social</option>
+                  <option value="cuidado_qualificado">Cuidado qualificado</option>
+                </select>
+              </div>
+            </div>
+
+            <label for="tipo_trabalho">Tipo de trabalho <span class="req">*</span></label>
+            <select id="tipo_trabalho" required>
+              <option value="" disabled selected>Selecione…</option>
+              <option value="pesquisa_original">Pesquisa original</option>
+              <option value="revisao_sistematizada">Revisão sistematizada de literatura</option>
+              <option value="ensaio_reflexao">Ensaio ou reflexão teórica</option>
+              <option value="relato_experiencia">Relato de experiência</option>
+              <option value="nota_previa">Nota prévia de pesquisa</option>
+              <option value="revisao_narrativa">Revisão narrativa / relato de caso</option>
+              <option value="projeto_pesquisa">Projeto de pesquisa</option>
+            </select>
+
+            <label for="resumo">Resumo estruturado <span class="req">*</span></label>
+            <textarea id="resumo" rows="12" required placeholder="Introdução: …&#10;Objetivos: …&#10;Métodos: …&#10;Resultados: …&#10;Conclusões: …&#10;Implicações para o campo da saúde e enfermagem: …"></textarea>
+            <p class="contador" id="contador-resumo">0 caracteres (mín. 1.500, máx. 3.000)</p>
+
+            <div class="duas-colunas">
+              <div>
+                <label for="cep_caae">CEP/CAAE (estudos com seres humanos)</label>
+                <input type="text" id="cep_caae" placeholder="Nº do protocolo + CAAE">
+              </div>
+              <div>
+                <label for="ceua">CEUA (estudos com animais)</label>
+                <input type="text" id="ceua" placeholder="Nº do protocolo de aprovação">
+              </div>
+            </div>
+
+            <label for="referencias">Referências <span class="req">*</span></label>
+            <textarea id="referencias" rows="5" required placeholder="Cole de 3 a 5 referências no formato Vancouver, uma por linha."></textarea>
+
+            <label for="descritores">Descritores (DeCS) <span class="req">*</span></label>
+            <input type="text" id="descritores" required placeholder="Separe por vírgula. Ex.: enfermagem obstétrica, parto humanizado, …">
+            <p class="hint">De 3 a 5 descritores, separados por vírgula.</p>
+
+            <label>Autores (até 6) <span class="req">*</span></label>
+            <p class="hint">A primeira pessoa da lista é a relatora principal (você). Adicione coautores se houver.</p>
+            <div id="autores-lista"></div>
+            <button type="button" id="btn-add-autor" class="btn btn-ghost" style="min-height:0;padding:0.5rem 0.9rem;margin-top:0.3rem;">+ Adicionar coautor</button>
+
+            <label>Arquivo PDF do trabalho <span class="req">*</span></label>
+            <div id="upload" class="upload-area">
+              <input type="file" id="pdf" accept="application/pdf" hidden>
+              <button type="button" id="btn-escolher-pdf" class="btn btn-ghost">Escolher arquivo PDF…</button>
+              <div id="pdf-info" hidden>
+                <div class="arquivo-nome" id="pdf-nome"></div>
+                <div class="arquivo-tamanho" id="pdf-tamanho"></div>
+                <button type="button" id="btn-remover-pdf" class="btn btn-ghost" style="margin-top:0.5rem;">Remover</button>
+              </div>
+              <p class="hint" style="margin-top:0.5rem;">Limite: 10 MB. Apenas PDF.</p>
+            </div>
+
+            <div class="acoes-form">
+              <button type="submit" id="btn-salvar" class="btn btn-solid">Submeter trabalho</button>
+              <button type="button" id="btn-cancelar" class="btn btn-ghost">Cancelar</button>
+            </div>
+          </form>
+        </div>
+
+        <div id="acoes-topo" style="margin:1.5rem 0;">
+          <button type="button" id="btn-novo" class="btn btn-solid">Submeter novo trabalho</button>
+        </div>
+
+        <div style="margin-top:2rem;text-align:center;">
+          <button type="button" id="btn-sair" class="btn btn-ghost">Sair</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="copyright">© <span id="ano"></span> ABENFO-RJ.</div>
+    </div>
+  </footer>
+
+  <script>document.getElementById('ano').textContent = new Date().getFullYear();</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    (function () {
+      if (!window.SUPABASE_PRONTO) {
+        document.getElementById('form-section').innerHTML =
+          '<div class="container" style="padding:3rem 1.5rem;"><div class="aviso-erro" style="margin:0 auto;max-width:480px;">' +
+          '<strong>Em configuração:</strong> a página está sendo finalizada. Volte em breve.</div></div>';
+        return;
+      }
+
+      // ============================================================
+      // Constantes do edital
+      // ============================================================
+      var PRAZO_INICIO = new Date('2026-06-01T00:00:00-03:00');
+      var PRAZO_FIM    = new Date('2026-06-19T23:59:59-03:00');
+      var LIMITE_TRABALHOS = 2;
+      var LIMITE_AUTORES   = 6;
+      var TITULO_MAX_LEN   = 150;
+      var RESUMO_MIN_LEN   = 1500;
+      var RESUMO_MAX_LEN   = 3000;
+      var PDF_MAX_BYTES    = 10 * 1024 * 1024;
+
+      var sb = window.abenfo.sb;
+      var emailAtual = '';
+      var doityAtual = '';
+      var inscritoAtual = null;
+      var trabalhos = [];
+      var pdfSelecionado = null;
+
+      var ROTULOS_AREA = {
+        neonatal: 'Enfermagem Neonatal',
+        obstetrica: 'Enfermagem Obstétrica',
+        saude_coletiva: 'Enfermagem em Saúde Coletiva'
+      };
+      var ROTULOS_EIXO = {
+        ensino_formacao_regulacao: 'Ensino, Formação e Regulação',
+        cenario_politico: 'Cenário Político',
+        protagonismo_social: 'Protagonismo social',
+        cuidado_qualificado: 'Cuidado qualificado'
+      };
+      var ROTULOS_TIPO = {
+        pesquisa_original: 'Pesquisa original',
+        revisao_sistematizada: 'Revisão sistematizada',
+        ensaio_reflexao: 'Ensaio / reflexão teórica',
+        relato_experiencia: 'Relato de experiência',
+        nota_previa: 'Nota prévia',
+        revisao_narrativa: 'Revisão narrativa / relato de caso',
+        projeto_pesquisa: 'Projeto de pesquisa'
+      };
+
+      var fb = document.getElementById('feedback');
+      function mostrarFeedback(texto, tipo) {
+        fb.hidden = false;
+        fb.className = 'feedback ' + (tipo || 'aviso');
+        fb.textContent = texto;
+        if (tipo === 'ok') setTimeout(function () { fb.hidden = true; }, 4000);
+      }
+      function escapar(s) {
+        if (!s) return '';
+        return String(s).replace(/[&<>"']/g, function (c) {
+          return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+        });
+      }
+      function fmtDataBR(d) {
+        if (!(d instanceof Date)) d = new Date(d);
+        return ('0'+d.getDate()).slice(-2) + '/' + ('0'+(d.getMonth()+1)).slice(-2) + '/' + d.getFullYear();
+      }
+      function fmtTamanhoArquivo(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+        return (bytes/(1024*1024)).toFixed(1) + ' MB';
+      }
+
+      // ============================================================
+      // Auth + carregamento
+      // ============================================================
+      async function carregarPainel(email, doityId) {
+        var r = await sb.rpc('externo_meus_trabalhos', { p_email: email, p_doity_id: doityId });
+        if (r.error) return { ok: false, erro: r.error.message };
+        return r.data;
+      }
+
+      document.getElementById('form-acesso').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        var erro = document.getElementById('erro-acesso');
+        erro.hidden = true;
+        var email = document.getElementById('email').value.trim().toLowerCase();
+        var doityId = document.getElementById('doity-id').value.trim().toUpperCase();
+        if (!email || !doityId) {
+          erro.textContent = 'Preencha e-mail e número Doity.';
+          erro.hidden = false;
+          return;
+        }
+        var r = await carregarPainel(email, doityId);
+        if (!r || !r.ok) {
+          erro.textContent = (r && r.erro) || 'Inscrição não encontrada.';
+          erro.hidden = false;
+          return;
+        }
+        emailAtual = email;
+        doityAtual = doityId;
+        inscritoAtual = r.inscrito;
+        trabalhos = r.trabalhos || [];
+        document.getElementById('saudacao-nome').textContent = inscritoAtual.nome;
+        document.getElementById('form-section').hidden = true;
+        document.getElementById('painel-section').hidden = false;
+        var prazoAberto = renderEstadoPrazo();
+        renderListaTrabalhos();
+        if (!prazoAberto || trabalhos.length >= LIMITE_TRABALHOS) {
+          document.getElementById('btn-novo').hidden = true;
+        }
+      });
+
+      document.getElementById('btn-sair').addEventListener('click', function () {
+        emailAtual = doityAtual = '';
+        inscritoAtual = null;
+        trabalhos = [];
+        document.getElementById('form-acesso').reset();
+        document.getElementById('form-section').hidden = false;
+        document.getElementById('painel-section').hidden = true;
+        document.getElementById('erro-acesso').hidden = true;
+      });
+
+      // ============================================================
+      // Render
+      // ============================================================
+      function renderEstadoPrazo() {
+        var alvo = document.getElementById('estado-prazo');
+        var hoje = new Date();
+        if (hoje < PRAZO_INICIO) {
+          alvo.innerHTML =
+            '<div class="bloqueio-prazo">' +
+              '<h3>Submissões ainda não abertas</h3>' +
+              '<p>A submissão de trabalhos começa em <strong>' + fmtDataBR(PRAZO_INICIO) + '</strong>.</p>' +
+            '</div>';
+          return false;
+        }
+        if (hoje > PRAZO_FIM) {
+          alvo.innerHTML =
+            '<div class="bloqueio-prazo">' +
+              '<h3>Submissões encerradas</h3>' +
+              '<p>O prazo terminou em <strong>' + fmtDataBR(PRAZO_FIM) + ' às 23h59</strong>. Você ainda pode visualizar seus trabalhos abaixo, mas não é mais possível editar ou submeter novos.</p>' +
+            '</div>';
+          return false;
+        }
+        alvo.innerHTML =
+          '<p style="color:var(--texto-suave);font-size:0.9rem;margin:0 0 1rem;">' +
+            'Prazo de submissão aberto até <strong>' + fmtDataBR(PRAZO_FIM) + ' às 23h59</strong>.' +
+          '</p>';
+        return true;
+      }
+
+      function renderListaTrabalhos() {
+        var alvo = document.getElementById('lista-trabalhos');
+        document.getElementById('contador-trabalhos').textContent =
+          '(' + trabalhos.length + ' de ' + LIMITE_TRABALHOS + ')';
+        if (trabalhos.length === 0) {
+          alvo.innerHTML = '<div class="lista-vazia">Você ainda não submeteu trabalhos.</div>';
+          return;
+        }
+        alvo.innerHTML = trabalhos.map(function (t) {
+          var meta = [];
+          meta.push('<strong>Área:</strong> ' + escapar(ROTULOS_AREA[t.area] || t.area));
+          meta.push('<strong>Eixo:</strong> ' + escapar(ROTULOS_EIXO[t.eixo_tematico] || t.eixo_tematico));
+          meta.push('<strong>Tipo:</strong> ' + escapar(ROTULOS_TIPO[t.tipo_trabalho] || t.tipo_trabalho));
+          var podeEditar = !t.bloqueado && new Date() <= PRAZO_FIM;
+          var acoes = '';
+          acoes += '<button class="btn btn-ghost" data-acao="editar" data-id="' + t.id + '"' + (podeEditar ? '' : ' disabled') + '>' + (podeEditar ? 'Editar' : 'Visualizar') + '</button>';
+          acoes += '<button class="btn btn-ghost" data-acao="baixar-pdf" data-path="' + escapar(t.pdf_path) + '" data-nome="' + escapar(inscritoAtual.nome + ' - ' + t.titulo) + '">Baixar PDF</button>';
+          if (podeEditar) {
+            acoes += '<button class="btn btn-ghost btn-excluir" data-acao="excluir" data-id="' + t.id + '">Excluir</button>';
+          }
+          var obs = t.observacao_avaliacao
+            ? '<div class="observacao"><strong>Comentário da comissão:</strong><br>' + escapar(t.observacao_avaliacao) + '</div>'
+            : '';
+          return '<div class="trabalho-card" data-id="' + t.id + '">' +
+            '<h3>' + escapar(t.titulo) + '</h3>' +
+            '<div class="status-row">' +
+              '<span class="badge-status ' + t.status + '">' + t.status.replace('_', ' ') + '</span>' +
+              (t.bloqueado ? '<span class="badge-status badge-bloq">em avaliação · não editável</span>' : '') +
+            '</div>' +
+            '<div class="meta">' + meta.join(' · ') + '</div>' +
+            '<div class="trabalho-acoes">' + acoes + '</div>' +
+            obs +
+          '</div>';
+        }).join('');
+      }
+
+      // ============================================================
+      // Form
+      // ============================================================
+      function novoAutorRow(nome, info, eh_relator) {
+        var div = document.createElement('div');
+        div.className = 'autor-row';
+        div.innerHTML =
+          '<div><label style="margin:0;font-size:0.8rem;">Nome</label><input type="text" class="autor-nome" value="' + escapar(nome || '') + '"></div>' +
+          '<div><label style="margin:0;font-size:0.8rem;">E-mail / Instituição</label><input type="text" class="autor-info" value="' + escapar(info || '') + '"></div>' +
+          (eh_relator
+            ? '<div style="font-size:0.78rem;color:var(--verde-escuro);font-weight:600;padding:0 0.5rem;">Relator(a)</div>'
+            : '<button type="button" class="remover">Remover</button>');
+        return div;
+      }
+
+      function getAutoresFromForm() {
+        var rows = document.querySelectorAll('#autores-lista .autor-row');
+        var lista = [];
+        rows.forEach(function (row, i) {
+          var nome = row.querySelector('.autor-nome').value.trim();
+          var info = row.querySelector('.autor-info').value.trim();
+          if (!nome) return;
+          lista.push({ nome: nome, info: info, eh_relator: i === 0 });
+        });
+        return lista;
+      }
+
+      function setAutoresInForm(autores) {
+        var alvo = document.getElementById('autores-lista');
+        alvo.innerHTML = '';
+        alvo.appendChild(novoAutorRow(inscritoAtual.nome, inscritoAtual.email, true));
+        (autores || []).slice(1).forEach(function (a) {
+          alvo.appendChild(novoAutorRow(a.nome, a.info || a.email, false));
+        });
+      }
+
+      function limparForm() {
+        document.getElementById('trabalho-id').value = '';
+        document.getElementById('titulo').value = '';
+        document.getElementById('area').value = '';
+        document.getElementById('eixo_tematico').value = '';
+        document.getElementById('tipo_trabalho').value = '';
+        document.getElementById('resumo').value = '';
+        document.getElementById('cep_caae').value = '';
+        document.getElementById('ceua').value = '';
+        document.getElementById('referencias').value = '';
+        document.getElementById('descritores').value = '';
+        setAutoresInForm([]);
+        pdfSelecionado = null;
+        document.getElementById('upload').classList.remove('tem-arquivo');
+        document.getElementById('pdf-info').hidden = true;
+        document.getElementById('btn-escolher-pdf').hidden = false;
+        atualizarContadorTitulo();
+        atualizarContadorResumo();
+      }
+
+      function carregarForm(trabalho) {
+        document.getElementById('trabalho-id').value = trabalho.id;
+        document.getElementById('titulo').value = trabalho.titulo;
+        document.getElementById('area').value = trabalho.area;
+        document.getElementById('eixo_tematico').value = trabalho.eixo_tematico;
+        document.getElementById('tipo_trabalho').value = trabalho.tipo_trabalho;
+        document.getElementById('resumo').value = trabalho.resumo;
+        document.getElementById('cep_caae').value = trabalho.cep_caae || '';
+        document.getElementById('ceua').value = trabalho.ceua || '';
+        document.getElementById('referencias').value = trabalho.referencias;
+        document.getElementById('descritores').value = (trabalho.descritores || []).join(', ');
+        setAutoresInForm(trabalho.autores);
+        pdfSelecionado = null;
+        document.getElementById('upload').classList.add('tem-arquivo');
+        document.getElementById('pdf-info').hidden = false;
+        document.getElementById('pdf-nome').textContent = 'PDF já enviado (escolha um novo arquivo para substituir)';
+        document.getElementById('pdf-tamanho').textContent = '';
+        document.getElementById('btn-escolher-pdf').hidden = false;
+        atualizarContadorTitulo();
+        atualizarContadorResumo();
+      }
+
+      function abrirForm(trabalho) {
+        if (trabalho) {
+          carregarForm(trabalho);
+          document.getElementById('titulo-form').textContent = trabalho.bloqueado ? 'Visualizar trabalho' : 'Editar trabalho';
+        } else {
+          if (trabalhos.length >= LIMITE_TRABALHOS) {
+            mostrarFeedback('Você já submeteu o limite de ' + LIMITE_TRABALHOS + ' trabalhos.', 'erro');
+            return;
+          }
+          limparForm();
+          document.getElementById('titulo-form').textContent = 'Novo trabalho';
+        }
+        document.getElementById('bloco-form').hidden = false;
+        document.getElementById('acoes-topo').hidden = true;
+        document.getElementById('bloco-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
+      function fecharForm() {
+        document.getElementById('bloco-form').hidden = true;
+        document.getElementById('acoes-topo').hidden = false;
+        fb.hidden = true;
+      }
+
+      function atualizarContadorTitulo() {
+        var len = document.getElementById('titulo').value.length;
+        var el = document.getElementById('contador-titulo');
+        el.textContent = len + '/' + TITULO_MAX_LEN + ' caracteres';
+        el.classList.toggle('invalido', len === 0 || len > TITULO_MAX_LEN);
+      }
+      function atualizarContadorResumo() {
+        var len = document.getElementById('resumo').value.length;
+        var el = document.getElementById('contador-resumo');
+        el.textContent = len + ' caracteres (mín. ' + RESUMO_MIN_LEN.toLocaleString('pt-BR') + ', máx. ' + RESUMO_MAX_LEN.toLocaleString('pt-BR') + ')';
+        el.classList.toggle('invalido', len < RESUMO_MIN_LEN || len > RESUMO_MAX_LEN);
+      }
+
+      function validarForm() {
+        var titulo = document.getElementById('titulo').value.trim();
+        if (titulo.length === 0 || titulo.length > TITULO_MAX_LEN) {
+          mostrarFeedback('Título obrigatório, até ' + TITULO_MAX_LEN + ' caracteres.', 'erro');
+          return null;
+        }
+        var area = document.getElementById('area').value;
+        var eixo = document.getElementById('eixo_tematico').value;
+        var tipo = document.getElementById('tipo_trabalho').value;
+        if (!area || !eixo || !tipo) {
+          mostrarFeedback('Selecione área, eixo temático e tipo de trabalho.', 'erro');
+          return null;
+        }
+        var resumo = document.getElementById('resumo').value;
+        if (resumo.length < RESUMO_MIN_LEN || resumo.length > RESUMO_MAX_LEN) {
+          mostrarFeedback('Resumo deve ter entre ' + RESUMO_MIN_LEN + ' e ' + RESUMO_MAX_LEN + ' caracteres.', 'erro');
+          return null;
+        }
+        var referencias = document.getElementById('referencias').value.trim();
+        if (!referencias) {
+          mostrarFeedback('Informe as referências (3 a 5 no formato Vancouver).', 'erro');
+          return null;
+        }
+        var descritoresRaw = document.getElementById('descritores').value;
+        var descritores = descritoresRaw.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+        if (descritores.length < 3 || descritores.length > 5) {
+          mostrarFeedback('Informe de 3 a 5 descritores separados por vírgula.', 'erro');
+          return null;
+        }
+        var autores = getAutoresFromForm();
+        if (autores.length === 0 || autores.length > LIMITE_AUTORES) {
+          mostrarFeedback('Lista de autores deve ter de 1 a ' + LIMITE_AUTORES + ' pessoas.', 'erro');
+          return null;
+        }
+        return {
+          titulo: titulo.toUpperCase(),
+          area: area,
+          eixo_tematico: eixo,
+          tipo_trabalho: tipo,
+          resumo: resumo,
+          cep_caae: document.getElementById('cep_caae').value.trim() || null,
+          ceua: document.getElementById('ceua').value.trim() || null,
+          referencias: referencias,
+          descritores: descritores,
+          autores: autores
+        };
+      }
+
+      async function uploadPdf(path, file) {
+        var r = await sb.storage.from('trabalhos-cientificos').upload(path, file, {
+          contentType: 'application/pdf',
+          upsert: true
+        });
+        if (r.error) throw new Error('Erro no upload do PDF: ' + r.error.message);
+      }
+
+      async function recarregarTrabalhos() {
+        var r = await carregarPainel(emailAtual, doityAtual);
+        if (r && r.ok) {
+          trabalhos = r.trabalhos || [];
+          renderListaTrabalhos();
+          var hoje = new Date();
+          var prazoAberto = hoje >= PRAZO_INICIO && hoje <= PRAZO_FIM;
+          document.getElementById('btn-novo').hidden = !prazoAberto || trabalhos.length >= LIMITE_TRABALHOS;
+        }
+      }
+
+      document.getElementById('form-trabalho').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        var dados = validarForm();
+        if (!dados) return;
+
+        var idEdicao = document.getElementById('trabalho-id').value;
+        if (!idEdicao && !pdfSelecionado) {
+          mostrarFeedback('Anexe o arquivo PDF do trabalho.', 'erro');
+          return;
+        }
+        if (pdfSelecionado && pdfSelecionado.size > PDF_MAX_BYTES) {
+          mostrarFeedback('PDF maior que 10MB. Comprima e tente novamente.', 'erro');
+          return;
+        }
+
+        var btn = document.getElementById('btn-salvar');
+        btn.disabled = true;
+        var textoOriginal = btn.textContent;
+        btn.textContent = idEdicao ? 'Salvando…' : 'Enviando…';
+
+        try {
+          if (idEdicao) {
+            var rUp = await sb.rpc('externo_atualizar_trabalho', {
+              p_email: emailAtual, p_doity_id: doityAtual,
+              p_trabalho_id: idEdicao, p_dados: dados
+            });
+            if (rUp.error) throw new Error(rUp.error.message);
+            if (rUp.data && !rUp.data.ok) throw new Error(rUp.data.erro);
+            if (pdfSelecionado) {
+              var trab = trabalhos.find(function (t) { return t.id === idEdicao; });
+              await uploadPdf(trab.pdf_path, pdfSelecionado);
+            }
+            mostrarFeedback('Trabalho atualizado com sucesso.', 'ok');
+          } else {
+            var rIns = await sb.rpc('externo_submeter_trabalho', {
+              p_email: emailAtual, p_doity_id: doityAtual, p_dados: dados
+            });
+            if (rIns.error) throw new Error(rIns.error.message);
+            if (rIns.data && !rIns.data.ok) throw new Error(rIns.data.erro);
+            await uploadPdf(rIns.data.pdf_path, pdfSelecionado);
+            mostrarFeedback('Trabalho submetido com sucesso!', 'ok');
+          }
+          fecharForm();
+          await recarregarTrabalhos();
+        } catch (err) {
+          mostrarFeedback(err.message || String(err), 'erro');
+        } finally {
+          btn.disabled = false;
+          btn.textContent = textoOriginal;
+        }
+      });
+
+      async function excluirTrabalho(id) {
+        if (!confirm('Excluir este trabalho? Esta ação não pode ser desfeita.')) return;
+        var trab = trabalhos.find(function (t) { return t.id === id; });
+        if (trab && trab.pdf_path) {
+          await sb.storage.from('trabalhos-cientificos').remove([trab.pdf_path]);
+        }
+        var r = await sb.rpc('externo_deletar_trabalho', {
+          p_email: emailAtual, p_doity_id: doityAtual, p_trabalho_id: id
+        });
+        if (r.error || (r.data && !r.data.ok)) {
+          mostrarFeedback((r.error && r.error.message) || r.data.erro || 'Erro ao excluir', 'erro');
+          return;
+        }
+        mostrarFeedback('Trabalho excluído.', 'ok');
+        await recarregarTrabalhos();
+      }
+
+      async function baixarPdf(path, nomeAmigavel) {
+        var r = await sb.storage.from('trabalhos-cientificos').download(path);
+        if (r.error) {
+          mostrarFeedback('Erro ao baixar: ' + r.error.message, 'erro');
+          return;
+        }
+        var url = URL.createObjectURL(r.data);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = nomeAmigavel.replace(/[\\/:"*?<>|]/g, '-') + '.pdf';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+
+      // ============================================================
+      // Wiring
+      // ============================================================
+      document.getElementById('btn-novo').addEventListener('click', function () { abrirForm(null); });
+      document.getElementById('btn-cancelar').addEventListener('click', fecharForm);
+      document.getElementById('titulo').addEventListener('input', atualizarContadorTitulo);
+      document.getElementById('resumo').addEventListener('input', atualizarContadorResumo);
+
+      document.getElementById('btn-add-autor').addEventListener('click', function () {
+        var n = document.querySelectorAll('#autores-lista .autor-row').length;
+        if (n >= LIMITE_AUTORES) {
+          mostrarFeedback('Limite de ' + LIMITE_AUTORES + ' autores atingido.', 'aviso');
+          return;
+        }
+        document.getElementById('autores-lista').appendChild(novoAutorRow('', '', false));
+      });
+
+      document.getElementById('autores-lista').addEventListener('click', function (e) {
+        if (e.target.classList && e.target.classList.contains('remover')) {
+          e.target.closest('.autor-row').remove();
+        }
+      });
+
+      document.getElementById('btn-escolher-pdf').addEventListener('click', function () {
+        document.getElementById('pdf').click();
+      });
+      document.getElementById('pdf').addEventListener('change', function (e) {
+        var f = e.target.files && e.target.files[0];
+        if (!f) return;
+        if (f.type !== 'application/pdf') {
+          mostrarFeedback('Selecione um arquivo PDF.', 'erro');
+          e.target.value = '';
+          return;
+        }
+        if (f.size > PDF_MAX_BYTES) {
+          mostrarFeedback('PDF maior que 10MB. Comprima e tente novamente.', 'erro');
+          e.target.value = '';
+          return;
+        }
+        pdfSelecionado = f;
+        document.getElementById('upload').classList.add('tem-arquivo');
+        document.getElementById('pdf-info').hidden = false;
+        document.getElementById('pdf-nome').textContent = f.name;
+        document.getElementById('pdf-tamanho').textContent = fmtTamanhoArquivo(f.size);
+        document.getElementById('btn-escolher-pdf').hidden = true;
+      });
+      document.getElementById('btn-remover-pdf').addEventListener('click', function () {
+        pdfSelecionado = null;
+        document.getElementById('pdf').value = '';
+        document.getElementById('upload').classList.remove('tem-arquivo');
+        document.getElementById('pdf-info').hidden = true;
+        document.getElementById('btn-escolher-pdf').hidden = false;
+      });
+
+      document.getElementById('lista-trabalhos').addEventListener('click', function (e) {
+        var btn = e.target.closest('button[data-acao]');
+        if (!btn) return;
+        var acao = btn.getAttribute('data-acao');
+        var id = btn.getAttribute('data-id');
+        if (acao === 'editar') {
+          var trab = trabalhos.find(function (t) { return t.id === id; });
+          if (trab) abrirForm(trab);
+        } else if (acao === 'excluir') {
+          excluirTrabalho(id);
+        } else if (acao === 'baixar-pdf') {
+          baixarPdf(btn.getAttribute('data-path'), btn.getAttribute('data-nome'));
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
