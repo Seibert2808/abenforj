@@ -80,6 +80,19 @@
       color: #742020;
       border-left: 4px solid #c53030;
     }
+
+    .convite-trabalhos {
+      background: var(--branco);
+      border: 1px solid var(--borda);
+      border-left: 4px solid var(--eneon-lavanda, #c0b0d8);
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      margin: 0.5rem 0 1.5rem;
+    }
+    .convite-trabalhos h3 { margin: 0 0 0.35rem; color: var(--verde-escuro); font-size: 1.05rem; }
+    .convite-trabalhos p { margin: 0 0 0.75rem; color: var(--texto); font-size: 0.95rem; line-height: 1.55; }
+    .convite-trabalhos .btn { min-height: 0; padding: 0.55rem 1rem; font-size: 0.95rem; }
+    .convite-trabalhos .acoes { display: flex; flex-wrap: wrap; gap: 0.5rem; }
   </style>
 </head>
 <body>
@@ -404,33 +417,47 @@
           if (!ev) continue;
 
           var rCursos = await sb.rpc('cursos_com_vagas', { p_evento_id: item.evento_id });
-          if (rCursos.error) continue;
-          var cursos = rCursos.data || [];
-          if (cursos.length === 0) continue;
+          var cursos = (rCursos && !rCursos.error && rCursos.data) ? rCursos.data : [];
 
-          // Agrupa por turno
-          var porTurno = {};
-          cursos.forEach(function (c) {
-            var t = c.turno || 'Sem turno';
-            if (!porTurno[t]) porTurno[t] = [];
-            porTurno[t].push(c);
-          });
+          var html = '';
 
-          var html = '<div class="convite-cursos" data-evento-id="' + ev.id + '">';
-          html += '<h3>Escolha seus cursos pré-encontro — ' + escapar(ev.nome) + '</h3>';
-          html += '<p>Escolha 1 curso por turno. As vagas são limitadas e preenchidas por ordem de escolha. Você pode trocar enquanto houver vagas.</p>';
-
-          Object.keys(porTurno).forEach(function (turno) {
-            html += '<div class="turno-label">' + escapar(turno) + '</div>';
-            html += '<div class="grade-cursos">';
-            porTurno[turno].forEach(function (c) {
-              c.evento_id = item.evento_id;
-              html += renderCursoCard(c, perfil);
+          if (cursos.length > 0) {
+            // Agrupa por turno
+            var porTurno = {};
+            cursos.forEach(function (c) {
+              var t = c.turno || 'Sem turno';
+              if (!porTurno[t]) porTurno[t] = [];
+              porTurno[t].push(c);
             });
-            html += '</div>';
-          });
 
+            html += '<div class="convite-cursos" data-evento-id="' + ev.id + '">';
+            html += '<h3>Escolha seus cursos pré-encontro — ' + escapar(ev.nome) + '</h3>';
+            html += '<p>Escolha 1 curso por turno. As vagas são limitadas e preenchidas por ordem de escolha. Você pode trocar enquanto houver vagas.</p>';
+
+            Object.keys(porTurno).forEach(function (turno) {
+              html += '<div class="turno-label">' + escapar(turno) + '</div>';
+              html += '<div class="grade-cursos">';
+              porTurno[turno].forEach(function (c) {
+                c.evento_id = item.evento_id;
+                html += renderCursoCard(c, perfil);
+              });
+              html += '</div>';
+            });
+
+            html += '</div>';
+          }
+
+          // Convite para submissão de trabalhos — logo abaixo da inscrição do evento
+          html += '<div class="convite-trabalhos" data-evento-id="' + ev.id + '">';
+          html += '<h3>Submeta seu trabalho científico — ' + escapar(ev.nome) + '</h3>';
+          html += '<p>Como pessoa inscrita no ' + escapar(ev.nome) + ', você pode enviar seus trabalhos científicos. ' +
+                  'Antes de enviar, confira as normas de submissão.</p>';
+          html += '<div class="acoes">';
+          html += '<a href="/area/trabalhos" class="btn btn-solid">Submeter trabalho</a>';
+          html += '<a href="../regras-trabalhos.html" class="btn btn-ghost" target="_blank" rel="noopener">Ver normas de submissão</a>';
           html += '</div>';
+          html += '</div>';
+
           alvo.insertAdjacentHTML('beforeend', html);
         }
       }
