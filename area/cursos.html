@@ -148,6 +148,8 @@
           <li><div class="doc-info"><strong>Carregando…</strong></div></li>
         </ul>
 
+        <div id="convites-trabalhos"></div>
+
         <h2 style="margin-top:2.5rem;">Cursos em que estou inscrita</h2>
 
         <div id="feedback-cursos" aria-live="polite"></div>
@@ -445,9 +447,26 @@
             });
 
             html += '</div>';
-          }
 
-          // Convite para submissão de trabalhos — logo abaixo da inscrição do evento
+            alvo.insertAdjacentHTML('beforeend', html);
+          }
+        }
+      }
+
+      // Convite de submissão de trabalhos — logo abaixo da inscrição do evento
+      async function montarConvitesTrabalhos(perfil) {
+        var sb = window.abenfo.sb;
+        var alvo = document.getElementById('convites-trabalhos');
+        alvo.innerHTML = '';
+
+        var rIns = await sb.from('inscricoes_evento')
+          .select('evento_id, eventos(id, nome)').eq('profile_id', perfil.id);
+        if (rIns.error || !rIns.data || rIns.data.length === 0) return;
+
+        var html = '';
+        rIns.data.forEach(function (item) {
+          var ev = item.eventos;
+          if (!ev) return;
           html += '<div class="convite-trabalhos" data-evento-id="' + ev.id + '">';
           html += '<h3>Submeta seu trabalho científico — ' + escapar(ev.nome) + '</h3>';
           html += '<p>Como pessoa inscrita no ' + escapar(ev.nome) + ', você pode enviar seus trabalhos científicos. ' +
@@ -457,9 +476,8 @@
           html += '<a href="../regras-trabalhos.html" class="btn btn-ghost" target="_blank" rel="noopener">Ver normas de submissão</a>';
           html += '</div>';
           html += '</div>';
-
-          alvo.insertAdjacentHTML('beforeend', html);
-        }
+        });
+        alvo.insertAdjacentHTML('beforeend', html);
       }
 
       async function escolherCursoSocia(perfil, cursoId, cursoNome, cursoTurno, cursoEventoId) {
@@ -588,6 +606,7 @@
         carregarInscricoes(e.detail);
         carregarInscricoesCursos(e.detail);
         carregarConvitesEventos(e.detail);
+        montarConvitesTrabalhos(e.detail);
         montarPainelConvites(e.detail);
       });
     })();
