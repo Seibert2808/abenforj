@@ -331,6 +331,10 @@
         fb.hidden = false;
         fb.className = 'feedback ' + (tipo || 'aviso');
         fb.textContent = texto;
+        // Rola a mensagem para a vista: o botão de enviar fica no fim de um
+        // formulário longo; sem isso, um erro de validação no topo passa
+        // despercebido e dá a impressão de que "o botão não funciona".
+        try { fb.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
         if (tipo === 'ok') setTimeout(function () { fb.hidden = true; }, 4000);
       }
 
