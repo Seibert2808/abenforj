@@ -467,11 +467,11 @@
           var ev = item.eventos;
           if (!ev) return;
           html += '<div class="convite-trabalhos" data-evento-id="' + ev.id + '">';
-          html += '<h3>Submeta seu trabalho científico — ' + escapar(ev.nome) + '</h3>';
-          html += '<p>Como pessoa inscrita no ' + escapar(ev.nome) + ', você pode enviar seus trabalhos científicos. ' +
-                  'Antes de enviar, confira as normas de submissão.</p>';
+          html += '<h3>📄 Envie seu trabalho para o ' + escapar(ev.nome) + '</h3>';
+          html += '<p>As inscrições de trabalhos científicos estão abertas! Clique abaixo para enviar o seu. ' +
+                  'Antes, confira as normas de submissão.</p>';
           html += '<div class="acoes">';
-          html += '<a href="/area/trabalhos" class="btn btn-solid">Submeter trabalho</a>';
+          html += '<a href="/area/trabalhos" class="btn btn-solid">Enviar meu trabalho →</a>';
           html += '<a href="../regras-trabalhos.html" class="btn btn-ghost" target="_blank" rel="noopener">Ver normas de submissão</a>';
           html += '</div>';
           html += '</div>';

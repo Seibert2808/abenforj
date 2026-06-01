@@ -109,6 +109,28 @@
         </div>
       </div>
     </section>
+    <!-- Pop-up de submissão de trabalhos (só durante o período, 1x por pessoa) -->
+    <div class="modal-overlay" id="modal-trabalhos" role="dialog" aria-modal="true" aria-labelledby="modal-trabalhos-titulo">
+      <div class="modal">
+        <button type="button" class="modal-close" id="modal-trabalhos-fechar" aria-label="Fechar">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+        <span class="modal-data">Inscrições abertas até 19/06</span>
+        <h2 id="modal-trabalhos-titulo">📄 Envie seu trabalho para o IX ENEON 2026</h2>
+        <p style="color:var(--texto-suave);margin-bottom:1.25rem;">
+          As inscrições de trabalhos científicos estão abertas! Se você vai apresentar um trabalho,
+          aproveite para enviá-lo agora. Antes, confira as normas de submissão.
+        </p>
+        <div style="display:flex;flex-wrap:wrap;gap:0.6rem;">
+          <a href="/area/trabalhos" class="btn btn-solid">Enviar meu trabalho →</a>
+          <a href="../regras-trabalhos.html" class="btn btn-ghost" target="_blank" rel="noopener">Ver normas</a>
+        </div>
+        <label style="display:flex;align-items:center;gap:0.5rem;margin-top:1.25rem;font-size:0.9rem;color:var(--texto-suave);cursor:pointer;">
+          <input type="checkbox" id="modal-trabalhos-naomostrar" style="width:auto;min-height:0;">
+          Não mostrar este aviso novamente
+        </label>
+      </div>
+    </div>
   </main>
 
   <footer class="site-footer" style="margin-top:2rem;">
@@ -143,6 +165,25 @@
         } else {
           document.getElementById('banner-intro').textContent = 'Falta finalizar sua filiação:';
         }
+      }
+
+      // Pop-up de submissão de trabalhos — só no período (1 a 19/jun) e 1x por pessoa
+      var PRAZO_INICIO = new Date('2026-06-01T00:00:00-03:00');
+      var PRAZO_FIM    = new Date('2026-06-19T23:59:59-03:00');
+      var agora = new Date();
+      var dispensado = localStorage.getItem('abenfo_popup_trabalhos_dispensado') === '1';
+      if (agora >= PRAZO_INICIO && agora <= PRAZO_FIM && !dispensado) {
+        var overlay = document.getElementById('modal-trabalhos');
+        var fechar = function () {
+          if (document.getElementById('modal-trabalhos-naomostrar').checked) {
+            localStorage.setItem('abenfo_popup_trabalhos_dispensado', '1');
+          }
+          overlay.classList.remove('open');
+        };
+        overlay.classList.add('open');
+        document.getElementById('modal-trabalhos-fechar').addEventListener('click', fechar);
+        overlay.addEventListener('click', function (ev) { if (ev.target === overlay) fechar(); });
+        document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') fechar(); });
       }
     });
   </script>
