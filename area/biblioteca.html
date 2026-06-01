@@ -187,15 +187,15 @@
 
         <p id="busca-geral-vazia" class="busca-sem-resultado" hidden>Nenhuma obra encontrada para a sua busca.</p>
 
-        <div class="secao-biblioteca" id="secao-publicacoes">
-          <h2>Publicações</h2>
-          <div class="obras-grid" id="grid-publicacoes" data-categoria="publicacoes">
+        <div class="secao-biblioteca" id="secao-manuais_protocolos">
+          <h2>Manuais e Protocolos</h2>
+          <div class="obras-grid" id="grid-manuais_protocolos" data-categoria="manuais_protocolos">
             <div class="obras-vazia">Carregando…</div>
           </div>
         </div>
 
-        <div class="secao-biblioteca" id="secao-legislacao">
-          <h2 style="margin-top:2.5rem;">Legislação e marcos regulatórios</h2>
+        <div class="secao-biblioteca" id="secao-legislacao_regulacao">
+          <h2 style="margin-top:2.5rem;">Legislação e Regulação</h2>
           <ul class="doc-list" id="legislacao-fixa">
             <li data-busca="lei do exercicio profissional da enfermagem 7498 1986 regula o exercicio da enfermagem no brasil">
               <div class="doc-info">
@@ -212,19 +212,26 @@
               <a href="http://www.cofen.gov.br/resolucao-cofen-no-05162016_41989.html" target="_blank" rel="noopener">Abrir →</a>
             </li>
           </ul>
-          <div class="obras-grid" id="grid-legislacao" data-categoria="legislacao" style="margin-top:1rem;"></div>
+          <div class="obras-grid" id="grid-legislacao_regulacao" data-categoria="legislacao_regulacao" style="margin-top:1rem;"></div>
+        </div>
+
+        <div class="secao-biblioteca" id="secao-artigos">
+          <h2 style="margin-top:2.5rem;">Artigos Científicos</h2>
+          <div class="obras-grid" id="grid-artigos" data-categoria="artigos">
+            <div class="obras-vazia">Carregando…</div>
+          </div>
         </div>
 
         <div class="secao-biblioteca" id="secao-pareceres">
-          <h2 style="margin-top:2.5rem;">Pareceres técnicos</h2>
+          <h2 style="margin-top:2.5rem;">Pareceres</h2>
           <div class="obras-grid" id="grid-pareceres" data-categoria="pareceres">
             <div class="obras-vazia">Carregando…</div>
           </div>
         </div>
 
-        <div class="secao-biblioteca" id="secao-didaticos">
-          <h2 style="margin-top:2.5rem;">Materiais didáticos</h2>
-          <div class="obras-grid" id="grid-didaticos" data-categoria="didaticos">
+        <div class="secao-biblioteca" id="secao-outros">
+          <h2 style="margin-top:2.5rem;">Outros</h2>
+          <div class="obras-grid" id="grid-outros" data-categoria="outros">
             <div class="obras-vazia">Carregando…</div>
           </div>
         </div>
@@ -323,7 +330,7 @@
           return;
         }
 
-        var porCategoria = { publicacoes: [], legislacao: [], pareceres: [], didaticos: [] };
+        var porCategoria = { manuais_protocolos: [], legislacao_regulacao: [], artigos: [], pareceres: [], outros: [] };
         (r.data || []).forEach(function (o) {
           if (porCategoria[o.categoria]) porCategoria[o.categoria].push(o);
         });
@@ -333,7 +340,7 @@
           var lista = porCategoria[cat] || [];
           if (lista.length === 0) {
             // Legislação tem conteúdo fixo acima, então sua grade extra fica vazia silenciosa
-            g.innerHTML = (cat === 'legislacao') ? '' : vazia('Em breve. A diretoria está reunindo o material desta seção.');
+            g.innerHTML = (cat === 'legislacao_regulacao') ? '' : vazia('Em breve. A diretoria está reunindo o material desta seção.');
             return;
           }
           g.innerHTML = lista.map(cardObra).join('');
