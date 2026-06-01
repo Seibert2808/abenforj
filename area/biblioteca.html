@@ -215,23 +215,18 @@
 
         <div class="secao-biblioteca" id="secao-artigos">
           <h2 style="margin-top:2.5rem;">Artigos Científicos</h2>
-          <div class="obras-grid" id="grid-artigos" data-categoria="artigos">
-            <div class="obras-vazia">Carregando…</div>
-          </div>
+          <ul class="doc-list" id="lista-artigos"></ul>
         </div>
 
         <div class="secao-biblioteca" id="secao-pareceres">
           <h2 style="margin-top:2.5rem;">Pareceres</h2>
-          <div class="obras-grid" id="grid-pareceres" data-categoria="pareceres">
-            <div class="obras-vazia">Carregando…</div>
-          </div>
+          <ul class="doc-list" id="lista-pareceres"></ul>
         </div>
 
         <div class="secao-biblioteca" id="secao-outros">
           <h2 style="margin-top:2.5rem;">Outros</h2>
-          <div class="obras-grid" id="grid-outros" data-categoria="outros">
-            <div class="obras-vazia">Carregando…</div>
-          </div>
+          <div class="obras-grid" id="grid-outros"></div>
+          <ul class="doc-list" id="lista-outros" style="margin-top:1rem;"></ul>
         </div>
       </div>
     </section>
@@ -338,9 +333,8 @@
           .order('criado_em', { ascending: false });
 
         if (r.error) {
-          document.querySelectorAll('.obras-grid[data-categoria]').forEach(function (g) {
-            g.innerHTML = vazia('Erro ao carregar: ' + r.error.message);
-          });
+          var gm = document.getElementById('grid-manuais_protocolos');
+          if (gm) gm.innerHTML = vazia('Erro ao carregar: ' + r.error.message);
           return;
         }
 
@@ -349,25 +343,47 @@
           if (porCategoria[o.categoria]) porCategoria[o.categoria].push(o);
         });
 
-        // Legislação e Regulação: anexa as obras como itens de lista (sem capa),
-        // junto das normativas fixas que já estão no HTML.
+        var EM_BREVE = 'Em breve. A diretoria está reunindo o material desta seção.';
+
+        // Manuais e Protocolos: cards com capa (placeholder se não tiver).
+        var gManuais = document.getElementById('grid-manuais_protocolos');
+        gManuais.innerHTML = porCategoria.manuais_protocolos.length
+          ? porCategoria.manuais_protocolos.map(cardObra).join('')
+          : vazia(EM_BREVE);
+
+        // Legislação e Regulação: tudo em lista (sem capa), junto das normativas fixas.
         var listaLeg = document.getElementById('legislacao-fixa');
         if (listaLeg) {
           listaLeg.insertAdjacentHTML('beforeend', porCategoria.legislacao_regulacao.map(itemLista).join(''));
         }
 
-        // Demais categorias: cards com capa, na grade.
-        document.querySelectorAll('.obras-grid[data-categoria]').forEach(function (g) {
-          var cat = g.getAttribute('data-categoria');
-          var lista = porCategoria[cat] || [];
-          if (lista.length === 0) {
-            g.innerHTML = vazia('Em breve. A diretoria está reunindo o material desta seção.');
-            return;
-          }
-          g.innerHTML = lista.map(cardObra).join('');
-        });
+        // Artigos Científicos e Pareceres: tudo em lista (sem capa).
+        renderLista('lista-artigos', porCategoria.artigos);
+        renderLista('lista-pareceres', porCategoria.pareceres);
+
+        // Outros: híbrido — com capa vira card (primeiro), sem capa vira lista (depois).
+        var outrosComCapa = porCategoria.outros.filter(function (o) { return o.capa_path; });
+        var outrosSemCapa = porCategoria.outros.filter(function (o) { return !o.capa_path; });
+        var gOutros = document.getElementById('grid-outros');
+        var lOutros = document.getElementById('lista-outros');
+        if (porCategoria.outros.length === 0) {
+          gOutros.innerHTML = vazia(EM_BREVE);
+          lOutros.innerHTML = '';
+        } else {
+          gOutros.innerHTML = outrosComCapa.map(cardObra).join('');
+          lOutros.innerHTML = outrosSemCapa.map(itemLista).join('');
+        }
 
         aplicarBusca();
+      }
+
+      // Preenche uma <ul> com itens de lista; mostra "em breve" se vazia.
+      function renderLista(id, lista) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.innerHTML = lista.length
+          ? lista.map(itemLista).join('')
+          : '<li><div class="doc-info"><strong>Em breve</strong><span>A diretoria está reunindo o material desta seção.</span></div></li>';
       }
 
       // ============================================================
