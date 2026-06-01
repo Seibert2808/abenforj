@@ -811,6 +811,70 @@
           </div>
         </details>
 
+        <details class="secao">
+          <summary><h2>Biblioteca <span id="contador-biblioteca" style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;"></span></h2></summary>
+          <p class="descricao-secao">
+            Acervo das associadas. O arquivo da obra fica no <strong>Google Drive</strong>
+            (cole o link de compartilhamento) e a <strong>capa</strong> é enviada aqui.
+            A sócia clica na capa e o download começa direto.
+          </p>
+
+          <div class="import-card">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+              <div>
+                <label for="obra-titulo">Título <span style="color:#b00020;">*</span></label>
+                <input id="obra-titulo" type="text" autocomplete="off" placeholder="Ex.: Cartilha de Aleitamento Materno">
+              </div>
+              <div>
+                <label for="obra-autor">Autor(a/es)</label>
+                <input id="obra-autor" type="text" autocomplete="off" placeholder="Ex.: Ministério da Saúde">
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+              <div>
+                <label for="obra-categoria">Categoria <span style="color:#b00020;">*</span></label>
+                <select id="obra-categoria">
+                  <option value="publicacoes">Publicações</option>
+                  <option value="legislacao">Legislação e marcos regulatórios</option>
+                  <option value="pareceres">Pareceres técnicos</option>
+                  <option value="didaticos">Materiais didáticos</option>
+                </select>
+              </div>
+              <div>
+                <label for="obra-ordem">Ordem (menor aparece antes)</label>
+                <input id="obra-ordem" type="number" value="0">
+              </div>
+            </div>
+
+            <label for="obra-arquivo-url">Link do Google Drive (arquivo da obra) <span style="color:#b00020;">*</span></label>
+            <input id="obra-arquivo-url" type="text" autocomplete="off" placeholder="https://drive.google.com/file/d/.../view?usp=sharing">
+            <p style="font-size:0.825rem;color:var(--texto-suave);margin:0.35rem 0 0;">
+              No Drive: botão direito no arquivo → Compartilhar → "Qualquer pessoa com o link" → Copiar link.
+              Eu converto sozinho para download direto.
+            </p>
+
+            <label for="obra-descricao">Descrição (opcional)</label>
+            <textarea id="obra-descricao" rows="2"></textarea>
+
+            <label style="margin-top:1rem;">Capa (opcional — imagem JPG/PNG)</label>
+            <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
+              <input type="file" id="obra-capa-arquivo" accept="image/*" hidden>
+              <button type="button" id="btn-escolher-capa" class="btn btn-ghost" style="min-height:0;padding:0.55rem 0.9rem;">Escolher capa…</button>
+              <span id="obra-capa-status" style="color:var(--texto-suave);font-size:0.875rem;">Sem capa: a obra mostra um cartão com o título.</span>
+            </div>
+
+            <div style="margin-top:1rem;">
+              <button type="button" id="btn-salvar-obra" class="btn btn-solid">Adicionar obra</button>
+            </div>
+          </div>
+
+          <h3 style="font-size:1rem;color:var(--texto-suave);margin-top:1.5rem;">Obras cadastradas</h3>
+          <div id="lista-biblioteca" style="display:grid;gap:0.75rem;">
+            <div class="lista-vazia">Carregando…</div>
+          </div>
+        </details>
+
       </div>
     </section>
   </main>
@@ -3136,6 +3200,148 @@
         await carregarTrabalhosAdmin();
       });
 
+      // ============================================================
+      // Biblioteca
+      // ============================================================
+      var ROTULOS_BIBLIO = {
+        publicacoes: 'Publicações',
+        legislacao: 'Legislação',
+        pareceres: 'Pareceres técnicos',
+        didaticos: 'Materiais didáticos'
+      };
+      var capaObraSelecionada = null;
+
+      async function carregarBibliotecaAdmin() {
+        var sb = window.abenfo.sb;
+        var alvo = document.getElementById('lista-biblioteca');
+        var r = await sb.from('biblioteca_obras')
+          .select('*')
+          .order('categoria', { ascending: true })
+          .order('ordem', { ascending: true });
+        if (r.error) {
+          alvo.innerHTML = '<div class="lista-vazia">Erro: ' + escapar(r.error.message) + '</div>';
+          return;
+        }
+        var obras = r.data || [];
+        document.getElementById('contador-biblioteca').textContent = '(' + obras.length + ')';
+        if (obras.length === 0) {
+          alvo.innerHTML = '<div class="lista-vazia">Nenhuma obra cadastrada ainda.</div>';
+          return;
+        }
+        alvo.innerHTML = obras.map(function (o) {
+          var meta = [ROTULOS_BIBLIO[o.categoria] || o.categoria];
+          if (o.autor) meta.push(escapar(o.autor));
+          if (!o.ativo) meta.push('[oculta]');
+          return '<div class="assoc-card" data-id="' + o.id + '">' +
+            '<div class="assoc-body">' +
+              '<div class="assoc-head"><strong>' + escapar(o.titulo) + '</strong></div>' +
+              '<div class="assoc-meta">' + meta.join(' · ') + '</div>' +
+            '</div>' +
+            '<div class="assoc-acoes">' +
+              '<a class="btn btn-ghost" href="' + escapar(o.arquivo_url) + '" target="_blank" rel="noopener">Abrir arquivo</a>' +
+              '<button class="btn btn-ghost" data-acao-bib="' + (o.ativo ? 'ocultar' : 'mostrar') + '" data-id="' + o.id + '">' + (o.ativo ? 'Ocultar' : 'Mostrar') + '</button>' +
+              '<span class="sep"></span>' +
+              '<button class="btn btn-ghost btn-excluir" data-acao-bib="excluir" data-id="' + o.id + '" data-capa="' + escapar(o.capa_path || '') + '" data-titulo="' + escapar(o.titulo) + '">Excluir</button>' +
+            '</div>' +
+          '</div>';
+        }).join('');
+      }
+
+      async function salvarNovaObra() {
+        var sb = window.abenfo.sb;
+        var titulo = document.getElementById('obra-titulo').value.trim();
+        var arquivoUrl = document.getElementById('obra-arquivo-url').value.trim();
+        if (!titulo) { mostrarAviso('Informe o título da obra.', 'erro'); return; }
+        if (!arquivoUrl) { mostrarAviso('Cole o link do Google Drive do arquivo.', 'erro'); return; }
+
+        var btn = document.getElementById('btn-salvar-obra');
+        btn.disabled = true;
+
+        // 1) Sobe a capa, se houver
+        var capaPath = null;
+        if (capaObraSelecionada) {
+          var ext = (capaObraSelecionada.name.split('.').pop() || 'jpg').toLowerCase();
+          capaPath = 'capa-' + Date.now() + '.' + ext;
+          var up = await sb.storage.from('biblioteca-capas').upload(capaPath, capaObraSelecionada, {
+            cacheControl: '3600', upsert: false
+          });
+          if (up.error) {
+            mostrarAviso('Erro ao enviar a capa: ' + up.error.message, 'erro');
+            btn.disabled = false;
+            return;
+          }
+        }
+
+        // 2) Insere a obra
+        var dados = {
+          titulo: titulo,
+          autor: document.getElementById('obra-autor').value.trim() || null,
+          categoria: document.getElementById('obra-categoria').value,
+          descricao: document.getElementById('obra-descricao').value.trim() || null,
+          arquivo_url: arquivoUrl,
+          capa_path: capaPath,
+          ordem: parseInt(document.getElementById('obra-ordem').value, 10) || 0
+        };
+        var r = await sb.from('biblioteca_obras').insert(dados).select().single();
+        btn.disabled = false;
+        if (r.error) {
+          mostrarAviso('Erro ao salvar obra: ' + r.error.message, 'erro');
+          return;
+        }
+
+        mostrarAviso('Obra "' + titulo + '" adicionada.', 'sucesso');
+        ['obra-titulo', 'obra-autor', 'obra-arquivo-url', 'obra-descricao'].forEach(function (id) {
+          document.getElementById(id).value = '';
+        });
+        document.getElementById('obra-ordem').value = '0';
+        capaObraSelecionada = null;
+        document.getElementById('obra-capa-arquivo').value = '';
+        document.getElementById('obra-capa-status').textContent = 'Sem capa: a obra mostra um cartão com o título.';
+        await carregarBibliotecaAdmin();
+      }
+
+      document.addEventListener('click', async function (e) {
+        if (!e.target) return;
+        if (e.target.id === 'btn-salvar-obra') {
+          salvarNovaObra();
+        } else if (e.target.id === 'btn-escolher-capa') {
+          document.getElementById('obra-capa-arquivo').click();
+        }
+        var btnBib = e.target.closest && e.target.closest('button[data-acao-bib]');
+        if (!btnBib) return;
+        var acao = btnBib.getAttribute('data-acao-bib');
+        var id = btnBib.getAttribute('data-id');
+        var sb = window.abenfo.sb;
+        if (acao === 'ocultar' || acao === 'mostrar') {
+          var r = await sb.from('biblioteca_obras').update({ ativo: acao === 'mostrar' }).eq('id', id);
+          if (r.error) { mostrarAviso('Erro: ' + r.error.message, 'erro'); return; }
+          await carregarBibliotecaAdmin();
+        } else if (acao === 'excluir') {
+          var titulo = btnBib.getAttribute('data-titulo');
+          if (!confirm('Excluir a obra "' + titulo + '"? Esta ação não pode ser desfeita.')) return;
+          var capa = btnBib.getAttribute('data-capa');
+          if (capa) { await sb.storage.from('biblioteca-capas').remove([capa]); }
+          var rd = await sb.from('biblioteca_obras').delete().eq('id', id);
+          if (rd.error) { mostrarAviso('Erro ao excluir: ' + rd.error.message, 'erro'); return; }
+          mostrarAviso('Obra excluída.', 'sucesso');
+          await carregarBibliotecaAdmin();
+        }
+      });
+
+      document.addEventListener('change', function (e) {
+        if (e.target && e.target.id === 'obra-capa-arquivo') {
+          var f = e.target.files && e.target.files[0];
+          if (!f) { capaObraSelecionada = null; return; }
+          if (f.type.indexOf('image/') !== 0) {
+            mostrarAviso('A capa precisa ser uma imagem (JPG/PNG).', 'erro');
+            e.target.value = '';
+            return;
+          }
+          capaObraSelecionada = f;
+          document.getElementById('obra-capa-status').textContent = 'Capa selecionada: ' + f.name;
+        }
+      });
+
       document.addEventListener('perfil-pronto', function (e) {
         if (!e.detail.is_admin) {
           window.location.href = 'index.html';
@@ -3149,6 +3355,7 @@
         carregarEventosParaSelectCurso();
         atualizarResumoCursos();
         carregarTrabalhosAdmin();
+        carregarBibliotecaAdmin();
       });
     })();
   </script>
