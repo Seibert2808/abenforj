@@ -11,6 +11,43 @@
   <link rel="stylesheet" href="../css/area.css">
   <link rel="icon" type="image/png" href="../assets/logo-abenforj.png">
   <style>
+    /* Barra de busca do painel */
+    .admin-busca {
+      position: relative;
+      max-width: 520px;
+      margin: 0 0 0.5rem;
+    }
+    .admin-busca svg {
+      position: absolute;
+      left: 0.85rem; top: 50%; transform: translateY(-50%);
+      color: var(--texto-suave);
+      pointer-events: none;
+    }
+    .admin-busca input {
+      width: 100%;
+      padding: 0.7rem 2.4rem 0.7rem 2.4rem;
+      border: 1px solid var(--borda);
+      border-radius: 999px;
+      font: inherit;
+      background: var(--branco);
+      min-height: 44px;
+    }
+    .admin-busca input:focus {
+      outline: 0; border-color: var(--verde-claro);
+      box-shadow: 0 0 0 3px var(--verde-pastel);
+    }
+    .admin-busca #admin-busca-limpar {
+      position: absolute;
+      right: 0.6rem; top: 50%; transform: translateY(-50%);
+      width: 30px; height: 30px;
+      border: 0; background: var(--areia); color: var(--texto-suave);
+      border-radius: 50%; cursor: pointer; font-size: 1.1rem; line-height: 1;
+    }
+    .admin-busca #admin-busca-limpar:hover { background: var(--borda); color: var(--texto); }
+    /* Card escondido pela busca / seção sem resultado */
+    .busca-oculto { display: none !important; }
+    .secao.busca-oculta { display: none; }
+
     /* Card de obra da biblioteca (sem avatar — layout em coluna simples) */
     .obra-admin-card {
       background: var(--branco);
@@ -560,6 +597,13 @@
       <div class="container">
 
         <div id="admin-aviso" hidden></div>
+
+        <div class="admin-busca">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="search" id="admin-busca" placeholder="Buscar pessoa, e-mail, trabalho, obra…" autocomplete="off" aria-label="Buscar no painel">
+          <button type="button" id="admin-busca-limpar" aria-label="Limpar busca" hidden>×</button>
+        </div>
+        <p id="admin-busca-status" style="color:var(--texto-suave);font-size:0.9rem;margin:0 0 1rem;" hidden></p>
 
         <h2>Estatísticas <span style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;">(sócias ativas)</span></h2>
         <div id="stats-grid" class="stats-grid">
@@ -3361,6 +3405,86 @@
           capaObraSelecionada = f;
           document.getElementById('obra-capa-status').textContent = 'Capa selecionada: ' + f.name;
         }
+      });
+
+      // ============================================================
+      // Busca global do painel
+      // Filtra os cards (associadas, trabalhos, biblioteca) pelo texto visível,
+      // abre as seções que têm resultado e fecha as vazias.
+      // ============================================================
+      function normalizarBusca(s) {
+        return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+      }
+
+      function aplicarBuscaAdmin() {
+        var input = document.getElementById('admin-busca');
+        var q = normalizarBusca(input.value.trim());
+        var status = document.getElementById('admin-busca-status');
+        var limpar = document.getElementById('admin-busca-limpar');
+        limpar.hidden = !q;
+
+        // Seções pesquisáveis: cada uma com seu container de cards.
+        var alvos = [
+          { secao: 'lista-pendentes', cards: '.assoc-card' },
+          { secao: 'lista-ativos', cards: '.assoc-card' },
+          { secao: 'lista-inativos', cards: '.assoc-card' },
+          { secao: 'lista-inscricoes-pendentes', cards: '.assoc-card' },
+          { secao: 'lista-trabalhos-admin', cards: '.assoc-card' },
+          { secao: 'lista-biblioteca', cards: '.obra-admin-card' }
+        ];
+
+        var totalEncontrado = 0;
+
+        alvos.forEach(function (alvo) {
+          var container = document.getElementById(alvo.secao);
+          if (!container) return;
+          var details = container.closest('details.secao');
+          var cards = container.querySelectorAll(alvo.cards);
+          var visiveis = 0;
+
+          cards.forEach(function (card) {
+            if (!q) {
+              card.classList.remove('busca-oculto');
+              return;
+            }
+            var texto = normalizarBusca(card.textContent);
+            var bate = texto.indexOf(q) !== -1;
+            card.classList.toggle('busca-oculto', !bate);
+            if (bate) visiveis++;
+          });
+
+          totalEncontrado += visiveis;
+
+          if (details) {
+            if (!q) {
+              // Sem busca: tira o controle da busca, volta ao estado manual (fechado).
+              details.classList.remove('busca-oculta');
+              details.open = false;
+            } else if (visiveis > 0) {
+              details.classList.remove('busca-oculta');
+              details.open = true; // abre seção com resultado
+            } else {
+              details.classList.add('busca-oculta'); // esconde seção sem resultado
+            }
+          }
+        });
+
+        if (!q) {
+          status.hidden = true;
+        } else {
+          status.hidden = false;
+          status.textContent = totalEncontrado === 0
+            ? 'Nenhum resultado para "' + input.value.trim() + '".'
+            : totalEncontrado + ' resultado(s) para "' + input.value.trim() + '".';
+        }
+      }
+
+      document.getElementById('admin-busca').addEventListener('input', aplicarBuscaAdmin);
+      document.getElementById('admin-busca-limpar').addEventListener('click', function () {
+        var input = document.getElementById('admin-busca');
+        input.value = '';
+        aplicarBuscaAdmin();
+        input.focus();
       });
 
       document.addEventListener('perfil-pronto', function (e) {
