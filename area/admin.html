@@ -831,6 +831,13 @@
               </div>
             </div>
 
+            <div style="display:grid;grid-template-columns:1fr 3fr;gap:0.75rem;">
+              <div>
+                <label for="obra-ano">Ano</label>
+                <input id="obra-ano" type="number" min="1900" max="2099" autocomplete="off" placeholder="2026">
+              </div>
+            </div>
+
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
               <div>
                 <label for="obra-categoria">Categoria <span style="color:#b00020;">*</span></label>
@@ -3231,6 +3238,7 @@
         alvo.innerHTML = obras.map(function (o) {
           var meta = [ROTULOS_BIBLIO[o.categoria] || o.categoria];
           if (o.autor) meta.push(escapar(o.autor));
+          if (o.ano) meta.push(escapar(o.ano));
           if (!o.ativo) meta.push('[oculta]');
           return '<div class="assoc-card" data-id="' + o.id + '">' +
             '<div class="assoc-body">' +
@@ -3273,9 +3281,11 @@
         }
 
         // 2) Insere a obra
+        var anoRaw = document.getElementById('obra-ano').value;
         var dados = {
           titulo: titulo,
           autor: document.getElementById('obra-autor').value.trim() || null,
+          ano: anoRaw ? parseInt(anoRaw, 10) : null,
           categoria: document.getElementById('obra-categoria').value,
           descricao: document.getElementById('obra-descricao').value.trim() || null,
           arquivo_url: arquivoUrl,
@@ -3290,7 +3300,7 @@
         }
 
         mostrarAviso('Obra "' + titulo + '" adicionada.', 'sucesso');
-        ['obra-titulo', 'obra-autor', 'obra-arquivo-url', 'obra-descricao'].forEach(function (id) {
+        ['obra-titulo', 'obra-autor', 'obra-ano', 'obra-arquivo-url', 'obra-descricao'].forEach(function (id) {
           document.getElementById(id).value = '';
         });
         document.getElementById('obra-ordem').value = '0';

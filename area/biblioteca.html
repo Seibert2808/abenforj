@@ -104,6 +104,41 @@
       border: 1px dashed var(--borda);
       border-radius: var(--raio);
     }
+
+    .obra-info .obra-ano { font-size: 0.78rem; color: var(--verde); font-weight: 600; margin: 0 0 0.4rem; }
+
+    /* Busca da biblioteca */
+    .biblioteca-busca {
+      position: relative;
+      max-width: 480px;
+      margin: 0.5rem 0 1.5rem;
+    }
+    .biblioteca-busca input {
+      width: 100%;
+      padding: 0.7rem 0.95rem 0.7rem 2.4rem;
+      border: 1px solid var(--borda);
+      border-radius: 999px;
+      font: inherit;
+      background: var(--branco);
+      min-height: 44px;
+    }
+    .biblioteca-busca input:focus {
+      outline: 0; border-color: var(--verde-claro);
+      box-shadow: 0 0 0 3px var(--verde-pastel);
+    }
+    .biblioteca-busca svg {
+      position: absolute;
+      left: 0.85rem; top: 50%; transform: translateY(-50%);
+      color: var(--texto-suave);
+      pointer-events: none;
+    }
+    /* Esconde a seção inteira quando a busca não tem resultado nela */
+    .secao-biblioteca[hidden] { display: none; }
+    .busca-sem-resultado {
+      padding: 2rem 1.5rem;
+      text-align: center;
+      color: var(--texto-suave);
+    }
   </style>
 </head>
 <body>
@@ -145,38 +180,53 @@
     <section class="section" style="padding-top:1rem;">
       <div class="container">
 
-        <h2>Publicações</h2>
-        <div class="obras-grid" id="grid-publicacoes" data-categoria="publicacoes">
-          <div class="obras-vazia">Carregando…</div>
+        <div class="biblioteca-busca">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="search" id="busca-biblioteca" placeholder="Buscar por título, autor ou ano…" autocomplete="off" aria-label="Buscar na biblioteca">
         </div>
 
-        <h2 style="margin-top:2.5rem;">Legislação e marcos regulatórios</h2>
-        <ul class="doc-list">
-          <li>
-            <div class="doc-info">
-              <strong>Lei do Exercício Profissional da Enfermagem (Lei 7.498/1986)</strong>
-              <span>Regula o exercício da enfermagem no Brasil.</span>
-            </div>
-            <a href="https://www.planalto.gov.br/ccivil_03/leis/l7498.htm" target="_blank" rel="noopener">Abrir →</a>
-          </li>
-          <li>
-            <div class="doc-info">
-              <strong>Resolução Cofen 0516/2016</strong>
-              <span>Normatiza a atuação e a responsabilidade do enfermeiro obstetra e da obstetriz.</span>
-            </div>
-            <a href="http://www.cofen.gov.br/resolucao-cofen-no-05162016_41989.html" target="_blank" rel="noopener">Abrir →</a>
-          </li>
-        </ul>
-        <div class="obras-grid" id="grid-legislacao" data-categoria="legislacao" style="margin-top:1rem;"></div>
+        <p id="busca-geral-vazia" class="busca-sem-resultado" hidden>Nenhuma obra encontrada para a sua busca.</p>
 
-        <h2 style="margin-top:2.5rem;">Pareceres técnicos</h2>
-        <div class="obras-grid" id="grid-pareceres" data-categoria="pareceres">
-          <div class="obras-vazia">Carregando…</div>
+        <div class="secao-biblioteca" id="secao-publicacoes">
+          <h2>Publicações</h2>
+          <div class="obras-grid" id="grid-publicacoes" data-categoria="publicacoes">
+            <div class="obras-vazia">Carregando…</div>
+          </div>
         </div>
 
-        <h2 style="margin-top:2.5rem;">Materiais didáticos</h2>
-        <div class="obras-grid" id="grid-didaticos" data-categoria="didaticos">
-          <div class="obras-vazia">Carregando…</div>
+        <div class="secao-biblioteca" id="secao-legislacao">
+          <h2 style="margin-top:2.5rem;">Legislação e marcos regulatórios</h2>
+          <ul class="doc-list" id="legislacao-fixa">
+            <li data-busca="lei do exercicio profissional da enfermagem 7498 1986 regula o exercicio da enfermagem no brasil">
+              <div class="doc-info">
+                <strong>Lei do Exercício Profissional da Enfermagem (Lei 7.498/1986)</strong>
+                <span>Regula o exercício da enfermagem no Brasil.</span>
+              </div>
+              <a href="https://www.planalto.gov.br/ccivil_03/leis/l7498.htm" target="_blank" rel="noopener">Abrir →</a>
+            </li>
+            <li data-busca="resolucao cofen 0516 2016 normatiza a atuacao e a responsabilidade do enfermeiro obstetra e da obstetriz">
+              <div class="doc-info">
+                <strong>Resolução Cofen 0516/2016</strong>
+                <span>Normatiza a atuação e a responsabilidade do enfermeiro obstetra e da obstetriz.</span>
+              </div>
+              <a href="http://www.cofen.gov.br/resolucao-cofen-no-05162016_41989.html" target="_blank" rel="noopener">Abrir →</a>
+            </li>
+          </ul>
+          <div class="obras-grid" id="grid-legislacao" data-categoria="legislacao" style="margin-top:1rem;"></div>
+        </div>
+
+        <div class="secao-biblioteca" id="secao-pareceres">
+          <h2 style="margin-top:2.5rem;">Pareceres técnicos</h2>
+          <div class="obras-grid" id="grid-pareceres" data-categoria="pareceres">
+            <div class="obras-vazia">Carregando…</div>
+          </div>
+        </div>
+
+        <div class="secao-biblioteca" id="secao-didaticos">
+          <h2 style="margin-top:2.5rem;">Materiais didáticos</h2>
+          <div class="obras-grid" id="grid-didaticos" data-categoria="didaticos">
+            <div class="obras-vazia">Carregando…</div>
+          </div>
         </div>
       </div>
     </section>
@@ -225,6 +275,11 @@
         '<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">' +
         '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>';
 
+      // Normaliza para busca: minúsculo e sem acentos.
+      function normalizar(s) {
+        return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+      }
+
       function cardObra(o) {
         var href = linkDownloadDrive(o.arquivo_url);
         var capa;
@@ -235,12 +290,15 @@
           capa = '<div class="obra-capa placeholder">' + ICONE_LIVRO +
                  '<span class="ph-titulo">' + escapar(o.titulo) + '</span></div>';
         }
+        var ano = o.ano ? '<p class="obra-ano">' + escapar(o.ano) + '</p>' : '';
         var autor = o.autor ? '<p class="obra-autor">' + escapar(o.autor) + '</p>' : '';
+        var termo = normalizar([o.titulo, o.autor, o.ano].filter(Boolean).join(' '));
         return '<a class="obra-card" href="' + escapar(href) + '" target="_blank" rel="noopener" ' +
-                 'title="Baixar: ' + escapar(o.titulo) + '">' +
+                 'data-busca="' + escapar(termo) + '" title="Baixar: ' + escapar(o.titulo) + '">' +
           capa +
           '<div class="obra-info">' +
             '<p class="obra-titulo">' + escapar(o.titulo) + '</p>' +
+            ano +
             autor +
             '<span class="obra-baixar">Baixar ↓</span>' +
           '</div>' +
@@ -255,7 +313,7 @@
         var sb = window.abenfo.sb;
         var grids = document.querySelectorAll('.obras-grid[data-categoria]');
         var r = await sb.from('biblioteca_obras')
-          .select('id, titulo, autor, categoria, capa_path, arquivo_url')
+          .select('id, titulo, autor, ano, categoria, capa_path, arquivo_url')
           .eq('ativo', true)
           .order('ordem', { ascending: true })
           .order('criado_em', { ascending: false });
@@ -280,8 +338,38 @@
           }
           g.innerHTML = lista.map(cardObra).join('');
         });
+
+        aplicarBusca();
       }
 
+      // ============================================================
+      // Busca: filtra cards (e as leis fixas) e oculta seções vazias
+      // ============================================================
+      function aplicarBusca() {
+        var q = normalizar(document.getElementById('busca-biblioteca').value.trim());
+        var secoes = document.querySelectorAll('.secao-biblioteca');
+        var totalVisivel = 0;
+
+        secoes.forEach(function (secao) {
+          var itens = secao.querySelectorAll('[data-busca]');
+          var visiveisNaSecao = 0;
+
+          itens.forEach(function (el) {
+            var bate = !q || el.getAttribute('data-busca').indexOf(q) !== -1;
+            el.style.display = bate ? '' : 'none';
+            if (bate) visiveisNaSecao++;
+          });
+
+          // Sem busca: mostra a seção sempre (inclusive vazias com "Em breve").
+          // Com busca: só mostra a seção se algum item dela bateu.
+          secao.hidden = q ? (visiveisNaSecao === 0) : false;
+          totalVisivel += visiveisNaSecao;
+        });
+
+        document.getElementById('busca-geral-vazia').hidden = !(q && totalVisivel === 0);
+      }
+
+      document.getElementById('busca-biblioteca').addEventListener('input', aplicarBusca);
       document.addEventListener('perfil-pronto', carregarBiblioteca);
     })();
   </script>
