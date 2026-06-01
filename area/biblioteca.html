@@ -203,13 +203,6 @@
               </div>
               <a href="https://www.planalto.gov.br/ccivil_03/leis/l7498.htm" target="_blank" rel="noopener">Abrir →</a>
             </li>
-            <li data-busca="resolucao cofen 0516 2016 normatiza a atuacao e a responsabilidade do enfermeiro obstetra e da obstetriz">
-              <div class="doc-info">
-                <strong>Resolução Cofen 0516/2016</strong>
-                <span>Normatiza a atuação e a responsabilidade do enfermeiro obstetra e da obstetriz.</span>
-              </div>
-              <a href="http://www.cofen.gov.br/resolucao-cofen-no-05162016_41989.html" target="_blank" rel="noopener">Abrir →</a>
-            </li>
           </ul>
         </div>
 
@@ -280,6 +273,33 @@
         return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
       }
 
+      // Suaviza títulos digitados TODO EM CAIXA ALTA, convertendo para
+      // "Maiúsculas e minúsculas". Só age quando o texto é majoritariamente
+      // maiúsculo; títulos já bem escritos passam sem alteração.
+      // Preserva siglas curtas (COFEN, RJ, UERJ…), números e palavrinhas (de, da, e…).
+      function formatarTitulo(s) {
+        s = String(s || '');
+        var letras = s.replace(/[^A-Za-zÀ-ÿ]/g, '');
+        if (!letras) return s;
+        var maiusc = letras.replace(/[^A-ZÀ-Þ]/g, '').length;
+        // Se menos de 80% das letras forem maiúsculas, deixa como está.
+        if (maiusc / letras.length < 0.8) return s;
+
+        var minusculas = ['de','da','do','das','dos','e','a','o','as','os','em','no','na','nos','nas','por','para','com','ao','à'];
+        var palavras = s.toLowerCase().split(/(\s+)/); // mantém os espaços
+        var primeira = true;
+        return palavras.map(function (p) {
+          if (/^\s+$/.test(p) || p === '') return p;
+          var soLetras = p.replace(/[^a-zà-ÿ]/g, '');
+          if (!primeira && minusculas.indexOf(soLetras) !== -1) {
+            return p; // palavrinha (de, da, e…) fica minúscula
+          }
+          primeira = false;
+          // Capitaliza a primeira letra (respeitando prefixos como "nº")
+          return p.replace(/[a-zà-ÿ]/, function (c) { return c.toUpperCase(); });
+        }).join('');
+      }
+
       function cardObra(o) {
         var href = linkDownloadDrive(o.arquivo_url);
         var capa;
@@ -288,7 +308,7 @@
                  '" alt="Capa de ' + escapar(o.titulo) + '" loading="lazy"></div>';
         } else {
           capa = '<div class="obra-capa placeholder">' + ICONE_LIVRO +
-                 '<span class="ph-titulo">' + escapar(o.titulo) + '</span></div>';
+                 '<span class="ph-titulo">' + escapar(formatarTitulo(o.titulo)) + '</span></div>';
         }
         var ano = o.ano ? '<p class="obra-ano">' + escapar(o.ano) + '</p>' : '';
         var autor = o.autor ? '<p class="obra-autor">' + escapar(o.autor) + '</p>' : '';
@@ -297,7 +317,7 @@
                  'data-busca="' + escapar(termo) + '" title="Baixar: ' + escapar(o.titulo) + '">' +
           capa +
           '<div class="obra-info">' +
-            '<p class="obra-titulo">' + escapar(o.titulo) + '</p>' +
+            '<p class="obra-titulo">' + escapar(formatarTitulo(o.titulo)) + '</p>' +
             ano +
             autor +
             '<span class="obra-baixar">Baixar ↓</span>' +
@@ -317,7 +337,7 @@
         var termo = normalizar([o.titulo, o.autor, o.ano].filter(Boolean).join(' '));
         return '<li data-busca="' + escapar(termo) + '">' +
           '<div class="doc-info">' +
-            '<strong>' + escapar(o.titulo) + '</strong>' +
+            '<strong>' + escapar(formatarTitulo(o.titulo)) + '</strong>' +
             (sub ? '<span>' + escapar(sub) + '</span>' : '') +
           '</div>' +
           '<a href="' + escapar(href) + '" target="_blank" rel="noopener">Abrir →</a>' +
