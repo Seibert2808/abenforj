@@ -1988,8 +1988,13 @@
         btn.textContent = 'Processando…';
 
         try {
-          // 1a) Quem é sócia? (cruza por profiles.email)
-          var rPerfis = await sb.from('profiles').select('id, email').in('email', emails);
+          // Cadastro de associada está CONFIRMADO? (aprovado + documentos conferidos)
+          function perfilConfirmado(p) {
+            return !!(p && p.status === 'ativo' && p.cadastro_completo === true);
+          }
+
+          // 1a) Quem tem cadastro de associada? (cruza por profiles.email; traz status e docs)
+          var rPerfis = await sb.from('profiles').select('id, email, status, cadastro_completo').in('email', emails);
           if (rPerfis.error) {
             mostrarAviso('Erro ao consultar perfis: ' + rPerfis.error.message, 'erro');
             return;
@@ -2002,7 +2007,7 @@
           //     (caso onde a socia usa email diferente no Doity, mapeado por
           //     "Associar a socia cadastrada" em imports anteriores).
           var rAlts = await sb.from('emails_alternativos')
-            .select('email, profile_id, profiles(id, email)').in('email', emails);
+            .select('email, profile_id, profiles(id, email, status, cadastro_completo)').in('email', emails);
           if (!rAlts.error) {
             (rAlts.data || []).forEach(function (a) {
               if (!a.profiles) return;
@@ -2016,12 +2021,13 @@
             });
           }
 
-          // 2) Sócias já inscritas no evento?
-          var idsPerfis = perfis.map(function (p) { return p.id; });
+          // 2) Sócias CONFIRMADAS já inscritas no evento?
+          var perfisConfirmados = perfis.filter(perfilConfirmado);
+          var idsPerfisConf = perfisConfirmados.map(function (p) { return p.id; });
           var jaInscritasSocias = {};
-          if (idsPerfis.length > 0) {
+          if (idsPerfisConf.length > 0) {
             var rEx = await sb.from('inscricoes_evento')
-              .select('profile_id').eq('evento_id', evento_id).in('profile_id', idsPerfis);
+              .select('profile_id').eq('evento_id', evento_id).in('profile_id', idsPerfisConf);
             if (rEx.error) {
               mostrarAviso('Erro ao verificar inscrições: ' + rEx.error.message, 'erro');
               return;
@@ -2029,13 +2035,17 @@
             (rEx.data || []).forEach(function (x) { jaInscritasSocias[x.profile_id] = true; });
           }
 
-          // 3) Não-sócias já registradas? (busca todos os campos pra detectar dados faltantes)
-          var emailsNaoSocias = emails.filter(function (e) { return !emailParaPerfil[e]; });
+          // 3) Vão pra inscritos_externos quem NÃO tem cadastro de associada OU tem cadastro
+          //    ainda não confirmado (ex.: documentos pendentes). Confirmadas viram sócias.
+          var emailsExternos = emails.filter(function (e) {
+            var p = emailParaPerfil[e];
+            return !p || !perfilConfirmado(p);
+          });
           var jaExternos = {};
-          if (emailsNaoSocias.length > 0) {
+          if (emailsExternos.length > 0) {
             var rExt = await sb.from('inscritos_externos')
-              .select('id, email, lote_doity, valor_pago, doity_id, telefone, data_inscricao')
-              .eq('evento_id', evento_id).in('email', emailsNaoSocias);
+              .select('id, email, lote_doity, valor_pago, doity_id, telefone, data_inscricao, pendente_verificacao_socia')
+              .eq('evento_id', evento_id).in('email', emailsExternos);
             if (rExt.error) {
               mostrarAviso('Erro ao verificar não-sócias: ' + rExt.error.message, 'erro');
               return;
@@ -2046,8 +2056,8 @@
           var auth = await sb.auth.getUser();
           var adminUid = auth && auth.data && auth.data.user ? auth.data.user.id : null;
 
-          // 4) Insere novas sócias em inscricoes_evento
-          var aInserirSocias = perfis
+          // 4) Insere novas SÓCIAS CONFIRMADAS em inscricoes_evento
+          var aInserirSocias = perfisConfirmados
             .filter(function (p) { return !jaInscritasSocias[p.id]; })
             .map(function (p) {
               return { profile_id: p.id, evento_id: evento_id, created_by: adminUid };
@@ -2062,20 +2072,21 @@
             inseridasSocias = aInserirSocias.length;
           }
 
-          // 5) Insere novas não-sócias em inscritos_externos (precisa dados ricos do XLSX)
-          //    Quem pagou cota de sócia mas não está em profiles entra com flag
-          //    pendente_verificacao_socia = true (aparece no bloco de pendências do admin).
+          // 5) Insere/atualiza em inscritos_externos. Marca pendente_verificacao_socia = true
+          //    (aparece no bloco de pendências) quando: tem cadastro de associada mas ainda
+          //    NÃO confirmado, OU pagou cota de sócia sem ter cadastro. Caso contrário, não-sócia.
           var semDados = [];
           var aInserirExt = [];
           var aAtualizarExt = [];   // re-importacao: preenche campos que estavam vazios
           var inseridasPendentes = 0;
-          emailsNaoSocias.forEach(function (em) {
+          emailsExternos.forEach(function (em) {
             var dados = _ultimasLinhasParsed[em];
             if (!dados || !dados.nome) {
               if (!jaExternos[em]) semDados.push(em);
               return;
             }
-            var pendente = loteEhCotaSocia(dados.lote);
+            var perfilEm = emailParaPerfil[em];
+            var pendente = (perfilEm && !perfilConfirmado(perfilEm)) || (!perfilEm && loteEhCotaSocia(dados.lote));
             var jaReg = jaExternos[em];
             if (jaReg) {
               // Existe: atualiza campos faltantes (lote/valor/telefone/etc) sem mexer no resto
@@ -2085,6 +2096,7 @@
               if (!jaReg.doity_id && dados.doity_id) patch.doity_id = dados.doity_id;
               if (!jaReg.telefone && dados.telefone) patch.telefone = dados.telefone;
               if (!jaReg.data_inscricao && dados.data_inscricao) patch.data_inscricao = dados.data_inscricao;
+              if (pendente && !jaReg.pendente_verificacao_socia) patch.pendente_verificacao_socia = true;
               if (Object.keys(patch).length > 0) {
                 aAtualizarExt.push({ id: jaReg.id, patch: patch });
               }
@@ -2123,35 +2135,126 @@
             inseridosExt = aInserirExt.length;
           }
 
-          // 5b) Auto-limpeza: remove da lista de não-sócias quem JÁ é reconhecida
-          //     como sócia (e-mail bate com um perfil ou com um vínculo alternativo).
-          //     Sem isso, sócias que entraram como externas antes de terem perfil ficam
-          //     "presas" na lista e reaparecem a cada reimportação. NÃO apaga quem tiver
-          //     trabalho científico vinculado, pra não perder o trabalho.
+          // 5b) Reconciliação ampla: varre TODOS os externos do evento (não só os da
+          //     planilha) e acerta quem já tem cadastro de associada:
+          //       - cadastro CONFIRMADO  -> migra pra sócias inscritas e remove dos externos
+          //         (preserva quem tem trabalho científico vinculado);
+          //       - cadastro NÃO confirmado -> tira da lista de não-sócias e marca como
+          //         pendente de verificação, até a diretoria confirmar.
           var removidosExternos = 0;
-          var emailsSocias = Object.keys(emailParaPerfil);
-          if (emailsSocias.length > 0) {
-            var rExtFantasma = await sb.from('inscritos_externos')
-              .select('id')
-              .eq('evento_id', evento_id)
-              .in('email', emailsSocias);
-            var idsFantasma = (rExtFantasma.data || []).map(function (x) { return x.id; });
-            if (idsFantasma.length > 0) {
-              var rTrabsFant = await sb.from('trabalhos_cientificos')
-                .select('inscrito_externo_id')
-                .in('inscrito_externo_id', idsFantasma);
-              var temTrabalhoFant = {};
-              (rTrabsFant.data || []).forEach(function (t) { temTrabalhoFant[t.inscrito_externo_id] = true; });
-              var idsApagar = idsFantasma.filter(function (id) { return !temTrabalhoFant[id]; });
-              if (idsApagar.length > 0) {
-                var rDelFant = await sb.from('inscritos_externos').delete().in('id', idsApagar);
-                if (!rDelFant.error) removidosExternos = idsApagar.length;
+          var marcadosPendentes = 0;
+          var rTodosExt = await sb.from('inscritos_externos')
+            .select('id, email, pendente_verificacao_socia').eq('evento_id', evento_id);
+          var todosExt = rTodosExt.data || [];
+          if (todosExt.length > 0) {
+            var emailsTodosExt = todosExt.map(function (x) { return (x.email || '').toLowerCase(); });
+            // mapeia e-mail -> perfil (status/docs), por perfil direto OU por vínculo alternativo
+            var emailParaPerfilRec = {};
+            var rPerfRec = await sb.from('profiles')
+              .select('id, email, status, cadastro_completo').in('email', emailsTodosExt);
+            (rPerfRec.data || []).forEach(function (p) {
+              if (p.email) emailParaPerfilRec[p.email.toLowerCase()] = p;
+            });
+            var rAltRec = await sb.from('emails_alternativos')
+              .select('email, profiles(id, status, cadastro_completo)').in('email', emailsTodosExt);
+            (rAltRec.data || []).forEach(function (a) {
+              if (a.email && a.profiles && !emailParaPerfilRec[a.email.toLowerCase()]) {
+                emailParaPerfilRec[a.email.toLowerCase()] = a.profiles;
+              }
+            });
+
+            var extComCadastro = todosExt.filter(function (x) {
+              return emailParaPerfilRec[(x.email || '').toLowerCase()];
+            });
+            if (extComCadastro.length > 0) {
+              var idsCom = extComCadastro.map(function (x) { return x.id; });
+              var rTrabsRec = await sb.from('trabalhos_cientificos')
+                .select('inscrito_externo_id').in('inscrito_externo_id', idsCom);
+              var temTrabalhoRec = {};
+              (rTrabsRec.data || []).forEach(function (t) { temTrabalhoRec[t.inscrito_externo_id] = true; });
+
+              var idsApagarRec = [];     // confirmadas sem trabalho -> remover do externo
+              var profileIdsMigrar = {}; // confirmadas -> garantir em inscricoes_evento
+              var idsMarcarPend = [];    // não confirmadas ainda em não-sócias -> marcar pendente
+              extComCadastro.forEach(function (x) {
+                var perfil = emailParaPerfilRec[(x.email || '').toLowerCase()];
+                if (perfilConfirmado(perfil)) {
+                  if (!temTrabalhoRec[x.id]) {
+                    idsApagarRec.push(x.id);
+                    profileIdsMigrar[perfil.id] = true;
+                  }
+                } else if (!x.pendente_verificacao_socia) {
+                  idsMarcarPend.push(x.id);
+                }
+              });
+
+              // (i) garante inscricao_evento dos confirmados antes de remover o externo
+              var idsProfMig = Object.keys(profileIdsMigrar);
+              if (idsProfMig.length > 0) {
+                var rJaRec = await sb.from('inscricoes_evento')
+                  .select('profile_id').eq('evento_id', evento_id).in('profile_id', idsProfMig);
+                var jaInscRec = {};
+                (rJaRec.data || []).forEach(function (x) { jaInscRec[x.profile_id] = true; });
+                var aInserirRec = idsProfMig.filter(function (id) { return !jaInscRec[id]; })
+                  .map(function (id) {
+                    return { profile_id: id, evento_id: evento_id,
+                             observacao: 'Reconciliada de inscrita externa (cadastro de sócia confirmado)',
+                             created_by: adminUid };
+                  });
+                if (aInserirRec.length > 0) await sb.from('inscricoes_evento').insert(aInserirRec);
+              }
+              // (ii) remove os externos migrados (confirmados, sem trabalho)
+              if (idsApagarRec.length > 0) {
+                var rDelRec = await sb.from('inscritos_externos').delete().in('id', idsApagarRec);
+                if (!rDelRec.error) removidosExternos = idsApagarRec.length;
+              }
+              // (iii) marca como pendente quem tem cadastro mas ainda não confirmado
+              if (idsMarcarPend.length > 0) {
+                var rUpdPend = await sb.from('inscritos_externos')
+                  .update({ pendente_verificacao_socia: true }).in('id', idsMarcarPend);
+                if (!rUpdPend.error) marcadosPendentes = idsMarcarPend.length;
               }
             }
           }
 
-          var sociasJaExistiam = perfis.length - inseridasSocias;
-          var externosJaExistiam = emailsNaoSocias.length - inseridosExt - semDados.length;
+          // 5c) Demove da lista de SÓCIAS quem está com cadastro ainda NÃO confirmado
+          //     (ex.: documentos pendentes) — deve ficar em pendências até a diretoria
+          //     confirmar. Garante o registro de pendência antes de remover de sócias,
+          //     pra não perder a inscrição no evento (que ela pagou).
+          var demovidosSocias = 0;
+          var rInscEv = await sb.from('inscricoes_evento')
+            .select('id, perfil:profile_id(status, cadastro_completo, nome_completo, email)')
+            .eq('evento_id', evento_id);
+          var inscEvNaoConf = (rInscEv.data || []).filter(function (x) {
+            return x.perfil && !perfilConfirmado(x.perfil);
+          });
+          if (inscEvNaoConf.length > 0) {
+            var emailsNaoConf = inscEvNaoConf
+              .map(function (x) { return (x.perfil.email || '').toLowerCase(); })
+              .filter(Boolean);
+            var jaExtNaoConf = {};
+            if (emailsNaoConf.length > 0) {
+              var rExtNC = await sb.from('inscritos_externos')
+                .select('email').eq('evento_id', evento_id).in('email', emailsNaoConf);
+              (rExtNC.data || []).forEach(function (x) { jaExtNaoConf[(x.email || '').toLowerCase()] = true; });
+            }
+            // cria pendência pra quem ainda não tem registro externo (não duplica)
+            var novosPend = inscEvNaoConf
+              .filter(function (x) { var e = (x.perfil.email || '').toLowerCase(); return e && !jaExtNaoConf[e]; })
+              .map(function (x) {
+                return { evento_id: evento_id, nome: x.perfil.nome_completo || '(sem nome)',
+                         email: (x.perfil.email || '').toLowerCase(), pendente_verificacao_socia: true,
+                         created_by: adminUid };
+              });
+            if (novosPend.length > 0) await sb.from('inscritos_externos').insert(novosPend);
+            // remove da lista de sócias
+            var idsInscRemover = inscEvNaoConf.map(function (x) { return x.id; });
+            var rDelInsc = await sb.from('inscricoes_evento').delete().in('id', idsInscRemover);
+            if (!rDelInsc.error) demovidosSocias = idsInscRemover.length;
+          }
+
+          var sociasJaExistiam = perfisConfirmados.length - inseridasSocias;
+          var externosJaExistiam = emailsExternos.length - inseridosExt - semDados.length;
 
           // 6) Relatório
           var rel = document.getElementById('relatorio-inscricoes');
@@ -2159,10 +2262,10 @@
           var html = '';
           html += '<p><strong>E-mails recebidos:</strong> ' + emails.length + '</p>';
           html += '<p style="margin-top:0.5rem;border-top:1px solid var(--borda);padding-top:0.5rem;"><strong>Sócias</strong></p>';
-          html += '<p>· Encontradas no banco: ' + perfis.length + '</p>';
+          html += '<p>· Com cadastro confirmado: ' + perfisConfirmados.length + '</p>';
           html += '<p>· Novas inscrições registradas: ' + inseridasSocias + '</p>';
           if (sociasJaExistiam > 0) html += '<p>· Já estavam registradas: ' + sociasJaExistiam + '</p>';
-          if (removidosExternos > 0) html += '<p>· Removidas da lista de não-sócias (já eram sócias): ' + removidosExternos + '</p>';
+          if (removidosExternos > 0) html += '<p>· Reconciliadas dos externos (cadastro confirmado): ' + removidosExternos + '</p>';
           html += '<p style="margin-top:0.5rem;border-top:1px solid var(--borda);padding-top:0.5rem;"><strong>Não-sócias</strong></p>';
           html += '<p>· Detectadas na planilha: ' + (aInserirExt.length + externosJaExistiam) + '</p>';
           html += '<p>· Novas registradas: ' + inseridosExt + '</p>';
@@ -2174,9 +2277,11 @@
             semDados.forEach(function (e) { html += '<li>' + escapar(e) + '</li>'; });
             html += '</ul></details>';
           }
-          if (inseridasPendentes > 0) {
+          if (inseridasPendentes > 0 || marcadosPendentes > 0 || demovidosSocias > 0) {
             html += '<p style="margin-top:0.5rem;border-top:1px solid var(--borda);padding-top:0.5rem;color:#9a6700;"><strong>⚠ Pendentes de verificação</strong></p>';
-            html += '<p>· Pagaram como sócia mas não estão cadastradas: ' + inseridasPendentes + '</p>';
+            if (inseridasPendentes > 0) html += '<p>· Novas pendências (cota de sócia ou cadastro não confirmado): ' + inseridasPendentes + '</p>';
+            if (marcadosPendentes > 0) html += '<p>· Movidas de não-sócias para pendências (têm cadastro, aguardando confirmação): ' + marcadosPendentes + '</p>';
+            if (demovidosSocias > 0) html += '<p>· Movidas de sócias para pendências (cadastro ainda não confirmado): ' + demovidosSocias + '</p>';
             html += '<p style="margin-top:0.4rem;"><a href="#bloco-pendentes">Ver lista de pendências →</a></p>';
           }
           rel.innerHTML = html;
