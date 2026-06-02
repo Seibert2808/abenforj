@@ -460,7 +460,17 @@
         }
         var r = await carregarPainel(email, doityId);
         if (!r || !r.ok) {
-          erro.textContent = (r && r.erro) || 'Inscrição não encontrada.';
+          var msgTecnica = (r && r.erro && !/encontrada/i.test(r.erro)) ? r.erro : null;
+          if (msgTecnica) {
+            erro.textContent = msgTecnica;
+          } else {
+            erro.innerHTML =
+              'Não encontramos sua inscrição. Se você se inscreveu pelo Doity há pouco tempo, ' +
+              'ela pode levar <strong>algumas horas</strong> para aparecer aqui — aguarde um pouco e tente novamente. ' +
+              'Confira também se o e-mail e o número da inscrição (formato <strong>DOI-XXXXXXXXX</strong>) ' +
+              'estão exatamente como no seu comprovante do Doity. ' +
+              'Se o problema continuar, escreva para <a href="mailto:abenforio@gmail.com">abenforio@gmail.com</a>.';
+          }
           erro.hidden = false;
           return;
         }
