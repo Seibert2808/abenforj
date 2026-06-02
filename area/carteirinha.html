@@ -183,10 +183,12 @@
       // carteirinha, eles só aparecem após essa aprovação.
       // Em modo admin, mostramos a carteirinha mesmo sem cadastro_completo
       // para a diretoria poder conferir dados antes de aprovar.
-      if (!p.cadastro_completo && !modoAdmin) {
-        document.getElementById('bloco-aguardando').hidden = false;
-        return;
-      }
+      // Com documentos confirmados (ou em modo admin), mostra a carteirinha completa.
+      // Com inscrição ATIVA mas documentos ainda pendentes, mostra uma PRÉVIA: só
+      // nome e validade — sem categoria, especialidade, título acadêmico ou Coren,
+      // que só são liberados após a diretoria confirmar os documentos.
+      var docsPendentes = !p.cadastro_completo && !modoAdmin;
+
       document.getElementById('bloco-carteirinha').hidden = false;
 
       if (modoAdmin) {
@@ -204,12 +206,47 @@
         if (linkPerfil) linkPerfil.style.display = 'none';
       }
 
+      // Prévia (docs pendentes): avisa que faltam dados e esconde a impressão —
+      // uma carteirinha incompleta não deve ser usada/impressa como credencial.
+      if (docsPendentes) {
+        var avisoPrev = document.createElement('div');
+        avisoPrev.className = 'aviso';
+        avisoPrev.style.cssText = 'background:#fff8e1;color:#856404;margin-bottom:1.5rem;';
+        avisoPrev.innerHTML = '<strong>Prévia da carteirinha.</strong> Categoria, especialidade, Coren, título e a ' +
+          'impressão são liberados assim que a diretoria confirmar seus documentos. ' +
+          '<a href="https://forms.gle/3BBomeeqXv5ZRHLJA" target="_blank" rel="noopener">Enviar documentos</a>.';
+        var blocoPrev = document.getElementById('bloco-carteirinha');
+        blocoPrev.parentNode.insertBefore(avisoPrev, blocoPrev);
+
+        var btnImprimir = document.querySelector('.actions-print button');
+        if (btnImprimir) btnImprimir.style.display = 'none';
+      }
+
       // Nome social prevalece sobre nome de registro na carteirinha.
-      // Se houver formação acadêmica (mestrado/doutorado), o título vai antes.
+      // O título acadêmico (Dra./Me. etc.) só entra na carteirinha completa.
       var nomeRaw = window.abenfo.utils.nomeExibido(p) || '—';
-      var titulo = tituloAcademico(p.formacao, p.genero);
+      var titulo = docsPendentes ? '' : tituloAcademico(p.formacao, p.genero);
       var nomeExibido = titulo ? (titulo + ' ' + nomeRaw) : nomeRaw;
       document.getElementById('cart-nome').textContent = nomeExibido;
+
+      // Validade — sempre visível (inclusive na prévia)
+      var ano = p.ano_vigencia || new Date().getFullYear();
+      document.getElementById('cart-ano').textContent = '31/12/' + ano;
+
+      var fotoEl = document.getElementById('cart-foto');
+      if (p.foto_url) {
+        fotoEl.innerHTML = '<img src="' + p.foto_url + '" alt="Foto da associada">';
+      }
+
+      // Categoria, especialidade e Coren — só na carteirinha completa.
+      // Na prévia ficam ocultas e a renderização para por aqui.
+      if (docsPendentes) {
+        document.getElementById('cart-categoria-linha').style.display = 'none';
+        document.getElementById('cart-especialidade-linha').style.display = 'none';
+        document.getElementById('cart-coren-linha').style.display = 'none';
+        return;
+      }
+
       document.getElementById('cart-categoria').textContent = rotuloCategoria(p.categoria, p.genero);
 
       // Especialidade só aparece se preenchida
@@ -220,9 +257,6 @@
         especialidadeLinha.style.display = 'none';
       }
 
-      var ano = p.ano_vigencia || new Date().getFullYear();
-      document.getElementById('cart-ano').textContent = '31/12/' + ano;
-
       // Coren só aparece se a associada tiver
       var corenLinha = document.getElementById('cart-coren-linha');
       if (p.coren) {
@@ -230,11 +264,6 @@
         corenLinha.innerHTML = '<strong>' + formatarCoren(p.coren) + '</strong>';
       } else {
         corenLinha.style.display = 'none';
-      }
-
-      var fotoEl = document.getElementById('cart-foto');
-      if (p.foto_url) {
-        fotoEl.innerHTML = '<img src="' + p.foto_url + '" alt="Foto da associada">';
       }
     }
 
