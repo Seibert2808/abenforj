@@ -1988,13 +1988,18 @@
         btn.textContent = 'Processando…';
 
         try {
-          // Cadastro de associada está CONFIRMADO? (aprovado + documentos conferidos)
+          // Cadastro de associada está CONFIRMADO para contar como sócia no evento?
+          // Regra: aprovada (status ativo) já confirma — documentos são etapa à parte.
+          // EXCEÇÃO: estudante só conta depois de conferir os documentos (comprovante
+          // de matrícula), porque a inscrição como estudante exige essa verificação.
           function perfilConfirmado(p) {
-            return !!(p && p.status === 'ativo' && p.cadastro_completo === true);
+            if (!p || p.status !== 'ativo') return false;
+            if (p.categoria === 'estudante') return p.cadastro_completo === true;
+            return true;
           }
 
           // 1a) Quem tem cadastro de associada? (cruza por profiles.email; traz status e docs)
-          var rPerfis = await sb.from('profiles').select('id, email, status, cadastro_completo').in('email', emails);
+          var rPerfis = await sb.from('profiles').select('id, email, status, cadastro_completo, categoria').in('email', emails);
           if (rPerfis.error) {
             mostrarAviso('Erro ao consultar perfis: ' + rPerfis.error.message, 'erro');
             return;
@@ -2007,7 +2012,7 @@
           //     (caso onde a socia usa email diferente no Doity, mapeado por
           //     "Associar a socia cadastrada" em imports anteriores).
           var rAlts = await sb.from('emails_alternativos')
-            .select('email, profile_id, profiles(id, email, status, cadastro_completo)').in('email', emails);
+            .select('email, profile_id, profiles(id, email, status, cadastro_completo, categoria)').in('email', emails);
           if (!rAlts.error) {
             (rAlts.data || []).forEach(function (a) {
               if (!a.profiles) return;
@@ -2151,12 +2156,12 @@
             // mapeia e-mail -> perfil (status/docs), por perfil direto OU por vínculo alternativo
             var emailParaPerfilRec = {};
             var rPerfRec = await sb.from('profiles')
-              .select('id, email, status, cadastro_completo').in('email', emailsTodosExt);
+              .select('id, email, status, cadastro_completo, categoria').in('email', emailsTodosExt);
             (rPerfRec.data || []).forEach(function (p) {
               if (p.email) emailParaPerfilRec[p.email.toLowerCase()] = p;
             });
             var rAltRec = await sb.from('emails_alternativos')
-              .select('email, profiles(id, status, cadastro_completo)').in('email', emailsTodosExt);
+              .select('email, profiles(id, status, cadastro_completo, categoria)').in('email', emailsTodosExt);
             (rAltRec.data || []).forEach(function (a) {
               if (a.email && a.profiles && !emailParaPerfilRec[a.email.toLowerCase()]) {
                 emailParaPerfilRec[a.email.toLowerCase()] = a.profiles;
@@ -2223,7 +2228,7 @@
           //     pra não perder a inscrição no evento (que ela pagou).
           var demovidosSocias = 0;
           var rInscEv = await sb.from('inscricoes_evento')
-            .select('id, perfil:profile_id(status, cadastro_completo, nome_completo, email)')
+            .select('id, perfil:profile_id(status, cadastro_completo, categoria, nome_completo, email)')
             .eq('evento_id', evento_id);
           var inscEvNaoConf = (rInscEv.data || []).filter(function (x) {
             return x.perfil && !perfilConfirmado(x.perfil);
