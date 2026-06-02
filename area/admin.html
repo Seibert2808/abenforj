@@ -2391,11 +2391,36 @@
 
       function corpoEmailRegularizacao(p) {
         var nomeEvento = (p.eventos && p.eventos.nome) || 'IX ENEON 2026';
+        var ehEstudante = loteEhEstudante(p.lote_doity);
+
+        // Variante para quem JÁ está com a anuidade 2026 quitada (lista oficial
+        // socias_anuidade): NÃO cobra anuidade de novo — só pede pra concluir o
+        // cadastro no site e enviar os documentos.
+        if (p._anuidadePaga) {
+          return (
+            'Olá, ' + (p.nome || '') + '!\n\n' +
+            'Identificamos sua inscrição em ' + nomeEvento + ' como sócia/o da ' +
+            'Associação Brasileira de Enfermagem Obstétrica do Estado do Rio de Janeiro (ABENFO-RJ)' +
+            (ehEstudante ? ' e como estudante de graduação' : '') + '. ' +
+            'Nossos registros mostram que sua anuidade de 2026 já está quitada — obrigada! ' +
+            'Falta apenas concluir seu cadastro no site para que sua inscrição como sócia no evento ' +
+            'seja confirmada. Você não precisa pagar a anuidade novamente.\n\n' +
+            'Como concluir:\n\n' +
+            '1) Crie sua conta em https://abenforj.org.br/cadastro e faça login.\n\n' +
+            '2) Envie seus documentos pela página do seu perfil (https://abenforj.org.br/area/perfil)' +
+            (ehEstudante ? ', incluindo o comprovante do seu vínculo como estudante de graduação (por exemplo, declaração de matrícula)' : '') +
+            '. Após a conferência da diretoria, sua inscrição no evento será confirmada.\n\n' +
+            'Se você já tem cadastro no site, basta responder este e-mail confirmando o e-mail utilizado, para regularizarmos.\n\n' +
+            'Atenciosamente,\n' +
+            'Comissão Executiva — ' + nomeEvento + '\n' +
+            'ABENFO-RJ'
+          );
+        }
 
         // Variante para quem se inscreveu como sócia/o E estudante de graduação:
         // além de regularizar a filiação, precisa enviar o comprovante de vínculo
         // de estudante pela página do perfil.
-        if (loteEhEstudante(p.lote_doity)) {
+        if (ehEstudante) {
           return (
             'Olá, ' + (p.nome || '') + '!\n\n' +
             'Identificamos sua inscrição em ' + nomeEvento + ' como sócia/o da ' +
@@ -2452,6 +2477,7 @@
         var avatar = '<div class="assoc-avatar">' + escapar(iniciaisDe(p.nome || '')) + '</div>';
 
         var badges = '<span class="badge badge-pendente">aguarda regularização</span>';
+        if (p._anuidadePaga) badges += '<span class="badge" style="background:#e6f4ea;color:#1f5d3a;">✓ anuidade 2026 paga</span>';
 
         var meta = '';
         meta += metaLinha('Evento', escapar(nomeEvento));
@@ -2531,6 +2557,19 @@
           });
           dados.forEach(function (p) { p._emails_enviados = porInscrito[p.id] || []; });
         }
+
+        // Sinaliza quem JÁ está com a anuidade 2026 paga (lista oficial socias_anuidade),
+        // cruzando por e-mail. Usado no selo do card e no e-mail de regularização.
+        if (dados.length > 0) {
+          var emailsPend = dados.map(function (p) { return (p.email || '').toLowerCase(); }).filter(Boolean);
+          if (emailsPend.length > 0) {
+            var rAnu = await sb.from('socias_anuidade').select('email').in('email', emailsPend);
+            var pagas = {};
+            (rAnu.data || []).forEach(function (a) { if (a.email) pagas[a.email.toLowerCase()] = true; });
+            dados.forEach(function (p) { p._anuidadePaga = !!pagas[(p.email || '').toLowerCase()]; });
+          }
+        }
+
         contador.textContent = dados.length > 0 ? '(' + dados.length + ')' : '';
         if (dados.length === 0) {
           alvo.innerHTML = '<div class="lista-vazia">Nenhuma pendência aberta — todas as inscrições como sócia foram verificadas.</div>';
