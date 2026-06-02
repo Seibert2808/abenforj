@@ -2122,6 +2122,33 @@
             inseridosExt = aInserirExt.length;
           }
 
+          // 5b) Auto-limpeza: remove da lista de não-sócias quem JÁ é reconhecida
+          //     como sócia (e-mail bate com um perfil ou com um vínculo alternativo).
+          //     Sem isso, sócias que entraram como externas antes de terem perfil ficam
+          //     "presas" na lista e reaparecem a cada reimportação. NÃO apaga quem tiver
+          //     trabalho científico vinculado, pra não perder o trabalho.
+          var removidosExternos = 0;
+          var emailsSocias = Object.keys(emailParaPerfil);
+          if (emailsSocias.length > 0) {
+            var rExtFantasma = await sb.from('inscritos_externos')
+              .select('id')
+              .eq('evento_id', evento_id)
+              .in('email', emailsSocias);
+            var idsFantasma = (rExtFantasma.data || []).map(function (x) { return x.id; });
+            if (idsFantasma.length > 0) {
+              var rTrabsFant = await sb.from('trabalhos_cientificos')
+                .select('inscrito_externo_id')
+                .in('inscrito_externo_id', idsFantasma);
+              var temTrabalhoFant = {};
+              (rTrabsFant.data || []).forEach(function (t) { temTrabalhoFant[t.inscrito_externo_id] = true; });
+              var idsApagar = idsFantasma.filter(function (id) { return !temTrabalhoFant[id]; });
+              if (idsApagar.length > 0) {
+                var rDelFant = await sb.from('inscritos_externos').delete().in('id', idsApagar);
+                if (!rDelFant.error) removidosExternos = idsApagar.length;
+              }
+            }
+          }
+
           var sociasJaExistiam = perfis.length - inseridasSocias;
           var externosJaExistiam = emailsNaoSocias.length - inseridosExt - semDados.length;
 
@@ -2134,6 +2161,7 @@
           html += '<p>· Encontradas no banco: ' + perfis.length + '</p>';
           html += '<p>· Novas inscrições registradas: ' + inseridasSocias + '</p>';
           if (sociasJaExistiam > 0) html += '<p>· Já estavam registradas: ' + sociasJaExistiam + '</p>';
+          if (removidosExternos > 0) html += '<p>· Removidas da lista de não-sócias (já eram sócias): ' + removidosExternos + '</p>';
           html += '<p style="margin-top:0.5rem;border-top:1px solid var(--borda);padding-top:0.5rem;"><strong>Não-sócias</strong></p>';
           html += '<p>· Detectadas na planilha: ' + (aInserirExt.length + externosJaExistiam) + '</p>';
           html += '<p>· Novas registradas: ' + inseridosExt + '</p>';
