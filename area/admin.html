@@ -2381,8 +2381,43 @@
       // (pagou como sócia mas não está em profiles)
       // ============================================================
 
+      // Detecta, pelo lote do Doity, inscrições de estudante de graduação
+      // (ex.: "Estudante de Graduação sócia/o da ABENFO-RJ").
+      function loteEhEstudante(loteTexto) {
+        if (!loteTexto) return false;
+        var s = String(loteTexto).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+        return /estudante/.test(s);
+      }
+
       function corpoEmailRegularizacao(p) {
         var nomeEvento = (p.eventos && p.eventos.nome) || 'IX ENEON 2026';
+
+        // Variante para quem se inscreveu como sócia/o E estudante de graduação:
+        // além de regularizar a filiação, precisa enviar o comprovante de vínculo
+        // de estudante pela página do perfil.
+        if (loteEhEstudante(p.lote_doity)) {
+          return (
+            'Olá, ' + (p.nome || '') + '!\n\n' +
+            'Identificamos sua inscrição em ' + nomeEvento + ' como sócia/o da ' +
+            'Associação Brasileira de Enfermagem Obstétrica do Estado do Rio de Janeiro (ABENFO-RJ) ' +
+            'e como estudante de graduação. No entanto, seu cadastro não consta em nosso sistema de ' +
+            'associadas e, portanto, sua inscrição ainda não foi confirmada.\n\n' +
+            'Para regularizar:\n\n' +
+            '1) Filie-se à ABENFO-RJ como estudante (anuidade)\n' +
+            'Consulte o valor da anuidade de estudante em https://abenforj.org.br/associe-se e realize o pagamento. ' +
+            'Em seguida, crie sua conta em https://abenforj.org.br/cadastro e faça login.\n\n' +
+            '2) Envie seus documentos pela página do seu perfil\n' +
+            'No seu perfil (https://abenforj.org.br/area/perfil), envie o comprovante de pagamento da anuidade ' +
+            'e o comprovante do seu vínculo como estudante de graduação (por exemplo, declaração de matrícula). ' +
+            'Após a conferência da diretoria, sua inscrição no evento será confirmada.\n\n' +
+            'Caso já seja associada e este e-mail tenha chegado por engano, ' +
+            'responda confirmando o e-mail cadastrado conosco para regularizarmos.\n\n' +
+            'Atenciosamente,\n' +
+            'Comissão Executiva — ' + nomeEvento + '\n' +
+            'ABENFO-RJ'
+          );
+        }
+
         return (
           'Olá, ' + (p.nome || '') + '!\n\n' +
           'Identificamos sua inscrição em ' + nomeEvento + ' como sócia/o da ' +
