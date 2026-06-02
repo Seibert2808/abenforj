@@ -55,6 +55,23 @@
   window.abenfo.utils = window.abenfo.utils || {};
   window.abenfo.utils.tituloPt = tituloPt;
 
+  // Nome social só "vale" quando difere do nome de registro (ignora caixa/espaços).
+  // Blinda as exibições contra dados antigos onde alguém preencheu nome social igual
+  // ao nome completo (antes da dedup existir no cadastro/perfil). Ver migration
+  // 2026-05-26-limpar-nome-social-redundante.sql.
+  function nomeSocialEfetivo(p) {
+    if (!p) return '';
+    var ns = (p.nome_social || '').trim();
+    var nc = (p.nome_completo || '').trim();
+    return (ns && ns.toLowerCase() !== nc.toLowerCase()) ? ns : '';
+  }
+  // Nome a exibir: nome social (se efetivo) senão o nome completo.
+  function nomeExibido(p) {
+    return nomeSocialEfetivo(p) || (p && p.nome_completo) || '';
+  }
+  window.abenfo.utils.nomeSocialEfetivo = nomeSocialEfetivo;
+  window.abenfo.utils.nomeExibido = nomeExibido;
+
   // ============================================================
   // Helpers de auth
   // ============================================================

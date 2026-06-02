@@ -1114,7 +1114,7 @@
       }
 
       function renderDetalhesPerfil(p) {
-        var nomeBase = p.nome_social || p.nome_completo || '(sem nome)';
+        var nomeBase = window.abenfo.utils.nomeExibido(p) || '(sem nome)';
         var avatar = p.foto_url
           ? '<div class="assoc-avatar" style="width:64px;height:64px;"><img src="' + escapar(p.foto_url) + '" alt=""></div>'
           : '<div class="assoc-avatar" style="width:64px;height:64px;font-size:1.2rem;">' + escapar(iniciaisDe(nomeBase)) + '</div>';
@@ -1130,7 +1130,7 @@
             avatar +
             '<div style="min-width:0;">' +
               '<div style="font-size:1.1rem;font-weight:600;color:var(--texto);">' + escapar(nomeBase) + '</div>' +
-              (p.nome_social && p.nome_completo
+              (window.abenfo.utils.nomeSocialEfetivo(p)
                 ? '<div style="color:var(--texto-suave);font-size:0.875rem;">Nome civil: ' + escapar(p.nome_completo) + '</div>'
                 : '') +
               '<div style="margin-top:0.4rem;display:flex;gap:0.35rem;flex-wrap:wrap;">' + badges + '</div>' +
@@ -1460,15 +1460,16 @@
         var anoAtual = new Date().getFullYear();
 
         // Avatar: foto se houver, senão iniciais
-        var nomeBase = p.nome_social || p.nome_completo || '';
+        var nomeBase = window.abenfo.utils.nomeExibido(p);
         var avatar = p.foto_url
           ? '<div class="assoc-avatar"><img src="' + p.foto_url + '" alt=""></div>'
           : '<div class="assoc-avatar">' + escapar(iniciaisDe(nomeBase)) + '</div>';
 
         // Nome + badges no header
+        var nsEf = window.abenfo.utils.nomeSocialEfetivo(p);
         var nomeExibido = escapar(p.nome_completo || '(sem nome)');
-        if (p.nome_social) {
-          nomeExibido = escapar(p.nome_social) + ' <span style="font-weight:400;color:var(--texto-suave);">(' + escapar(p.nome_completo) + ')</span>';
+        if (nsEf) {
+          nomeExibido = escapar(nsEf) + ' <span style="font-weight:400;color:var(--texto-suave);">(' + escapar(p.nome_completo) + ')</span>';
         }
 
         var badges = '<span class="badge badge-' + p.status + '">' + p.status + '</span>';

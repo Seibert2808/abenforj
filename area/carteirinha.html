@@ -194,7 +194,7 @@
         aviso.className = 'aviso';
         aviso.style.cssText = 'background:#fff8e1;color:#856404;margin-bottom:1.5rem;';
         aviso.innerHTML = '<strong>Visualização administrativa.</strong> Você está vendo a carteirinha de ' +
-          (p.nome_social || p.nome_completo || '(sem nome)') +
+          (window.abenfo.utils.nomeExibido(p) || '(sem nome)') +
           '. <a href="admin.html">Voltar ao painel admin</a>.';
         var bloco = document.getElementById('bloco-carteirinha');
         bloco.parentNode.insertBefore(aviso, bloco);
@@ -206,7 +206,7 @@
 
       // Nome social prevalece sobre nome de registro na carteirinha.
       // Se houver formação acadêmica (mestrado/doutorado), o título vai antes.
-      var nomeRaw = p.nome_social || p.nome_completo || '—';
+      var nomeRaw = window.abenfo.utils.nomeExibido(p) || '—';
       var titulo = tituloAcademico(p.formacao, p.genero);
       var nomeExibido = titulo ? (titulo + ' ' + nomeRaw) : nomeRaw;
       document.getElementById('cart-nome').textContent = nomeExibido;
