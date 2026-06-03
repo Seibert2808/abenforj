@@ -2724,9 +2724,15 @@
         var sb = window.abenfo.sb;
         var ctx = modalState.associarPendente;
         if (!ctx) return;
+        var perfil = ativosAtuais.find(function (p) { return p.id === profileId; }) || null;
+        var ehEstudanteSemDocs = perfil && perfil.categoria === 'estudante' && perfil.cadastro_completo !== true;
         if (!confirm(
           'Confirmar: registrar a inscrição de "' + ctx.nome + '" como sendo da associada selecionada?\n\n' +
-          'Isso cria a inscrição em "Sócias inscritas" e remove o registro de pendente.'
+          'Isso cria a inscrição em "Sócias inscritas" e remove o registro de pendente.' +
+          (ehEstudanteSemDocs
+            ? '\n\nComo a associada é estudante, os documentos dela também serão marcados como ' +
+              'conferidos — assim a inscrição continua confirmada nos próximos reprocessamentos.'
+            : '')
         )) return;
 
         var auth = await sb.auth.getUser();
@@ -2760,6 +2766,18 @@
           }, { onConflict: 'email' });
         }
 
+        // 2b) Estudante: marca os documentos como conferidos. Sem isso, o
+        //     reprocessamento da listagem trata a estudante como "não confirmada"
+        //     (perfilConfirmado exige cadastro_completo === true) e recria o
+        //     pendente — desfazendo a associação a cada import.
+        if (ehEstudanteSemDocs) {
+          var rDocs = await sb.from('profiles').update({ cadastro_completo: true }).eq('id', profileId);
+          if (rDocs.error) {
+            // Não aborta: a associação principal já foi feita; só avisa.
+            mostrarAviso('Inscrição associada, mas erro ao marcar documentos: ' + rDocs.error.message, 'erro');
+          }
+        }
+
         // 3) Remove o registro pendente (cascade deleta emails_enviados associados)
         var rDel = await sb.from('inscritos_externos').delete().eq('id', ctx.id);
         if (rDel.error) {
@@ -2769,7 +2787,7 @@
 
         mostrarAviso('Inscrição associada com sucesso.', 'sucesso');
         fecharModal();
-        await Promise.all([carregarPendentes(), atualizarResumoInscricoes()]);
+        await Promise.all([carregar(), carregarPendentes(), atualizarResumoInscricoes()]);
       }
 
       // ============================================================
