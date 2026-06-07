@@ -1511,7 +1511,9 @@
           acoesPrim =
             '<input type="number" min="2020" max="2099" value="' + (p.ano_vigencia || anoAtual) + '" data-ano="' + p.id + '" aria-label="Ano de vigência">' +
             '<button class="btn btn-solid" data-acao="anuidade-paga" data-id="' + p.id + '">Anuidade paga</button>';
-          acoesSec = '<button class="btn btn-ghost" data-acao="desativar" data-id="' + p.id + '">Desativar</button>';
+          acoesSec =
+            '<button class="btn btn-ghost" data-acao="voltar-pendente" data-id="' + p.id + '">Voltar para pendente</button>' +
+            '<button class="btn btn-ghost" data-acao="desativar" data-id="' + p.id + '">Desativar</button>';
         } else {
           // inativo: anuidade paga + (se houver email) enviar lembrete via mailto
           acoesPrim =
@@ -1741,6 +1743,11 @@
           if (!confirm('Tem certeza que quer ' + (acao === 'recusar' ? 'recusar' : 'desativar') + ' esta associada?')) return;
           atualiz.status = 'inativo';
           msgOk = acao === 'recusar' ? 'Associada recusada.' : 'Associada desativada.';
+        } else if (acao === 'voltar-pendente') {
+          if (!confirm('Voltar esta associada para a lista de pendentes de aprovação?\n\nIsso desfaz a aprovação/anuidade e limpa a validade.')) return;
+          atualiz.status = 'pendente';
+          atualiz.ano_vigencia = null;
+          msgOk = 'Associada devolvida à lista de pendentes de aprovação.';
         } else if (acao === 'docs-completo') {
           atualiz.cadastro_completo = true;
           msgOk = 'Documentos marcados como entregues.';
