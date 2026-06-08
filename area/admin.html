@@ -999,6 +999,9 @@
 
       // Estado dos perfis ativos para alimentar as estatísticas e o modal
       var ativosAtuais = [];
+      // Pendentes (status='pendente') ficam disponíveis pro modal de associação,
+      // pois associar uma inscrição a um perfil pendente também o aprova.
+      var pendentesAtuais = [];
       var modalState = { titulo: '', lista: [], perfilAtual: null, tipoLista: 'socias' };
 
       function isObstetricia(p) {
@@ -1643,6 +1646,7 @@
         document.getElementById('contador-inativos').textContent = '(' + inativos.length + ')';
 
         ativosAtuais = ativos;
+        pendentesAtuais = pendentes;
         atualizarStats();
         // Se o modal de lista estiver aberto, atualiza o conteúdo (caso a admin aprove alguém com modal aberto)
         if (!document.getElementById('modal-overlay').hidden && !modalState.perfilAtual && modalState.titulo) {
@@ -2694,7 +2698,7 @@
       // corresponde a uma inscrição pendente (caso de email diferente no Doity).
       function abrirModalSelecionarSocia(pendenteId, pendenteNome, eventoId) {
         modalState.titulo = 'Associar "' + pendenteNome + '" a uma sócia cadastrada';
-        modalState.lista = ordenarPorNome(ativosAtuais);
+        modalState.lista = ordenarPorNome(ativosAtuais.concat(pendentesAtuais));
         modalState.perfilAtual = null;
         modalState.tipoLista = 'selecionar-socia';
         modalState.associarPendente = { id: pendenteId, nome: pendenteNome, evento_id: eventoId };
@@ -2707,9 +2711,10 @@
         var intro =
           '<p style="margin:0 0 1rem;color:var(--texto-suave);font-size:0.875rem;">' +
             'Clique na associada que corresponde a <strong>' + escapar(ctx.nome || '') + '</strong>. ' +
-            'A inscrição vai ser transferida para o cadastro escolhido (registro pendente é removido).' +
+            'A inscrição vai ser transferida para o cadastro escolhido (registro pendente é removido). ' +
+            'Se a conta escolhida ainda estiver <strong>aguardando aprovação</strong>, associar também a <strong>aprova</strong> automaticamente.' +
           '</p>';
-        if (!perfis.length) return intro + '<p class="lista-vazia">Nenhuma associada ativa cadastrada.</p>';
+        if (!perfis.length) return intro + '<p class="lista-vazia">Nenhuma associada cadastrada.</p>';
         var html = intro + '<div class="lista-nomes">';
         perfis.forEach(function (p) {
           var nomeBase = p.nome_social || p.nome_completo || '(sem nome)';
@@ -2717,12 +2722,16 @@
             ? '<span class="mini-avatar"><img src="' + escapar(p.foto_url) + '" alt=""></span>'
             : '<span class="mini-avatar">' + escapar(iniciaisDe(nomeBase)) + '</span>';
           var sub = subtituloPerfil(p);
+          var seloPendente = p.status === 'pendente'
+            ? '<span style="font-size:0.7rem;color:#a16207;background:#fef9c3;border-radius:6px;padding:0.05rem 0.4rem;align-self:flex-start;margin-top:0.15rem;">aguardando aprovação</span>'
+            : '';
           html += '<button type="button" class="btn-selecionar-socia" data-acao-modal="confirmar-associacao" data-id="' + escapar(p.id) + '">' +
             avatar +
             '<span class="nome-info">' +
               '<strong>' + escapar(nomeBase) + '</strong>' +
               (sub ? '<span>' + escapar(sub) + '</span>' : '') +
               (p.email ? '<span style="font-size:0.75rem;">' + escapar(p.email) + '</span>' : '') +
+              seloPendente +
             '</span>' +
           '</button>';
         });
@@ -2734,11 +2743,19 @@
         var sb = window.abenfo.sb;
         var ctx = modalState.associarPendente;
         if (!ctx) return;
-        var perfil = ativosAtuais.find(function (p) { return p.id === profileId; }) || null;
+        var perfil = ativosAtuais.find(function (p) { return p.id === profileId; })
+          || pendentesAtuais.find(function (p) { return p.id === profileId; })
+          || null;
+        var ehPendente = perfil && perfil.status === 'pendente';
         var ehEstudanteSemDocs = perfil && perfil.categoria === 'estudante' && perfil.cadastro_completo !== true;
         if (!confirm(
           'Confirmar: registrar a inscrição de "' + ctx.nome + '" como sendo da associada selecionada?\n\n' +
           'Isso cria a inscrição em "Sócias inscritas" e remove o registro de pendente.' +
+          (ehPendente
+            ? '\n\nA conta dessa associada está aguardando aprovação e será APROVADA ' +
+              'automaticamente (status ativo) ao confirmar — assim ela não volta para as ' +
+              'pendências nos próximos reprocessamentos da planilha.'
+            : '') +
           (ehEstudanteSemDocs
             ? '\n\nComo a associada é estudante, os documentos dela também serão marcados como ' +
               'conferidos — assim a inscrição continua confirmada nos próximos reprocessamentos.'
@@ -2776,16 +2793,36 @@
           }, { onConflict: 'email' });
         }
 
-        // 2b) Estudante: marca os documentos como conferidos. Sem isso, o
-        //     reprocessamento da listagem trata a estudante como "não confirmada"
-        //     (perfilConfirmado exige cadastro_completo === true) e recria o
-        //     pendente — desfazendo a associação a cada import.
-        if (ehEstudanteSemDocs) {
-          var rDocs = await sb.from('profiles').update({ cadastro_completo: true }).eq('id', profileId);
-          if (rDocs.error) {
-            // Não aborta: a associação principal já foi feita; só avisa.
-            mostrarAviso('Inscrição associada, mas erro ao marcar documentos: ' + rDocs.error.message, 'erro');
+        // 2b) Aprova/atualiza o perfil. Associar é a confirmação de que é sócia real:
+        //     - se a conta está pendente, vira 'ativo' (e ganha validade da anuidade
+        //       no ano corrente se ainda não tiver) — sem isso o reprocessamento
+        //       (perfilConfirmado exige status==='ativo') re-cria a pendência a cada import;
+        //     - estudante sem docs ganha cadastro_completo=true (perfilConfirmado exige
+        //       cadastro_completo===true pra estudante).
+        var atualizPerfil = {};
+        if (ehPendente) {
+          atualizPerfil.status = 'ativo';
+          if (!perfil.ano_vigencia) atualizPerfil.ano_vigencia = new Date().getFullYear();
+        }
+        if (ehEstudanteSemDocs) atualizPerfil.cadastro_completo = true;
+        if (Object.keys(atualizPerfil).length) {
+          var rUpd = await sb.from('profiles').update(atualizPerfil).eq('id', profileId);
+          if (rUpd.error) {
+            // Não aborta: a inscrição principal já foi criada; só avisa.
+            mostrarAviso('Inscrição associada, mas erro ao aprovar/atualizar o perfil: ' + rUpd.error.message, 'erro');
           }
+        }
+
+        // 2c) Re-vincula trabalhos científicos do inscrito externo ao perfil ANTES de
+        //     deletar o externo. A FK trabalhos_cientificos.inscrito_externo_id é
+        //     "on delete set null"; sem profile_id, deletar o externo violaria o check
+        //     (profile_id IS NOT NULL OR inscrito_externo_id IS NOT NULL) e travaria o delete.
+        var rTrab = await sb.from('trabalhos_cientificos')
+          .update({ profile_id: profileId, inscrito_externo_id: null })
+          .eq('inscrito_externo_id', ctx.id);
+        if (rTrab.error) {
+          mostrarAviso('Inscrição associada, mas erro ao revincular trabalho científico: ' + rTrab.error.message + '. Não removi o pendente para não perder o trabalho.', 'erro');
+          return;
         }
 
         // 3) Remove o registro pendente (cascade deleta emails_enviados associados)
