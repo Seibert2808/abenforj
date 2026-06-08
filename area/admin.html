@@ -989,6 +989,77 @@
           </div>
         </details>
 
+        <details class="secao">
+          <summary><h2>Certificados</h2></summary>
+          <p class="descricao-secao">
+            Modelo de certificado por <strong>evento × tipo</strong>. Você sobe a arte base
+            (PNG <strong>3508×2480</strong>, A4 paisagem) com as assinaturas já na imagem; o sistema
+            escreve só o texto central. As sócias e os externos só baixam quando o evento estiver
+            <strong>liberado</strong>.
+          </p>
+
+          <div class="import-card">
+            <label for="cert-evento">Evento</label>
+            <select id="cert-evento"><option value="" disabled selected>Carregando…</option></select>
+
+            <label style="display:flex;align-items:center;gap:0.5rem;margin-top:1rem;cursor:pointer;">
+              <input type="checkbox" id="cert-liberados" style="width:auto;min-height:0;">
+              Certificados liberados para download (sócias e externos)
+            </label>
+
+            <hr style="border:0;border-top:1px solid var(--borda);margin:1.25rem 0;">
+
+            <label for="cert-tipo">Tipo de certificado</label>
+            <select id="cert-tipo">
+              <option value="participacao">Participação no evento</option>
+              <option value="oficina">Oficina pré-evento</option>
+              <option value="palestrante">Palestrante</option>
+              <option value="comissao">Comissão / organização</option>
+            </select>
+
+            <label style="margin-top:1rem;">Arte base (PNG 3508×2480)</label>
+            <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
+              <input type="file" id="cert-base-arquivo" accept="image/png,image/jpeg" hidden>
+              <button type="button" id="btn-cert-escolher-base" class="btn btn-ghost" style="min-height:0;padding:0.55rem 0.9rem;">Escolher arte…</button>
+              <span id="cert-base-status" style="color:var(--texto-suave);font-size:0.875rem;">Sem arte: o teste sai com fundo branco.</span>
+            </div>
+
+            <label for="cert-texto-pre" style="margin-top:1rem;">Texto de abertura (linha pequena acima do nome)</label>
+            <input id="cert-texto-pre" type="text" autocomplete="off" placeholder="Certificamos que">
+
+            <label for="cert-texto-corpo" style="margin-top:1rem;">Texto do certificado (corpo, abaixo do nome)</label>
+            <textarea id="cert-texto-corpo" rows="4"></textarea>
+            <p style="font-size:0.825rem;color:var(--texto-suave);margin:0.35rem 0 0;">
+              Campos automáticos: <code>{{nome}}</code> (vai grande, no centro), <code>{{oficina}}</code>,
+              <code>{{carga_horaria}}</code>, <code>{{titulo_palestra}}</code>, <code>{{comissao}}</code>.
+            </p>
+
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.75rem;margin-top:1rem;">
+              <div>
+                <label for="cert-nome-size">Tam. do nome (px)</label>
+                <input id="cert-nome-size" type="number" value="130">
+              </div>
+              <div>
+                <label for="cert-corpo-size">Tam. do corpo (px)</label>
+                <input id="cert-corpo-size" type="number" value="64">
+              </div>
+              <div>
+                <label for="cert-band-top">Altura inicial Y (px)</label>
+                <input id="cert-band-top" type="number" value="1000">
+              </div>
+            </div>
+            <p style="font-size:0.825rem;color:var(--texto-suave);margin:0.35rem 0 0;">
+              A arte tem 2480px de altura. "Altura inicial Y" é onde o texto começa (use ~1000 pra meio da página).
+            </p>
+
+            <div style="margin-top:1rem;display:flex;gap:0.5rem;flex-wrap:wrap;">
+              <button type="button" id="btn-cert-salvar" class="btn btn-solid">Salvar modelo</button>
+              <button type="button" id="btn-cert-teste" class="btn btn-ghost">Gerar PDF de teste</button>
+            </div>
+            <p id="cert-status" style="font-size:0.875rem;color:var(--texto-suave);margin:0.6rem 0 0;"></p>
+          </div>
+        </details>
+
       </div>
     </section>
   </main>
@@ -1006,6 +1077,7 @@
   <script src="../js/config.js"></script>
   <script src="../js/supabase-client.js"></script>
   <script src="../js/area-comum.js"></script>
+  <script src="../js/certificado.js"></script>
   <script>
     (function () {
       var ROTULOS = {
@@ -3865,6 +3937,197 @@
       });
 
       // ============================================================
+      // Certificados (modelos por evento × tipo)
+      // ============================================================
+      var CERT_DEFAULTS = {
+        participacao: {
+          pre: 'Certificamos que',
+          corpo: 'participou do IX Encontro de Enfermagem Obstétrica e Neonatal do Estado do Rio de Janeiro – IX ENEON, realizado de 15 a 17 de julho de 2026, na UERJ, com o tema "Diversidade, Equidade e Acesso para mulheres e bebês no Estado do Rio de Janeiro", totalizando {{carga_horaria}} horas.'
+        },
+        oficina: {
+          pre: 'Certificamos que',
+          corpo: 'participou da oficina pré-evento "{{oficina}}", realizada em 15 de julho de 2026, no âmbito do IX ENEON, na UERJ, com carga horária de 4 horas.'
+        },
+        palestrante: {
+          pre: 'Certificamos que',
+          corpo: 'atuou como palestrante no IX ENEON – IX Encontro de Enfermagem Obstétrica e Neonatal do Estado do Rio de Janeiro, apresentando "{{titulo_palestra}}", realizado de 15 a 17 de julho de 2026, na UERJ.'
+        },
+        comissao: {
+          pre: 'Certificamos que',
+          corpo: 'integrou a {{comissao}} do IX ENEON – IX Encontro de Enfermagem Obstétrica e Neonatal do Estado do Rio de Janeiro, realizado de 15 a 17 de julho de 2026, na UERJ.'
+        }
+      };
+      var certEventos = [];
+      var certBaseSelecionada = null;  // arquivo escolhido mas ainda não salvo
+      var certModeloAtual = null;      // linha do modelo carregado (ou null)
+
+      function certEl(id) { return document.getElementById(id); }
+      function certStatus(msg, erro) {
+        var el = certEl('cert-status');
+        el.textContent = msg || '';
+        el.style.color = erro ? '#b00020' : 'var(--texto-suave)';
+      }
+      function eventoCertSelecionado() {
+        var id = certEl('cert-evento').value;
+        return certEventos.find(function (e) { return e.id === id; }) || null;
+      }
+
+      async function carregarCertificadosEventos() {
+        var sb = window.abenfo.sb;
+        var sel = certEl('cert-evento');
+        var r = await sb.from('eventos').select('id, nome, certificados_liberados').order('nome', { ascending: true });
+        if (r.error) { sel.innerHTML = '<option value="">Erro: ' + escapar(r.error.message) + '</option>'; return; }
+        certEventos = r.data || [];
+        if (!certEventos.length) { sel.innerHTML = '<option value="">Nenhum evento cadastrado</option>'; return; }
+        sel.innerHTML = certEventos.map(function (e) {
+          return '<option value="' + e.id + '">' + escapar(e.nome) + '</option>';
+        }).join('');
+        await aoTrocarEventoCert();
+      }
+
+      async function aoTrocarEventoCert() {
+        var ev = eventoCertSelecionado();
+        certEl('cert-liberados').checked = !!(ev && ev.certificados_liberados);
+        await carregarModeloCert();
+      }
+
+      async function carregarModeloCert() {
+        var sb = window.abenfo.sb;
+        var ev = eventoCertSelecionado();
+        var tipo = certEl('cert-tipo').value;
+        certBaseSelecionada = null;
+        certEl('cert-base-arquivo').value = '';
+        certStatus('');
+        if (!ev) return;
+        var r = await sb.from('certificado_modelos').select('*')
+          .eq('evento_id', ev.id).eq('tipo', tipo).maybeSingle();
+        if (r.error) { certStatus('Erro ao carregar modelo: ' + r.error.message, true); return; }
+        certModeloAtual = r.data || null;
+        var def = CERT_DEFAULTS[tipo] || { pre: 'Certificamos que', corpo: '' };
+        var cfg = (certModeloAtual && certModeloAtual.config) || {};
+        certEl('cert-texto-pre').value = certModeloAtual ? (certModeloAtual.texto_pre || '') : def.pre;
+        certEl('cert-texto-corpo').value = certModeloAtual ? (certModeloAtual.texto_template || '') : def.corpo;
+        certEl('cert-nome-size').value = cfg.nome_size || 130;
+        certEl('cert-corpo-size').value = cfg.corpo_size || 64;
+        certEl('cert-band-top').value = cfg.band_top || 1000;
+        certEl('cert-base-status').textContent = (certModeloAtual && certModeloAtual.base_path)
+          ? 'Arte salva (escolha outra para substituir).'
+          : 'Sem arte: o teste sai com fundo branco.';
+      }
+
+      function certConfigDoForm() {
+        return {
+          nome_size: parseInt(certEl('cert-nome-size').value, 10) || 130,
+          corpo_size: parseInt(certEl('cert-corpo-size').value, 10) || 64,
+          band_top: parseInt(certEl('cert-band-top').value, 10) || 1000,
+          pre_size: 56,
+          margem: 380
+        };
+      }
+
+      async function salvarModeloCert() {
+        var sb = window.abenfo.sb;
+        var ev = eventoCertSelecionado();
+        if (!ev) { certStatus('Selecione um evento.', true); return; }
+        var tipo = certEl('cert-tipo').value;
+        var btn = certEl('btn-cert-salvar');
+        btn.disabled = true;
+        certStatus('Salvando…');
+
+        var basePath = certModeloAtual ? certModeloAtual.base_path : null;
+        if (certBaseSelecionada) {
+          var ext = (certBaseSelecionada.name.split('.').pop() || 'png').toLowerCase();
+          var novoPath = 'base-' + tipo + '-' + ev.id + '-' + Date.now() + '.' + ext;
+          var up = await sb.storage.from('certificados-bases').upload(novoPath, certBaseSelecionada, { cacheControl: '3600', upsert: false });
+          if (up.error) { certStatus('Erro ao enviar a arte: ' + up.error.message, true); btn.disabled = false; return; }
+          if (basePath) { await sb.storage.from('certificados-bases').remove([basePath]); }
+          basePath = novoPath;
+        }
+
+        var dados = {
+          evento_id: ev.id,
+          tipo: tipo,
+          base_path: basePath,
+          texto_pre: certEl('cert-texto-pre').value.trim() || null,
+          texto_template: certEl('cert-texto-corpo').value.trim() || null,
+          config: certConfigDoForm()
+        };
+        var r = await sb.from('certificado_modelos').upsert(dados, { onConflict: 'evento_id,tipo' }).select().single();
+        btn.disabled = false;
+        if (r.error) { certStatus('Erro ao salvar: ' + r.error.message, true); return; }
+        certModeloAtual = r.data;
+        certBaseSelecionada = null;
+        certEl('cert-base-arquivo').value = '';
+        certEl('cert-base-status').textContent = basePath
+          ? 'Arte salva (escolha outra para substituir).'
+          : 'Sem arte: o teste sai com fundo branco.';
+        certStatus('Modelo salvo.');
+        mostrarAviso('Modelo de certificado salvo.', 'sucesso');
+      }
+
+      async function gerarTesteCert() {
+        var sb = window.abenfo.sb;
+        var tipo = certEl('cert-tipo').value;
+        var btn = certEl('btn-cert-teste');
+        btn.disabled = true;
+        certStatus('Gerando PDF de teste…');
+        var baseUrl = null;
+        try {
+          if (certBaseSelecionada) {
+            baseUrl = URL.createObjectURL(certBaseSelecionada);
+          } else if (certModeloAtual && certModeloAtual.base_path) {
+            baseUrl = await window.abenfoCert.baseUrlDeStorage(sb, 'certificados-bases', certModeloAtual.base_path);
+          }
+          var nome = 'Maria da Silva Exemplo';
+          var campos = {
+            nome: nome,
+            oficina: 'Manejo Clínico da Amamentação com Laserterapia',
+            carga_horaria: '20',
+            titulo_palestra: 'Título da palestra apresentada',
+            comissao: 'Comissão Executiva'
+          };
+          var corpo = window.abenfoCert.aplicarCampos(certEl('cert-texto-corpo').value, campos);
+          await window.abenfoCert.baixarPDF({
+            baseUrl: baseUrl,
+            textoPre: certEl('cert-texto-pre').value.trim(),
+            nome: nome,
+            textoCorpo: corpo,
+            config: certConfigDoForm()
+          }, 'certificado-teste-' + tipo + '.pdf');
+          certStatus('PDF de teste gerado (confira o download).');
+        } catch (e) {
+          certStatus('Erro ao gerar teste: ' + (e && e.message ? e.message : e), true);
+        } finally {
+          if (baseUrl) URL.revokeObjectURL(baseUrl);
+          btn.disabled = false;
+        }
+      }
+
+      if (certEl('cert-evento')) {
+        certEl('cert-evento').addEventListener('change', aoTrocarEventoCert);
+        certEl('cert-tipo').addEventListener('change', carregarModeloCert);
+        certEl('btn-cert-escolher-base').addEventListener('click', function () { certEl('cert-base-arquivo').click(); });
+        certEl('cert-base-arquivo').addEventListener('change', function (e) {
+          var f = e.target.files && e.target.files[0];
+          if (!f) { certBaseSelecionada = null; return; }
+          certBaseSelecionada = f;
+          certEl('cert-base-status').textContent = 'Arte escolhida: ' + f.name + ' (clique em "Salvar modelo" para guardar).';
+        });
+        certEl('btn-cert-salvar').addEventListener('click', salvarModeloCert);
+        certEl('btn-cert-teste').addEventListener('click', gerarTesteCert);
+        certEl('cert-liberados').addEventListener('change', async function () {
+          var ev = eventoCertSelecionado();
+          if (!ev) return;
+          var sb = window.abenfo.sb;
+          var novo = certEl('cert-liberados').checked;
+          var r = await sb.from('eventos').update({ certificados_liberados: novo }).eq('id', ev.id);
+          if (r.error) { mostrarAviso('Erro ao atualizar liberação: ' + r.error.message, 'erro'); certEl('cert-liberados').checked = !novo; return; }
+          ev.certificados_liberados = novo;
+          mostrarAviso(novo ? 'Certificados liberados para "' + ev.nome + '".' : 'Certificados bloqueados para "' + ev.nome + '".', 'sucesso');
+        });
+      }
+
+      // ============================================================
       // Busca global do painel
       // Filtra os cards (associadas, trabalhos, biblioteca) pelo texto visível,
       // abre as seções que têm resultado e fecha as vazias.
@@ -3960,6 +4223,7 @@
         carregarTrabalhosAdmin();
         carregarBibliotecaAdmin();
         carregarAvisosAdmin();
+        carregarCertificadosEventos();
       });
     })();
   </script>
