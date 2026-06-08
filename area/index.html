@@ -10,6 +10,18 @@
   <link rel="stylesheet" href="../css/style.css">
   <link rel="stylesheet" href="../css/area.css">
   <link rel="icon" type="image/png" href="../assets/logo-abenforj.png">
+  <style>
+    /* Card "Avisos" — mostra os recados ativos direto no dashboard */
+    #card-avisos { cursor: default; }
+    #card-avisos:hover { border-color: var(--borda); transform: none; }
+    #avisos-conteudo { margin-top: 0.25rem; max-height: 240px; overflow-y: auto; }
+    .aviso-item { padding: 0.6rem 0; border-top: 1px solid var(--borda); }
+    .aviso-item:first-child { border-top: 0; padding-top: 0; }
+    .aviso-item strong { display: block; color: var(--texto); font-size: 0.95rem; line-height: 1.35; }
+    .aviso-item p { margin: 0.2rem 0 0; font-size: 0.875rem; color: var(--texto-suave); white-space: pre-wrap; }
+    .aviso-item .aviso-data { display: block; margin-top: 0.25rem; font-size: 0.72rem; color: var(--texto-suave); opacity: 0.75; }
+    .avisos-vazio { font-size: 0.95rem; color: var(--texto-suave); margin: 0; }
+  </style>
 </head>
 <body>
   <a href="#conteudo" class="skip-link">Pular para o conteúdo</a>
@@ -105,6 +117,16 @@
             <h3>Transparência</h3>
             <p>Atas de assembleia, prestação de contas e quadro associativo.</p>
           </a>
+
+          <div class="card-area" id="card-avisos">
+            <div class="icon" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+            </div>
+            <h3>Avisos</h3>
+            <div id="avisos-conteudo">
+              <p class="avisos-vazio">Carregando avisos…</p>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -166,6 +188,8 @@
         }
       }
 
+      carregarAvisos();
+
       // Pop-up de submissão de trabalhos — só no período (1 a 19/jun) e 1x por pessoa
       var PRAZO_INICIO = new Date('2026-06-01T00:00:00-03:00');
       var PRAZO_FIM    = new Date('2026-06-19T23:59:59-03:00');
@@ -185,6 +209,42 @@
         document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') fechar(); });
       }
     });
+
+    function escapeHtml(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    async function carregarAvisos() {
+      var alvo = document.getElementById('avisos-conteudo');
+      if (!alvo || !window.abenfo || !window.abenfo.sb) return;
+      var r = await window.abenfo.sb.from('avisos')
+        .select('titulo, mensagem, criado_em')
+        .eq('ativo', true)
+        .order('ordem', { ascending: true })
+        .order('criado_em', { ascending: false });
+      if (r.error) {
+        alvo.innerHTML = '<p class="avisos-vazio">Não foi possível carregar os avisos agora.</p>';
+        return;
+      }
+      var avisos = r.data || [];
+      if (avisos.length === 0) {
+        alvo.innerHTML = '<p class="avisos-vazio">Nenhum aviso no momento.</p>';
+        return;
+      }
+      alvo.innerHTML = avisos.map(function (a) {
+        var d = a.criado_em ? new Date(a.criado_em) : null;
+        var data = (d && !isNaN(d))
+          ? d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+          : '';
+        return '<div class="aviso-item">' +
+          '<strong>' + escapeHtml(a.titulo) + '</strong>' +
+          (a.mensagem ? '<p>' + escapeHtml(a.mensagem) + '</p>' : '') +
+          (data ? '<span class="aviso-data">' + data + '</span>' : '') +
+        '</div>';
+      }).join('');
+    }
   </script>
 </body>
 </html>
