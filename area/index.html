@@ -19,6 +19,8 @@
     .aviso-item:first-child { border-top: 0; padding-top: 0; }
     .aviso-item strong { display: block; color: var(--texto); font-size: 0.95rem; line-height: 1.35; }
     .aviso-item p { margin: 0.2rem 0 0; font-size: 0.875rem; color: var(--texto-suave); white-space: pre-wrap; }
+    .aviso-item .aviso-link { display: inline-block; margin-top: 0.4rem; font-size: 0.85rem; font-weight: 600; color: var(--verde-escuro); text-decoration: none; }
+    .aviso-item .aviso-link:hover { text-decoration: underline; }
     .aviso-item .aviso-data { display: block; margin-top: 0.25rem; font-size: 0.72rem; color: var(--texto-suave); opacity: 0.75; }
     .avisos-vazio { font-size: 0.95rem; color: var(--texto-suave); margin: 0; }
   </style>
@@ -220,7 +222,7 @@
       var alvo = document.getElementById('avisos-conteudo');
       if (!alvo || !window.abenfo || !window.abenfo.sb) return;
       var r = await window.abenfo.sb.from('avisos')
-        .select('titulo, mensagem, criado_em')
+        .select('titulo, mensagem, criado_em, link_url, link_texto')
         .eq('ativo', true)
         .order('ordem', { ascending: true })
         .order('criado_em', { ascending: false });
@@ -238,9 +240,12 @@
         var data = (d && !isNaN(d))
           ? d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
           : '';
+        var temLink = a.link_url && /^https?:\/\//i.test(a.link_url);
+        var linkTexto = (a.link_texto && a.link_texto.trim()) ? a.link_texto.trim() : 'Saiba mais';
         return '<div class="aviso-item">' +
           '<strong>' + escapeHtml(a.titulo) + '</strong>' +
           (a.mensagem ? '<p>' + escapeHtml(a.mensagem) + '</p>' : '') +
+          (temLink ? '<a class="aviso-link" href="' + escapeHtml(a.link_url) + '" target="_blank" rel="noopener">' + escapeHtml(linkTexto) + ' →</a>' : '') +
           (data ? '<span class="aviso-data">' + data + '</span>' : '') +
         '</div>';
       }).join('');

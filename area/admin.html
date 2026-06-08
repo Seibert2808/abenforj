@@ -950,7 +950,21 @@
             <input id="aviso-titulo" type="text" autocomplete="off" placeholder="Ex.: Assembleia geral em 30/06">
 
             <label for="aviso-mensagem" style="margin-top:1rem;">Mensagem (opcional)</label>
-            <textarea id="aviso-mensagem" rows="3" placeholder="Detalhes do aviso (data, local, link, etc.)"></textarea>
+            <textarea id="aviso-mensagem" rows="3" placeholder="Detalhes do aviso (data, local, etc.)"></textarea>
+
+            <div style="display:grid;grid-template-columns:2fr 1fr;gap:0.75rem;margin-top:1rem;">
+              <div>
+                <label for="aviso-link-url">Link (opcional)</label>
+                <input id="aviso-link-url" type="url" autocomplete="off" placeholder="https://...">
+              </div>
+              <div>
+                <label for="aviso-link-texto">Texto do botão</label>
+                <input id="aviso-link-texto" type="text" autocomplete="off" placeholder="Saiba mais">
+              </div>
+            </div>
+            <p style="font-size:0.825rem;color:var(--texto-suave);margin:0.35rem 0 0;">
+              Se preencher o link, o aviso ganha um botão clicável. O texto do botão é opcional (padrão: "Saiba mais").
+            </p>
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-top:1rem;align-items:end;">
               <div>
@@ -3753,6 +3767,7 @@
             (a.mensagem ? '<div class="obra-admin-meta" style="white-space:pre-wrap;">' + escapar(a.mensagem) + '</div>' : '') +
             '<div class="obra-admin-meta">' + meta.join(' · ') + '</div>' +
             '<div class="assoc-acoes">' +
+              (a.link_url ? '<a class="btn btn-ghost" href="' + escapar(a.link_url) + '" target="_blank" rel="noopener">Abrir link</a>' : '') +
               '<button class="btn btn-ghost" data-acao-aviso="' + (a.ativo ? 'ocultar' : 'mostrar') + '" data-id="' + a.id + '">' + (a.ativo ? 'Ocultar' : 'Mostrar') + '</button>' +
               '<span class="sep"></span>' +
               '<button class="btn btn-ghost btn-excluir" data-acao-aviso="excluir" data-id="' + a.id + '" data-titulo="' + escapar(a.titulo) + '">Excluir</button>' +
@@ -3771,6 +3786,8 @@
         var dados = {
           titulo: titulo,
           mensagem: document.getElementById('aviso-mensagem').value.trim() || null,
+          link_url: document.getElementById('aviso-link-url').value.trim() || null,
+          link_texto: document.getElementById('aviso-link-texto').value.trim() || null,
           ordem: parseInt(document.getElementById('aviso-ordem').value, 10) || 0,
           ativo: document.getElementById('aviso-ativo').checked
         };
@@ -3779,8 +3796,9 @@
         if (r.error) { mostrarAviso('Erro ao salvar aviso: ' + r.error.message, 'erro'); return; }
 
         mostrarAviso('Aviso "' + titulo + '" adicionado.', 'sucesso');
-        document.getElementById('aviso-titulo').value = '';
-        document.getElementById('aviso-mensagem').value = '';
+        ['aviso-titulo', 'aviso-mensagem', 'aviso-link-url', 'aviso-link-texto'].forEach(function (id) {
+          document.getElementById(id).value = '';
+        });
         document.getElementById('aviso-ordem').value = '0';
         document.getElementById('aviso-ativo').checked = true;
         await carregarAvisosAdmin();
