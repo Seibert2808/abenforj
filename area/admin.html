@@ -732,6 +732,18 @@
         </div>
         </details>
 
+        <h2 style="margin-top:2rem;">Cancelamentos <span id="contador-cancelamentos" style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;"></span></h2>
+        <p style="color:var(--texto-suave);max-width:680px;">
+          Inscrições canceladas (sócias e não-sócias). Elas não aparecem no credenciamento normal.
+          Imprima esta lista para deixar na mesa de cadastramento.
+        </p>
+        <div style="margin:0.5rem 0 0.75rem;">
+          <button type="button" id="btn-imprimir-cancelamentos" class="btn btn-ghost" style="min-height:0;padding:0.55rem 0.9rem;">Imprimir cancelamentos</button>
+        </div>
+        <div id="lista-cancelamentos" style="margin-bottom:2.5rem;">
+          <div class="lista-vazia">Carregando…</div>
+        </div>
+
         <details class="secao" id="bloco-pendentes">
           <summary><h2>Inscrições pendentes de verificação <span id="contador-inscricoes-pendentes" style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;"></span></h2></summary>
           <p class="descricao-secao">
@@ -1127,6 +1139,7 @@
       // pois associar uma inscrição a um perfil pendente também o aprova.
       var pendentesAtuais = [];
       var modalState = { titulo: '', lista: [], perfilAtual: null, tipoLista: 'socias' };
+      var cancelamentosCache = [];
 
       function isObstetricia(p) {
         if (p.categoria === 'obstetriz') return true;
@@ -1211,13 +1224,15 @@
             ? '<span class="mini-avatar"><img src="' + escapar(p.foto_url) + '" alt=""></span>'
             : '<span class="mini-avatar">' + escapar(iniciaisDe(nomeBase)) + '</span>';
           var sub = subtituloPerfil(p);
+          var btnCancelarSocia = (modalState.tipoLista === 'socias' && p._inscricaoId ? '<button type="button" class="btn btn-ghost" data-acao-cancelar="socia" data-id="' + escapar(p._inscricaoId) + '" data-nome="' + escapar(nomeBase) + '">Cancelar inscrição</button>' : '');
           html += '<button type="button" data-acao-modal="ver-perfil" data-id="' + escapar(p.id) + '">' +
             avatar +
             '<span class="nome-info">' +
               '<strong>' + escapar(nomeBase) + '</strong>' +
               (sub ? '<span>' + escapar(sub) + '</span>' : '') +
             '</span>' +
-          '</button>';
+          '</button>' +
+          btnCancelarSocia;
         });
         html += '</div>';
         return html;
@@ -1383,6 +1398,8 @@
             'data-acao-modal="abrir-associar" data-id="' + escapar(p.id) + '" ' +
             'data-nome="' + escapar(nome) + '" data-evento-id="' + escapar(p.evento_id || '') + '">É sócia cadastrada</button>';
 
+          var btnCancelar = '<button type="button" class="btn btn-ghost btn-instrucoes" data-acao-cancelar="ext" data-id="' + escapar(p.id) + '" data-nome="' + escapar(nome) + '">Cancelar inscrição</button>';
+
           var historicoChips = '';
           if (p._emails_enviados && p._emails_enviados.length > 0) {
             historicoChips =
@@ -1406,6 +1423,7 @@
             '</span>' +
             btnEnviar +
             btnAssociar +
+            btnCancelar +
           '</div>';
         });
         html += '</div>';
@@ -1424,14 +1442,19 @@
 
         // FK explicita pra evitar ambiguidade do PostgREST quando ha multiplas relacoes
         var r = await sb.from('inscricoes_evento')
-          .select('profile:profile_id(*)')
-          .eq('evento_id', eventoId);
+          .select('id, cancelado, profile:profile_id(*)')
+          .eq('evento_id', eventoId)
+          .eq('cancelado', false);
         if (r.error) {
           document.getElementById('modal-body').innerHTML =
             '<p class="lista-vazia">Erro: ' + escapar(r.error.message) + '</p>';
           return;
         }
-        var perfis = (r.data || []).map(function (x) { return x.profile; }).filter(Boolean);
+        var perfis = (r.data || []).map(function (x) {
+          var prof = x.profile;
+          if (prof) prof._inscricaoId = x.id;
+          return prof;
+        }).filter(Boolean);
         modalState.lista = ordenarPorNome(perfis);
         try { renderModal(); } catch (err) {
           document.getElementById('modal-body').innerHTML =
@@ -1452,7 +1475,8 @@
 
         var r = await sb.from('inscritos_externos').select('*')
           .eq('evento_id', eventoId)
-          .eq('pendente_verificacao_socia', false);
+          .eq('pendente_verificacao_socia', false)
+          .eq('cancelado', false);
         if (r.error) {
           document.getElementById('modal-body').innerHTML =
             '<p class="lista-vazia">Erro: ' + escapar(r.error.message) + '</p>';
@@ -1801,6 +1825,30 @@
 
       // Delegação de eventos pros botões de ação
       document.addEventListener('click', async function (e) {
+        // Cancelar inscrição em evento (sócia ou não-sócia) — mantém o registro,
+        // marca cancelado=true e tira a pessoa das listas/contagens normais.
+        var btnCanc = e.target.closest && e.target.closest('[data-acao-cancelar]');
+        if (btnCanc) {
+          e.preventDefault();
+          var tipoCanc = btnCanc.getAttribute('data-acao-cancelar'); // 'ext' | 'socia'
+          var idCanc = btnCanc.getAttribute('data-id');
+          var nomeCanc = btnCanc.getAttribute('data-nome') || 'esta inscrição';
+          if (!confirm('Cancelar a inscrição de ' + nomeCanc + '? Ela sai das listas do credenciamento e vai para Cancelamentos (o registro é mantido).')) return;
+          var motivoCanc = prompt('Motivo do cancelamento (opcional):', '');
+          if (motivoCanc === null) return; // clicou em Cancelar no prompt
+          motivoCanc = motivoCanc.trim() || null;
+          var sbC = window.abenfo.sb;
+          var tabelaCanc = (tipoCanc === 'socia') ? 'inscricoes_evento' : 'inscritos_externos';
+          var rC = await sbC.from(tabelaCanc).update({ cancelado: true, cancelado_motivo: motivoCanc, cancelado_em: new Date().toISOString() }).eq('id', idCanc);
+          if (rC.error) { mostrarAviso('Erro ao cancelar: ' + rC.error.message, 'erro'); return; }
+          mostrarAviso('Inscrição de ' + nomeCanc + ' cancelada.', 'sucesso');
+          fecharModal();
+          await atualizarResumoInscricoes();
+          await carregarPendentes();
+          await carregarCancelamentos();
+          return;
+        }
+
         var btn = e.target.closest('button[data-acao]');
         if (!btn) return;
         e.preventDefault();
@@ -2454,7 +2502,7 @@
       async function atualizarResumoInscricoes() {
         var sb = window.abenfo.sb;
         var alvo = document.getElementById('resumo-inscricoes');
-        var rSocias = await sb.from('inscricoes_evento').select('evento_id, eventos(nome, data_inicio)');
+        var rSocias = await sb.from('inscricoes_evento').select('evento_id, eventos(nome, data_inicio)').eq('cancelado', false);
         if (rSocias.error) {
           alvo.innerHTML = '<div class="lista-vazia">Erro: ' + escapar(rSocias.error.message) + '</div>';
           return;
@@ -2463,7 +2511,8 @@
         // (pendente_verificacao_socia=true) aparece no bloco proprio de pendentes.
         var rExt = await sb.from('inscritos_externos')
           .select('evento_id, eventos(nome, data_inicio)')
-          .eq('pendente_verificacao_socia', false);
+          .eq('pendente_verificacao_socia', false)
+          .eq('cancelado', false);
         if (rExt.error) {
           alvo.innerHTML = '<div class="lista-vazia">Erro: ' + escapar(rExt.error.message) + '</div>';
           return;
@@ -2515,6 +2564,138 @@
           '</div>';
         }).join('');
       }
+
+      // ============================================================
+      // Cancelamentos (inscrições marcadas como canceladas)
+      // ============================================================
+      async function carregarCancelamentos() {
+        var sb = window.abenfo.sb;
+        var alvo = document.getElementById('lista-cancelamentos');
+        var contador = document.getElementById('contador-cancelamentos');
+
+        var rExt = await sb.from('inscritos_externos')
+          .select('nome, email, cancelado_motivo, cancelado_em, eventos(nome)')
+          .eq('cancelado', true);
+        if (rExt.error) {
+          alvo.innerHTML = '<div class="lista-vazia">Erro: ' + escapar(rExt.error.message) + '</div>';
+          contador.textContent = '';
+          return;
+        }
+        var rSoc = await sb.from('inscricoes_evento')
+          .select('cancelado_motivo, cancelado_em, eventos(nome), profile:profile_id(nome_completo, nome_social, email)')
+          .eq('cancelado', true);
+        if (rSoc.error) {
+          alvo.innerHTML = '<div class="lista-vazia">Erro: ' + escapar(rSoc.error.message) + '</div>';
+          contador.textContent = '';
+          return;
+        }
+
+        var lista = [];
+        (rExt.data || []).forEach(function (x) {
+          lista.push({
+            nome: x.nome,
+            email: x.email,
+            evento: x.eventos && x.eventos.nome,
+            origem: 'Não-sócia',
+            motivo: x.cancelado_motivo,
+            data: x.cancelado_em
+          });
+        });
+        (rSoc.data || []).forEach(function (x) {
+          lista.push({
+            nome: x.profile && (x.profile.nome_social || x.profile.nome_completo),
+            email: x.profile && x.profile.email,
+            evento: x.eventos && x.eventos.nome,
+            origem: 'Sócia',
+            motivo: x.cancelado_motivo,
+            data: x.cancelado_em
+          });
+        });
+
+        lista.sort(function (a, b) {
+          if (!a.data && !b.data) return 0;
+          if (!a.data) return 1;
+          if (!b.data) return -1;
+          return String(b.data).localeCompare(String(a.data));
+        });
+
+        cancelamentosCache = lista;
+        contador.textContent = '(' + lista.length + ')';
+
+        if (lista.length === 0) {
+          alvo.innerHTML = '<div class="lista-vazia">Nenhum cancelamento registrado.</div>';
+          return;
+        }
+
+        var linhas = lista.map(function (c) {
+          var dataFmt = c.data ? fmtDataBR(String(c.data).slice(0, 10)) : '';
+          return '<tr>' +
+            '<td style="padding:0.5rem 0.6rem;border-bottom:1px solid var(--borda);">' + escapar(c.nome || '(sem nome)') + '</td>' +
+            '<td style="padding:0.5rem 0.6rem;border-bottom:1px solid var(--borda);">' + escapar(c.origem || '') + '</td>' +
+            '<td style="padding:0.5rem 0.6rem;border-bottom:1px solid var(--borda);">' + escapar(c.email || '') + '</td>' +
+            '<td style="padding:0.5rem 0.6rem;border-bottom:1px solid var(--borda);">' + escapar(c.evento || '') + '</td>' +
+            '<td style="padding:0.5rem 0.6rem;border-bottom:1px solid var(--borda);">' + escapar(c.motivo || '') + '</td>' +
+            '<td style="padding:0.5rem 0.6rem;border-bottom:1px solid var(--borda);white-space:nowrap;">' + escapar(dataFmt) + '</td>' +
+          '</tr>';
+        }).join('');
+
+        alvo.innerHTML =
+          '<div style="overflow-x:auto;">' +
+            '<table style="width:100%;border-collapse:collapse;font-size:0.9rem;background:var(--branco);border:1px solid var(--borda);border-radius:8px;">' +
+              '<thead><tr>' +
+                '<th style="text-align:left;padding:0.55rem 0.6rem;border-bottom:2px solid var(--borda);color:var(--texto-suave);">Nome</th>' +
+                '<th style="text-align:left;padding:0.55rem 0.6rem;border-bottom:2px solid var(--borda);color:var(--texto-suave);">Origem</th>' +
+                '<th style="text-align:left;padding:0.55rem 0.6rem;border-bottom:2px solid var(--borda);color:var(--texto-suave);">E-mail</th>' +
+                '<th style="text-align:left;padding:0.55rem 0.6rem;border-bottom:2px solid var(--borda);color:var(--texto-suave);">Evento</th>' +
+                '<th style="text-align:left;padding:0.55rem 0.6rem;border-bottom:2px solid var(--borda);color:var(--texto-suave);">Motivo</th>' +
+                '<th style="text-align:left;padding:0.55rem 0.6rem;border-bottom:2px solid var(--borda);color:var(--texto-suave);">Data</th>' +
+              '</tr></thead>' +
+              '<tbody>' + linhas + '</tbody>' +
+            '</table>' +
+          '</div>';
+      }
+
+      function imprimirCancelamentos() {
+        if (!cancelamentosCache.length) {
+          mostrarAviso('Não há cancelamentos para imprimir.', 'erro');
+          return;
+        }
+        var linhas = cancelamentosCache.map(function (c) {
+          var dataFmt = c.data ? fmtDataBR(String(c.data).slice(0, 10)) : '';
+          return '<tr>' +
+            '<td>' + escapar(c.nome || '(sem nome)') + '</td>' +
+            '<td>' + escapar(c.origem || '') + '</td>' +
+            '<td>' + escapar(c.email || '') + '</td>' +
+            '<td>' + escapar(c.evento || '') + '</td>' +
+            '<td>' + escapar(c.motivo || '') + '</td>' +
+            '<td>' + escapar(dataFmt) + '</td>' +
+          '</tr>';
+        }).join('');
+        var win = window.open('', '_blank');
+        if (!win) { mostrarAviso('Não foi possível abrir a janela de impressão.', 'erro'); return; }
+        win.document.write(
+          '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">' +
+          '<title>Cancelamentos — IX ENEON 2026</title>' +
+          '<style>' +
+            'body{font-family:Arial,Helvetica,sans-serif;color:#222;margin:24px;}' +
+            'h1{font-size:18px;margin:0 0 16px;}' +
+            'table{width:100%;border-collapse:collapse;font-size:12px;}' +
+            'th,td{border:1px solid #999;padding:6px 8px;text-align:left;vertical-align:top;}' +
+            'th{background:#eee;}' +
+          '</style></head><body>' +
+          '<h1>Cancelamentos — IX ENEON 2026</h1>' +
+          '<table><thead><tr>' +
+            '<th>Nome</th><th>Origem</th><th>E-mail</th><th>Evento</th><th>Motivo</th><th>Data</th>' +
+          '</tr></thead><tbody>' + linhas + '</tbody></table>' +
+          '</body></html>'
+        );
+        win.document.close();
+        win.focus();
+        win.print();
+      }
+
+      var btnImprimirCanc = document.getElementById('btn-imprimir-cancelamentos');
+      if (btnImprimirCanc) btnImprimirCanc.addEventListener('click', imprimirCancelamentos);
 
       // ============================================================
       // Inscrições pendentes de verificação
@@ -2683,7 +2864,8 @@
         var contador = document.getElementById('contador-inscricoes-pendentes');
         var r = await sb.from('inscritos_externos')
           .select('*, eventos(nome, data_inicio)')
-          .eq('pendente_verificacao_socia', true);
+          .eq('pendente_verificacao_socia', true)
+          .eq('cancelado', false);
         if (r.error) {
           alvo.innerHTML = '<div class="lista-vazia">Erro: ' + escapar(r.error.message) + '</div>';
           contador.textContent = '';
@@ -4276,6 +4458,7 @@
         carregarEventos();
         atualizarResumoInscricoes();
         carregarPendentes();
+        carregarCancelamentos();
         carregarCursos();
         carregarEventosParaSelectCurso();
         atualizarResumoCursos();
