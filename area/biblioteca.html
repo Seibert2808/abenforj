@@ -334,20 +334,34 @@
       function itemLista(o) {
         var href = linkDownloadDrive(o.arquivo_url);
         var sub = [o.autor, o.ano].filter(Boolean).join(' · ');
-        var termo = normalizar([o.titulo, o.autor, o.ano].filter(Boolean).join(' '));
+        var termo = normalizar([o.titulo, o.autor, o.ano, o.descricao].filter(Boolean).join(' '));
         return '<li data-busca="' + escapar(termo) + '">' +
           '<div class="doc-info">' +
             '<strong>' + escapar(formatarTitulo(o.titulo)) + '</strong>' +
-            (sub ? '<span>' + escapar(sub) + '</span>' : '') +
+            (sub ? '<span style="display:block;">' + escapar(sub) + '</span>' : '') +
+            (o.descricao ? '<span style="display:block;">' + escapar(o.descricao) + '</span>' : '') +
           '</div>' +
           '<a href="' + escapar(href) + '" target="_blank" rel="noopener">Abrir →</a>' +
         '</li>';
       }
 
+      // Ordena uma seção: ano decrescente (mais recente primeiro) e, dentro
+      // do mesmo ano, alfabético por título (A→Z). Obras sem ano vão para o fim.
+      function ordenarObras(lista) {
+        return lista.slice().sort(function (a, b) {
+          var anoA = parseInt(a.ano, 10);
+          var anoB = parseInt(b.ano, 10);
+          var temA = !isNaN(anoA), temB = !isNaN(anoB);
+          if (temA && temB && anoA !== anoB) return anoB - anoA;
+          if (temA !== temB) return temA ? -1 : 1;
+          return normalizar(a.titulo).localeCompare(normalizar(b.titulo), 'pt-BR');
+        });
+      }
+
       async function carregarBiblioteca() {
         var sb = window.abenfo.sb;
         var r = await sb.from('biblioteca_obras')
-          .select('id, titulo, autor, ano, categoria, capa_path, arquivo_url')
+          .select('id, titulo, autor, ano, categoria, descricao, capa_path, arquivo_url')
           .eq('ativo', true)
           .order('ordem', { ascending: true })
           .order('criado_em', { ascending: false });
@@ -361,6 +375,11 @@
         var porCategoria = { manuais_protocolos: [], legislacao_regulacao: [], artigos: [], pareceres: [], outros: [] };
         (r.data || []).forEach(function (o) {
           if (porCategoria[o.categoria]) porCategoria[o.categoria].push(o);
+        });
+
+        // Ordena cada seção: ano (mais recente primeiro), depois título A→Z.
+        Object.keys(porCategoria).forEach(function (cat) {
+          porCategoria[cat] = ordenarObras(porCategoria[cat]);
         });
 
         var EM_BREVE = 'Em breve. A diretoria está reunindo o material desta seção.';

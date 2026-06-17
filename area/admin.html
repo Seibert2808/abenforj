@@ -927,8 +927,9 @@
               <span id="obra-capa-status" style="color:var(--texto-suave);font-size:0.875rem;">Sem capa: a obra mostra um cartão com o título.</span>
             </div>
 
-            <div style="margin-top:1rem;">
+            <div style="margin-top:1rem;display:flex;gap:0.5rem;flex-wrap:wrap;">
               <button type="button" id="btn-salvar-obra" class="btn btn-solid">Adicionar obra</button>
+              <button type="button" id="btn-cancelar-edicao-obra" class="btn btn-ghost" hidden>Cancelar edição</button>
             </div>
           </div>
 
@@ -3679,6 +3680,8 @@
         outros: 'Outros'
       };
       var capaObraSelecionada = null;
+      var obraEditandoId = null;
+      var obrasBiblioCache = [];
 
       async function carregarBibliotecaAdmin() {
         var sb = window.abenfo.sb;
@@ -3692,6 +3695,7 @@
           return;
         }
         var obras = r.data || [];
+        obrasBiblioCache = obras;
         document.getElementById('contador-biblioteca').textContent = '(' + obras.length + ')';
         if (obras.length === 0) {
           alvo.innerHTML = '<div class="lista-vazia">Nenhuma obra cadastrada ainda.</div>';
@@ -3707,6 +3711,7 @@
             '<div class="obra-admin-meta">' + meta.join(' · ') + '</div>' +
             '<div class="assoc-acoes">' +
               '<a class="btn btn-ghost" href="' + escapar(o.arquivo_url) + '" target="_blank" rel="noopener">Abrir arquivo</a>' +
+              '<button class="btn btn-ghost" data-acao-bib="editar" data-id="' + o.id + '">Editar</button>' +
               '<button class="btn btn-ghost" data-acao-bib="' + (o.ativo ? 'ocultar' : 'mostrar') + '" data-id="' + o.id + '">' + (o.ativo ? 'Ocultar' : 'Mostrar') + '</button>' +
               '<span class="sep"></span>' +
               '<button class="btn btn-ghost btn-excluir" data-acao-bib="excluir" data-id="' + o.id + '" data-capa="' + escapar(o.capa_path || '') + '" data-titulo="' + escapar(o.titulo) + '">Excluir</button>' +
@@ -3715,7 +3720,44 @@
         }).join('');
       }
 
-      async function salvarNovaObra() {
+      // Carrega os dados de uma obra no formulário e entra em modo de edição.
+      function entrarModoEdicao(o) {
+        obraEditandoId = o.id;
+        document.getElementById('obra-titulo').value = o.titulo || '';
+        document.getElementById('obra-autor').value = o.autor || '';
+        document.getElementById('obra-ano').value = o.ano || '';
+        document.getElementById('obra-categoria').value = o.categoria || 'manuais_protocolos';
+        document.getElementById('obra-ordem').value = (o.ordem != null ? o.ordem : 0);
+        document.getElementById('obra-arquivo-url').value = o.arquivo_url || '';
+        document.getElementById('obra-descricao').value = o.descricao || '';
+        capaObraSelecionada = null;
+        document.getElementById('obra-capa-arquivo').value = '';
+        document.getElementById('obra-capa-status').textContent = o.capa_path
+          ? 'Capa atual mantida. Escolha um arquivo só se quiser trocá-la.'
+          : 'Sem capa: a obra mostra um cartão com o título.';
+        document.getElementById('btn-salvar-obra').textContent = 'Salvar alterações';
+        document.getElementById('btn-cancelar-edicao-obra').hidden = false;
+        var alvo = document.getElementById('obra-titulo');
+        alvo.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        alvo.focus();
+      }
+
+      // Limpa o formulário e volta ao modo "adicionar".
+      function sairModoEdicao() {
+        obraEditandoId = null;
+        ['obra-titulo', 'obra-autor', 'obra-ano', 'obra-arquivo-url', 'obra-descricao'].forEach(function (id) {
+          document.getElementById(id).value = '';
+        });
+        document.getElementById('obra-categoria').value = 'manuais_protocolos';
+        document.getElementById('obra-ordem').value = '0';
+        capaObraSelecionada = null;
+        document.getElementById('obra-capa-arquivo').value = '';
+        document.getElementById('obra-capa-status').textContent = 'Sem capa: a obra mostra um cartão com o título.';
+        document.getElementById('btn-salvar-obra').textContent = 'Adicionar obra';
+        document.getElementById('btn-cancelar-edicao-obra').hidden = true;
+      }
+
+      async function salvarObra() {
         var sb = window.abenfo.sb;
         var titulo = document.getElementById('obra-titulo').value.trim();
         var arquivoUrl = document.getElementById('obra-arquivo-url').value.trim();
@@ -3725,7 +3767,7 @@
         var btn = document.getElementById('btn-salvar-obra');
         btn.disabled = true;
 
-        // 1) Sobe a capa, se houver
+        // 1) Sobe a capa, se uma nova foi escolhida
         var capaPath = null;
         if (capaObraSelecionada) {
           var ext = (capaObraSelecionada.name.split('.').pop() || 'jpg').toLowerCase();
@@ -3740,7 +3782,7 @@
           }
         }
 
-        // 2) Insere a obra
+        // 2) Monta os dados
         var anoRaw = document.getElementById('obra-ano').value;
         var dados = {
           titulo: titulo,
@@ -3749,31 +3791,43 @@
           categoria: document.getElementById('obra-categoria').value,
           descricao: document.getElementById('obra-descricao').value.trim() || null,
           arquivo_url: arquivoUrl,
-          capa_path: capaPath,
           ordem: parseInt(document.getElementById('obra-ordem').value, 10) || 0
         };
-        var r = await sb.from('biblioteca_obras').insert(dados).select().single();
+
+        // 3) Edita ou insere
+        var r;
+        if (obraEditandoId) {
+          // Na edição, só troca a capa se uma nova foi enviada (e remove a antiga).
+          if (capaPath) {
+            var atual = obrasBiblioCache.find(function (x) { return x.id === obraEditandoId; });
+            if (atual && atual.capa_path) {
+              await sb.storage.from('biblioteca-capas').remove([atual.capa_path]);
+            }
+            dados.capa_path = capaPath;
+          }
+          r = await sb.from('biblioteca_obras').update(dados).eq('id', obraEditandoId);
+        } else {
+          dados.capa_path = capaPath;
+          r = await sb.from('biblioteca_obras').insert(dados).select().single();
+        }
+
         btn.disabled = false;
         if (r.error) {
           mostrarAviso('Erro ao salvar obra: ' + r.error.message, 'erro');
           return;
         }
 
-        mostrarAviso('Obra "' + titulo + '" adicionada.', 'sucesso');
-        ['obra-titulo', 'obra-autor', 'obra-ano', 'obra-arquivo-url', 'obra-descricao'].forEach(function (id) {
-          document.getElementById(id).value = '';
-        });
-        document.getElementById('obra-ordem').value = '0';
-        capaObraSelecionada = null;
-        document.getElementById('obra-capa-arquivo').value = '';
-        document.getElementById('obra-capa-status').textContent = 'Sem capa: a obra mostra um cartão com o título.';
+        mostrarAviso('Obra "' + titulo + '" ' + (obraEditandoId ? 'atualizada' : 'adicionada') + '.', 'sucesso');
+        sairModoEdicao();
         await carregarBibliotecaAdmin();
       }
 
       document.addEventListener('click', async function (e) {
         if (!e.target) return;
         if (e.target.id === 'btn-salvar-obra') {
-          salvarNovaObra();
+          salvarObra();
+        } else if (e.target.id === 'btn-cancelar-edicao-obra') {
+          sairModoEdicao();
         } else if (e.target.id === 'btn-escolher-capa') {
           document.getElementById('obra-capa-arquivo').click();
         }
@@ -3782,6 +3836,11 @@
         var acao = btnBib.getAttribute('data-acao-bib');
         var id = btnBib.getAttribute('data-id');
         var sb = window.abenfo.sb;
+        if (acao === 'editar') {
+          var obraEdit = obrasBiblioCache.find(function (x) { return x.id === id; });
+          if (obraEdit) entrarModoEdicao(obraEdit);
+          return;
+        }
         if (acao === 'ocultar' || acao === 'mostrar') {
           var r = await sb.from('biblioteca_obras').update({ ativo: acao === 'mostrar' }).eq('id', id);
           if (r.error) { mostrarAviso('Erro: ' + r.error.message, 'erro'); return; }
