@@ -101,7 +101,12 @@
       var res = await sb.auth.signUp({
         email: email,
         password: senha,
-        options: { data: meta }
+        options: {
+          data: meta,
+          // Após confirmar o e-mail, cai numa tela que explica o "em análise"
+          // (em vez da home). Requer a URL na allowlist de Redirect URLs do Supabase.
+          emailRedirectTo: window.location.origin + '/aguardando-aprovacao.html'
+        }
       });
       return res;
     },
