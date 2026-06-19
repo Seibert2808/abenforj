@@ -138,7 +138,7 @@
         <button type="button" class="modal-close" id="modal-trabalhos-fechar" aria-label="Fechar">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
         </button>
-        <span class="modal-data">Inscrições abertas até 19/06</span>
+        <span class="modal-data">Inscrições abertas até 23/06</span>
         <h2 id="modal-trabalhos-titulo">📄 Envie seu trabalho para o IX ENEON 2026</h2>
         <p style="color:var(--texto-suave);margin-bottom:1.25rem;">
           As inscrições de trabalhos científicos estão abertas! Se você vai apresentar um trabalho,
@@ -192,9 +192,9 @@
 
       carregarAvisos();
 
-      // Pop-up de submissão de trabalhos — só no período (1 a 19/jun) e 1x por pessoa
+      // Pop-up de submissão de trabalhos — só no período (1 a 23/jun) e 1x por pessoa
       var PRAZO_INICIO = new Date('2026-06-01T00:00:00-03:00');
-      var PRAZO_FIM    = new Date('2026-06-19T23:59:59-03:00');
+      var PRAZO_FIM    = new Date('2026-06-23T23:59:59-03:00');
       var agora = new Date();
       var dispensado = localStorage.getItem('abenfo_popup_trabalhos_dispensado') === '1';
       if (agora >= PRAZO_INICIO && agora <= PRAZO_FIM && !dispensado) {
