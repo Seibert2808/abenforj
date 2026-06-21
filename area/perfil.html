@@ -58,30 +58,27 @@
             <p style="margin:0.5rem 0 0;">Suba sua <strong>foto da carteirinha</strong> na seção abaixo.</p>
           </div>
           <div id="bloco-docs" hidden>
-            <p style="margin:0.5rem 0 0;">Anexe os seguintes documentos pelo formulário oficial (envie só os que se aplicam ao seu caso):</p>
-            <ul style="margin:0.5rem 0 0 1.5rem;color:inherit;">
-              <li>Cópia da carteira do COREN</li>
-              <li>Diploma de graduação</li>
-              <li>Diploma de pós-graduação (se aplicável)</li>
-              <li>Comprovante de matrícula (se estudante)</li>
-              <li>Outros documentos pertinentes ao seu caso</li>
-            </ul>
-            <p style="margin:0.85rem 0 0;">
-              <a href="https://forms.gle/3BBomeeqXv5ZRHLJA" target="_blank" rel="noopener" class="btn btn-solid" style="min-height:0;padding:0.6rem 1.1rem;">Abrir formulário de documentos</a>
-            </p>
+            <p style="margin:0.5rem 0 0;">Veja na seção <strong>“Documentos necessários”</strong> abaixo exatamente o que falta enviar no seu caso.</p>
           </div>
         </div>
 
         <div class="card" style="padding:2rem;margin-bottom:1.5rem;">
-          <h2 style="margin-bottom:0.5rem;">Documentos</h2>
+          <h2 style="margin-bottom:0.5rem;">Documentos necessários</h2>
           <p style="margin:0 0 1rem;color:var(--texto-suave);font-size:0.95rem;">
-            Para enviar ou atualizar seus documentos (carteira do COREN, diplomas, comprovante de matrícula etc.),
-            use o formulário oficial. Os arquivos vão direto para o Drive da Abenfo RJ.
+            Com base no seu cadastro, estes são os documentos que precisamos de você
+            (envie só os que se aplicam ao seu caso). Os arquivos vão para o Drive da Abenfo RJ.
           </p>
-          <a href="https://forms.gle/3BBomeeqXv5ZRHLJA"
+          <ul id="lista-docs-necessarios" style="margin:0 0 1rem 1.2rem;padding:0;line-height:1.8;">
+            <li style="color:var(--texto-suave);">Carregando…</li>
+          </ul>
+          <p style="margin:0 0 1rem;color:var(--texto-suave);font-size:0.9rem;">
+            Tem documento de convênio (ex.: <strong>Rede Alyne</strong>) ou outro pertinente? Use a opção
+            <strong>“Outros documentos”</strong> no formulário e dê um nome a ele.
+          </p>
+          <a id="btn-docs" href="https://forms.gle/3BBomeeqXv5ZRHLJA"
              target="_blank" rel="noopener"
              class="btn btn-solid"
-             style="min-height:0;padding:0.6rem 1.1rem;">Atualizar documentos</a>
+             style="min-height:0;padding:0.6rem 1.1rem;">Enviar / atualizar documentos</a>
         </div>
 
         <div class="card" style="padding:2rem;margin-bottom:1.5rem;">
@@ -224,6 +221,49 @@
       var fotoPreview = document.getElementById('foto-preview');
       var perfil = null;
 
+      // --- Documentos necessários (checklist do perfil) ---
+      // Quando o novo formulário de documentos estiver pronto, troque FORM_DOCS_URL
+      // pela URL LONGA dele (https://docs.google.com/forms/d/e/.../viewform) e preencha
+      // FORM_ENTRY_NOME com o id do campo de nome (ex.: 'entry.1234567890') para que o
+      // nome da sócia já vá pré-preenchido. Com a URL curta forms.gle o prefill não funciona.
+      var FORM_DOCS_URL = 'https://forms.gle/3BBomeeqXv5ZRHLJA';
+      var FORM_ENTRY_NOME = '';
+
+      function documentosNecessarios(p) {
+        var docs = ['Comprovante de pagamento da anuidade'];
+        var cat = p.categoria;
+        if (cat === 'estudante') {
+          docs.push('Comprovante de matrícula atualizado');
+        } else if (cat === 'enfermeira' || cat === 'obstetriz') {
+          docs.push('Diploma de graduação <em>ou</em> carteira/CIP do COREN <span style="color:var(--texto-suave);">(um dos dois)</span>');
+        } else if (cat === 'tecnica' || cat === 'auxiliar') {
+          docs.push('Carteira/CIP ou certidão do COREN');
+        }
+        if (['especializacao', 'mestrado', 'doutorado'].indexOf(p.formacao) >= 0) {
+          docs.push('Diploma ou declaração de conclusão da pós-graduação');
+        }
+        return docs;
+      }
+
+      function linkFormDocs(p) {
+        if (FORM_ENTRY_NOME && p && p.nome_completo) {
+          var sep = FORM_DOCS_URL.indexOf('?') >= 0 ? '&' : '?';
+          return FORM_DOCS_URL + sep + 'usp=pp_url&' + FORM_ENTRY_NOME + '=' + encodeURIComponent(p.nome_completo);
+        }
+        return FORM_DOCS_URL;
+      }
+
+      function renderDocsNecessarios(p) {
+        var ul = document.getElementById('lista-docs-necessarios');
+        if (ul) {
+          ul.innerHTML = documentosNecessarios(p).map(function (d) {
+            return '<li>' + d + '</li>';
+          }).join('');
+        }
+        var btn = document.getElementById('btn-docs');
+        if (btn) btn.href = linkFormDocs(p);
+      }
+
       function mostrarAviso(texto, tipo) {
         aviso.hidden = false;
         aviso.className = 'aviso';
@@ -334,6 +374,7 @@
         setPreview(perfil.foto_url);
         ajustarCoren();
         atualizarBanner();
+        renderDocsNecessarios(perfil);
 
         // Email vem do auth, não do profile
         window.abenfo.auth.usuario().then(function (u) {
