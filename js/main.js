@@ -30,7 +30,15 @@
   // basta mudar 'v1' para 'v2' no HTML e neste JS.
   // ============================================================
   var modal = document.getElementById('modal-boas-vindas');
-  var STORAGE_KEY = 'abenfo_modal_ix_v4';
+  var STORAGE_KEY = 'abenfo_modal_ix_v5';
+
+  // Aviso de prazo de trabalhos: aparece só até o fim de 23/06/2026,
+  // depois some sozinho (modal volta a ser só as boas-vindas do IX ENEON).
+  var avisoPrazo = document.getElementById('aviso-prazo-trabalhos');
+  if (avisoPrazo) {
+    var limitePrazo = new Date(2026, 5, 23, 23, 59, 59); // mês 0-based: 5 = junho
+    if (new Date() <= limitePrazo) avisoPrazo.hidden = false;
+  }
 
   if (modal) {
     var jaViu = false;
