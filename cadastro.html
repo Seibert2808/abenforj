@@ -77,7 +77,7 @@
     <section class="section">
       <div class="container" style="max-width:520px;">
         <div class="aviso">
-          <strong>Importante:</strong> ao criar sua conta, você recebe um e-mail para confirmar seu endereço. Para concluir sua filiação, envie o comprovante de pagamento da anuidade — e, se for estudante de graduação, também o comprovante de matrícula — para <a href="mailto:abenforio@gmail.com">abenforio@gmail.com</a>. A diretoria confirma sua filiação no quadro associativo (em geral, até 3 dias úteis) e, assim que aprovada, seu acesso é liberado com o mesmo e-mail e senha que cadastrou aqui. Se ainda não é associada, comece <a href="associe-se.html">aqui</a>.
+          <strong>Importante:</strong> criar sua conta tem dois passos. <strong>1)</strong> preencha seus dados abaixo — você receberá um e-mail para confirmar seu endereço. <strong>2)</strong> logo em seguida, <strong>anexe seus documentos obrigatórios</strong>: comprovante de pagamento da anuidade; comprovante de matrícula atualizado (se for estudante de graduação); e comprovante de convênio (ex.: Rede Alyne), se houver. A diretoria confirma sua filiação no quadro associativo (em geral, até 3 dias úteis) e, assim que aprovada, seu acesso é liberado com o mesmo e-mail e senha que cadastrou aqui. Se ainda não é associada, comece <a href="associe-se.html">aqui</a>.
         </div>
 
         <div class="card" style="padding:2rem;">
@@ -170,6 +170,28 @@
           </form>
         </div>
 
+        <div id="passo-docs" class="card" style="padding:2rem;margin-top:1.5rem;" hidden>
+          <div id="lembrete-email" style="background:#fff4e5;border:1px solid #f0b86c;border-left:4px solid #e08a00;border-radius:10px;padding:1rem 1.1rem;margin-bottom:1.5rem;color:#6b4600;line-height:1.55;">
+            <strong style="display:block;font-size:1.05rem;margin-bottom:0.35rem;">📧 Primeiro: confirme seu e-mail</strong>
+            Enviamos um link de confirmação para <strong id="lembrete-email-end">o e-mail que você cadastrou</strong>.
+            <strong>Sua conta só é ativada depois que você clicar nesse link.</strong>
+            Procure a mensagem da <strong>Abenfo RJ</strong> na caixa de entrada — e, se não encontrar,
+            olhe no <strong>spam / lixo eletrônico</strong>.
+          </div>
+          <h2 style="margin-bottom:0.5rem;">Passo 2 de 2 — Envie seus documentos</h2>
+          <p style="margin:0 0 1rem;color:var(--texto-suave);font-size:0.95rem;">
+            Para concluir sua filiação, anexe agora os documentos do seu caso:
+            <strong>comprovante de pagamento da anuidade</strong>;
+            <strong>comprovante de matrícula</strong> atualizado (estudantes de graduação);
+            e, se tiver convênio (ex.: <strong>Rede Alyne</strong>), use o campo “Outros documentos”.
+          </p>
+          <p style="margin:0 0 1rem;color:var(--texto-suave);font-size:0.85rem;">
+            Para anexar arquivos, o Google pede que você esteja conectada a uma conta Google (Gmail).
+            Se o formulário abaixo não carregar, <a id="link-form-docs" href="#" target="_blank" rel="noopener">abra-o em uma nova aba</a>.
+          </p>
+          <div id="docs-iframe-wrap"></div>
+        </div>
+
         <p style="margin-top:1rem;text-align:center;font-size:0.95rem;">
           Já tem conta? <a href="login.html">Entrar</a>.
         </p>
@@ -195,6 +217,45 @@
       var form = document.getElementById('cadastro-form');
       var aviso = document.getElementById('cadastro-aviso');
       var btn = document.getElementById('btn-cadastrar');
+
+      // Formulário Google de documentos (mesmo do perfil/associe-se).
+      // O Apps Script "organizar-formulario-novos" arquiva cada anexo na
+      // subpasta da sócia (pelo nome) dentro do Drive da Abenfo RJ.
+      var FORM_DOCS_URL = 'https://docs.google.com/forms/d/e/1FAIpQLScPA6_k5juFb6ipfHcXicmYzS00Cm8LFwj_76iPt1XcEkqD3Q/viewform';
+      var FORM_ENTRY_NOME = 'entry.1200616275';
+
+      function linkFormDocs(nomeCompleto, embedded) {
+        var params = [];
+        if (embedded) params.push('embedded=true');
+        if (nomeCompleto) {
+          params.push('usp=pp_url');
+          params.push(FORM_ENTRY_NOME + '=' + encodeURIComponent(nomeCompleto));
+        }
+        return params.length ? FORM_DOCS_URL + '?' + params.join('&') : FORM_DOCS_URL;
+      }
+
+      function mostrarPassoDocs(nomeCompleto, emailCadastrado) {
+        var bloco = document.getElementById('passo-docs');
+        var wrap = document.getElementById('docs-iframe-wrap');
+        var link = document.getElementById('link-form-docs');
+        var emailEl = document.getElementById('lembrete-email-end');
+        if (emailEl && emailCadastrado) emailEl.textContent = emailCadastrado;
+        if (link) link.href = linkFormDocs(nomeCompleto, false);
+        if (wrap && !wrap.querySelector('iframe')) {
+          var ifr = document.createElement('iframe');
+          ifr.src = linkFormDocs(nomeCompleto, true);
+          ifr.width = '100%';
+          ifr.height = '900';
+          ifr.setAttribute('frameborder', '0');
+          ifr.style.border = '0';
+          ifr.style.maxWidth = '100%';
+          ifr.title = 'Formulário de envio de documentos';
+          ifr.textContent = 'Carregando…';
+          wrap.appendChild(ifr);
+        }
+        bloco.hidden = false;
+        bloco.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
 
       // Mostrar/ocultar senha (em todos os campos .campo-senha)
       var ICONE_OLHO_ABERTO = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
@@ -312,12 +373,16 @@
             return;
           }
 
-          form.reset();
           mostrarAviso(
-            '<strong>Conta criada!</strong> Primeiro, confirme seu endereço no e-mail que enviamos (se não encontrar na caixa de entrada, olhe no lixo eletrônico/spam). Depois, para concluir sua filiação, envie para <a href="mailto:abenforio@gmail.com">abenforio@gmail.com</a> o comprovante de pagamento da anuidade — e, se você for estudante de graduação, também o comprovante de matrícula. A diretoria analisa (em geral, até 3 dias úteis) e, quando sua filiação for confirmada, seu acesso é liberado com este mesmo e-mail e senha.',
+            '<strong>Conta criada!</strong> Primeiro, confirme seu endereço no e-mail que enviamos (se não encontrar na caixa de entrada, olhe no lixo eletrônico/spam). Agora faça o <strong>Passo 2</strong> logo abaixo: anexe seus documentos. A diretoria analisa (em geral, até 3 dias úteis) e, quando sua filiação for confirmada, seu acesso é liberado com este mesmo e-mail e senha.',
             'sucesso'
           );
-          btn.style.display = 'none';
+          // Esconde o formulário de dados e revela o Passo 2 (documentos),
+          // já com o nome preenchido para cair na pasta certa do Drive.
+          var cardDados = form.closest('.card');
+          if (cardDados) cardDados.style.display = 'none';
+          mostrarPassoDocs(nome, email);
+          form.reset();
         } catch (err) {
           mostrarAviso('Erro ao criar a conta. Tente novamente em alguns instantes.', 'erro');
           btn.disabled = false;
