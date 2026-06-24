@@ -3621,6 +3621,7 @@
               '<select data-trab-acao="status" data-id="' + t.id + '" style="min-height:0;padding:0.4rem 0.5rem;font-size:0.825rem;border-radius:6px;border:1px solid var(--borda);">' + statusOpts + '</select>' +
               '<button class="btn btn-ghost" data-trab-acao="ver" data-id="' + t.id + '">Ver detalhes</button>' +
               '<button class="btn btn-ghost" data-trab-acao="baixar-pdf" data-id="' + t.id + '" data-path="' + escapar(t.pdf_path) + '" data-nome="' + escapar(nomeArquivo) + '">Baixar PDF</button>' +
+              '<button class="btn btn-ghost" data-trab-acao="anexar-pdf" data-id="' + t.id + '" data-path="' + escapar(t.pdf_path) + '">Anexar PDF</button>' +
               '<button class="btn btn-ghost" data-trab-acao="' + (t.bloqueado ? 'desbloquear' : 'bloquear') + '" data-id="' + t.id + '">' + (t.bloqueado ? 'Desbloquear' : 'Bloquear edição') + '</button>' +
               '<span class="sep"></span>' +
               '<button class="btn btn-ghost btn-excluir" data-trab-acao="excluir" data-id="' + t.id + '" data-titulo="' + escapar(t.titulo) + '">Excluir</button>' +
@@ -3747,6 +3748,38 @@
         URL.revokeObjectURL(url);
       }
 
+      // Upload manual do PDF de um trabalho (ex.: autora reenviou por e-mail).
+      // Sobe pro mesmo caminho do registro, então o "Baixar PDF" passa a funcionar.
+      async function anexarPdfTrabalho(path) {
+        if (!path) { mostrarAviso('Trabalho sem caminho de arquivo definido.', 'erro'); return; }
+        var sb = window.abenfo.sb;
+        var inp = document.createElement('input');
+        inp.type = 'file';
+        inp.accept = 'application/pdf';
+        inp.onchange = async function () {
+          var file = inp.files && inp.files[0];
+          if (!file) return;
+          if (file.type !== 'application/pdf' && !/\.pdf$/i.test(file.name)) {
+            mostrarAviso('Selecione um arquivo PDF.', 'erro');
+            return;
+          }
+          if (file.size > 10 * 1024 * 1024) {
+            mostrarAviso('PDF muito grande (máx. 10 MB).', 'erro');
+            return;
+          }
+          mostrarAviso('Enviando PDF…', 'aviso');
+          try {
+            var up = await sb.storage.from('trabalhos-cientificos')
+              .upload(path, file, { upsert: true, contentType: 'application/pdf' });
+            if (up.error) throw up.error;
+            mostrarAviso('PDF anexado com sucesso! Já é possível baixar este trabalho.', 'sucesso');
+          } catch (err) {
+            mostrarAviso('Erro ao anexar o PDF: ' + (err.message || err), 'erro');
+          }
+        };
+        inp.click();
+      }
+
       function abrirDetalhesTrabalho(id) {
         var t = trabalhosCache.find(function (x) { return x.id === id; });
         if (!t) return;
@@ -3794,6 +3827,7 @@
           '<div style="background:var(--areia);padding:1rem;border-radius:8px;white-space:pre-wrap;font-size:0.85rem;line-height:1.55;">' + escapar(t.referencias) + '</div>' +
           '<div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--borda);display:flex;gap:0.5rem;flex-wrap:wrap;">' +
             '<button type="button" class="btn btn-solid" data-trab-acao="baixar-pdf" data-id="' + t.id + '" data-path="' + escapar(t.pdf_path) + '" data-nome="' + escapar(nomeArquivo) + '" style="min-height:0;padding:0.55rem 0.9rem;font-size:0.875rem;">Baixar PDF</button>' +
+            '<button type="button" class="btn btn-ghost" data-trab-acao="anexar-pdf" data-id="' + t.id + '" data-path="' + escapar(t.pdf_path) + '" style="min-height:0;padding:0.55rem 0.9rem;font-size:0.875rem;">Anexar PDF</button>' +
             '<label style="display:flex;align-items:center;gap:0.5rem;font-size:0.875rem;flex:1;">Observação para a relatora:</label>' +
           '</div>' +
           '<textarea id="obs-avaliacao-input" rows="3" style="width:100%;margin-top:0.4rem;padding:0.6rem;border:1px solid var(--borda);border-radius:6px;font:inherit;" placeholder="Comentário visível pra relatora">' + escapar(t.observacao_avaliacao || '') + '</textarea>' +
@@ -3825,6 +3859,10 @@
         if (acao === 'ver') { abrirDetalhesTrabalho(id); return; }
         if (acao === 'baixar-pdf') {
           await baixarTrabalhoIndividual(btn.getAttribute('data-path'), btn.getAttribute('data-nome'));
+          return;
+        }
+        if (acao === 'anexar-pdf') {
+          anexarPdfTrabalho(btn.getAttribute('data-path'));
           return;
         }
         if (acao === 'bloquear' || acao === 'desbloquear') {
