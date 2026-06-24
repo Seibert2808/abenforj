@@ -869,7 +869,7 @@
               <option value="recusado">Recusado</option>
             </select>
             <span style="flex:1;"></span>
-            <button type="button" id="btn-baixar-todos-trabs" class="btn btn-ghost" style="min-height:0;padding:0.5rem 0.9rem;font-size:0.875rem;">Baixar PDFs (ZIP)</button>
+            <button type="button" id="btn-baixar-todos-trabs" class="btn btn-ghost" style="min-height:0;padding:0.5rem 0.9rem;font-size:0.875rem;">Baixar todos os PDFs (ZIP)</button>
             <button type="button" id="btn-bloquear-todos-trabs" class="btn btn-ghost" style="min-height:0;padding:0.5rem 0.9rem;font-size:0.875rem;">Iniciar avaliação (bloquear edições)</button>
           </div>
 
@@ -3643,28 +3643,61 @@
       async function baixarTrabalhosZip() {
         var btn = document.getElementById('btn-baixar-todos-trabs');
         var sb = window.abenfo.sb;
-        var dados = trabalhosFiltrados();
+        // Baixa SEMPRE todos os trabalhos carregados, independentemente dos
+        // filtros da tela — pra nunca deixar nenhum de fora por engano.
+        var dados = trabalhosCache.slice();
         if (dados.length === 0) {
-          mostrarAviso('Nenhum trabalho para baixar nos filtros atuais.', 'aviso');
+          mostrarAviso('Nenhum trabalho cadastrado para baixar.', 'aviso');
           return;
         }
         btn.disabled = true;
         var textoOriginal = btn.textContent;
-        btn.textContent = 'Preparando ZIP (0/' + dados.length + ')…';
+        btn.textContent = 'Baixando (0/' + dados.length + ')…';
         try {
           var JSZip = await carregarJsZip();
           var zip = new JSZip();
+          var nomesUsados = {};
+
+          // Baixa um PDF tentando até 3 vezes antes de desistir (rede instável).
+          var baixarComRetry = async function (path) {
+            var ultimoErro = null;
+            for (var tent = 0; tent < 3; tent++) {
+              var r = await sb.storage.from('trabalhos-cientificos').download(path);
+              if (!r.error && r.data) return r.data;
+              ultimoErro = r.error;
+            }
+            throw ultimoErro || new Error('arquivo vazio');
+          };
+
+          var falhas = [];
           for (var i = 0; i < dados.length; i++) {
             var t = dados[i];
-            btn.textContent = 'Preparando ZIP (' + (i + 1) + '/' + dados.length + ')…';
-            var dl = await sb.storage.from('trabalhos-cientificos').download(t.pdf_path);
-            if (dl.error) {
-              console.error('Erro ao baixar ' + t.titulo + ':', dl.error);
-              continue;
+            btn.textContent = 'Baixando (' + (i + 1) + '/' + dados.length + ')…';
+            try {
+              var data = await baixarComRetry(t.pdf_path);
+              var base = (t.relator_nome + ' - ' + t.titulo).replace(/[\\/:"*?<>|]/g, '-');
+              // Evita sobrescrita de nomes iguais: o 2º vira "... (2).pdf", etc.
+              var usos = (nomesUsados[base] || 0) + 1;
+              nomesUsados[base] = usos;
+              var nome = (usos === 1 ? base : base + ' (' + usos + ')') + '.pdf';
+              zip.file(nome, data);
+            } catch (e) {
+              console.error('Falhou: ' + t.relator_nome + ' - ' + t.titulo, e);
+              falhas.push(t.relator_nome + ' — ' + t.titulo + '  [id ' + t.id + ']');
             }
-            var nome = (t.relator_nome + ' - ' + t.titulo).replace(/[\\/:"*?<>|]/g, '-') + '.pdf';
-            zip.file(nome, dl.data);
           }
+
+          var baixados = dados.length - falhas.length;
+
+          // Se algo falhou, registra a lista DENTRO do ZIP — você nunca fica sem saber.
+          if (falhas.length) {
+            zip.file('_TRABALHOS-QUE-FALHARAM.txt',
+              'Estes ' + falhas.length + ' trabalho(s) NÃO entraram no ZIP ' +
+              '(falha de download após 3 tentativas):\n\n' + falhas.join('\n') +
+              '\n\nBaixe de novo; se persistir, avise a Sabrina.');
+          }
+
+          btn.textContent = 'Compactando…';
           var blob = await zip.generateAsync({ type: 'blob' });
           var url = URL.createObjectURL(blob);
           var a = document.createElement('a');
@@ -3674,7 +3707,14 @@
           a.click();
           document.body.removeChild(a);
           URL.revokeObjectURL(url);
-          mostrarAviso(dados.length + ' trabalho(s) baixado(s) em ZIP.', 'sucesso');
+
+          if (falhas.length) {
+            mostrarAviso('Baixados ' + baixados + ' de ' + dados.length + '. ' +
+              falhas.length + ' falharam — veja o arquivo "_TRABALHOS-QUE-FALHARAM.txt" ' +
+              'dentro do ZIP e tente de novo (costuma ser rede).', 'erro');
+          } else {
+            mostrarAviso('✓ Todos os ' + baixados + ' trabalhos baixados, sem erro.', 'sucesso');
+          }
         } catch (err) {
           mostrarAviso('Erro: ' + (err.message || err), 'erro');
         } finally {
