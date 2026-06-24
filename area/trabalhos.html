@@ -704,7 +704,13 @@
             if (pdfSelecionado) {
               // Substitui o PDF
               var trab = trabalhos.find(function (t) { return t.id === idEdicao; });
-              await uploadPdf(trab.pdf_path, pdfSelecionado);
+              try {
+                await uploadPdf(trab.pdf_path, pdfSelecionado);
+              } catch (errUpload) {
+                throw new Error('Seus dados foram salvos, mas o NOVO PDF não pôde ser enviado (' +
+                  (errUpload.message || 'erro') + '). O arquivo anterior foi mantido — ' +
+                  'tente anexar o PDF novamente.');
+              }
             }
             mostrarFeedback('Trabalho atualizado com sucesso.', 'ok');
           } else {
@@ -729,7 +735,17 @@
             }).select().single();
             if (rIns.error) throw new Error('Erro ao submeter: ' + rIns.error.message);
 
-            await uploadPdf(path, pdfSelecionado);
+            try {
+              await uploadPdf(path, pdfSelecionado);
+            } catch (errUpload) {
+              // Registro criado mas PDF não subiu: desfaz pra não deixar
+              // "trabalho fantasma" sem arquivo, e avisa claramente.
+              try { await sb.from('trabalhos_cientificos').delete().eq('id', rIns.data.id); }
+              catch (errRollback) { /* o aviso abaixo já alerta a sócia */ }
+              throw new Error('Seu trabalho NÃO foi enviado: o PDF não pôde ser salvo (' +
+                (errUpload.message || 'erro') + '). Nada foi registrado — confira o arquivo ' +
+                '(PDF de até 10MB) e tente enviar novamente.');
+            }
             mostrarFeedback('Trabalho submetido com sucesso!', 'ok');
           }
 

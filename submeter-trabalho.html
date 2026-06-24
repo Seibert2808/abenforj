@@ -774,7 +774,13 @@
             if (rUp.data && !rUp.data.ok) throw new Error(rUp.data.erro);
             if (pdfSelecionado) {
               var trab = trabalhos.find(function (t) { return t.id === idEdicao; });
-              await uploadPdf(trab.pdf_path, pdfSelecionado);
+              try {
+                await uploadPdf(trab.pdf_path, pdfSelecionado);
+              } catch (errUpload) {
+                throw new Error('Seus dados foram salvos, mas o NOVO PDF não pôde ser enviado (' +
+                  (errUpload.message || 'erro') + '). O arquivo anterior foi mantido — ' +
+                  'tente anexar o PDF novamente.');
+              }
             }
             mostrarFeedback('Trabalho atualizado com sucesso.', 'ok');
           } else {
@@ -783,7 +789,20 @@
             });
             if (rIns.error) throw new Error(rIns.error.message);
             if (rIns.data && !rIns.data.ok) throw new Error(rIns.data.erro);
-            await uploadPdf(rIns.data.pdf_path, pdfSelecionado);
+            try {
+              await uploadPdf(rIns.data.pdf_path, pdfSelecionado);
+            } catch (errUpload) {
+              // O registro foi criado, mas o PDF não subiu. Desfaz o registro
+              // pra não ficar "trabalho fantasma" sem arquivo — e avisa claramente.
+              try {
+                await sb.rpc('externo_deletar_trabalho', {
+                  p_email: emailAtual, p_doity_id: doityAtual, p_trabalho_id: rIns.data.id
+                });
+              } catch (errRollback) { /* o aviso abaixo já alerta a autora */ }
+              throw new Error('Seu trabalho NÃO foi enviado: o PDF não pôde ser salvo (' +
+                (errUpload.message || 'erro') + '). Nada foi registrado — confira o arquivo ' +
+                '(PDF de até 10MB) e tente enviar novamente.');
+            }
             mostrarFeedback('Trabalho submetido com sucesso!', 'ok');
           }
           fecharForm();
