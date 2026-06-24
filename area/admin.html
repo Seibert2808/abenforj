@@ -3725,12 +3725,19 @@
 
       async function baixarTrabalhoIndividual(path, nomeAmigavel) {
         var sb = window.abenfo.sb;
-        var r = await sb.storage.from('trabalhos-cientificos').download(path);
-        if (r.error) {
-          mostrarAviso('Erro ao baixar: ' + r.error.message, 'erro');
+        var data = null, ultimoErro = null;
+        for (var tent = 0; tent < 3; tent++) {
+          var r = await sb.storage.from('trabalhos-cientificos').download(path);
+          if (!r.error && r.data) { data = r.data; break; }
+          ultimoErro = r.error;
+        }
+        if (!data) {
+          mostrarAviso('Não consegui baixar após 3 tentativas: ' +
+            (ultimoErro && ultimoErro.message ? ultimoErro.message : 'arquivo indisponível') +
+            '. Caminho no servidor: ' + path, 'erro');
           return;
         }
-        var url = URL.createObjectURL(r.data);
+        var url = URL.createObjectURL(data);
         var a = document.createElement('a');
         a.href = url;
         a.download = nomeAmigavel + '.pdf';
@@ -4482,6 +4489,20 @@
       }
 
       document.getElementById('admin-busca').addEventListener('input', aplicarBuscaAdmin);
+      // Enter leva direto ao primeiro resultado (sem precisar rolar a página).
+      document.getElementById('admin-busca').addEventListener('keydown', function (e) {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        var primeiro = document.querySelector(
+          '#lista-pendentes .assoc-card:not(.busca-oculto), ' +
+          '#lista-ativos .assoc-card:not(.busca-oculto), ' +
+          '#lista-inativos .assoc-card:not(.busca-oculto), ' +
+          '#lista-inscricoes-pendentes .assoc-card:not(.busca-oculto), ' +
+          '#lista-trabalhos-admin .assoc-card:not(.busca-oculto), ' +
+          '#lista-biblioteca .obra-admin-card:not(.busca-oculto), ' +
+          '#lista-avisos .obra-admin-card:not(.busca-oculto)');
+        if (primeiro) primeiro.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
       document.getElementById('admin-busca-limpar').addEventListener('click', function () {
         var input = document.getElementById('admin-busca');
         input.value = '';
