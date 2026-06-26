@@ -47,9 +47,10 @@
         <span class="eneon-data">15 a 17 de julho de 2026 · UERJ · Rio de Janeiro</span>
         <h1>IX Encontro de Enfermagem Obstétrica e Neonatal do Estado do Rio de Janeiro</h1>
         <p class="tema">“Diversidade, Equidade e Acesso para mulheres e bebês no Estado do Rio de Janeiro”</p>
+        <p class="eneon-encerradas">Inscrições encerradas</p>
         <div class="eneon-cta">
           <a href="#programacao" class="btn btn-outline">Ver programação</a>
-          <a href="https://doity.com.br/ix-encontro-de-enfermagem-obsttrica-e-neonatal-do-estado-do-rio-de-janeiro" class="btn btn-solid" target="_blank" rel="noopener">Inscreva-se</a>
+          <a href="#inscritos" class="btn btn-solid">Inscritos confirmados</a>
           <a href="cursos.html#ix-encontro" class="btn btn-cores-eneon">Cursos pré-encontro</a>
         </div>
       </div>
@@ -78,8 +79,8 @@
       <div class="container">
         <div class="section-header" style="max-width:none;">
           <span class="eyebrow">Participe</span>
-          <h2>Inscrições abertas</h2>
-          <p style="font-size:0.95rem;color:var(--texto-suave);">Duas oportunidades para participar ativamente do IX ENEON.</p>
+          <h2>Inscrições encerradas</h2>
+          <p style="font-size:0.95rem;color:var(--texto-suave);">As inscrições no IX ENEON pelo Doity foram encerradas. Quem já se inscreveu ainda pode escolher os cursos pré-encontro e acompanhar os trabalhos — e a seleção de monitoria segue com inscrições abertas.</p>
         </div>
 
         <div class="grid grid-2" style="margin-top:1.25rem;align-items:stretch;">
@@ -104,17 +105,18 @@
 
           <article class="eneon-dia" style="display:flex;flex-direction:column;">
             <span class="badge-destaque" style="background:var(--eneon-lavanda);color:var(--eneon-grafite);">Trabalhos científicos</span>
-            <h3 style="margin-top:0.9rem;">Submissão de trabalhos · 1 a 23 de junho</h3>
+            <h3 style="margin-top:0.9rem;">Trabalhos científicos · resultado em breve</h3>
             <p style="font-size:0.95rem;color:var(--texto-suave);line-height:1.55;">
-              Envie seu trabalho científico entre <strong>1º e 23 de junho de 2026</strong> (até as 23h59).
-              Até 2 trabalhos por relator(a) principal. Os aprovados serão apresentados na tarde de 16 de julho.
+              As submissões foram <strong>encerradas em 23 de junho de 2026</strong>. A lista dos trabalhos
+              classificados para apresentação oral (tarde de 16 de julho) será publicada em breve, após a
+              avaliação da Comissão Científica.
             </p>
             <p style="font-size:0.9rem;color:var(--texto);margin-top:0.25rem;">
-              Antes de enviar, confira as <strong>normas de submissão</strong>.
+              Você pode rever as <strong>normas de submissão</strong> que orientaram os envios.
             </p>
             <div style="margin-top:auto;padding-top:1rem;display:flex;flex-wrap:wrap;gap:0.5rem;">
-              <a href="regras-trabalhos.html" class="btn btn-ghost" style="min-height:0;padding:0.55rem 1rem;font-size:0.9rem;">Ver normas de submissão</a>
-              <a href="submeter-trabalho.html" class="btn btn-cores-eneon" style="padding:0.55rem 1rem;font-size:0.9rem;">Submeter trabalho</a>
+              <a href="regras-trabalhos.html" class="btn btn-ghost" style="min-height:0;padding:0.55rem 1rem;font-size:0.9rem;">Ver normas</a>
+              <a href="trabalhos-aprovados.html" class="btn btn-cores-eneon" style="padding:0.55rem 1rem;font-size:0.9rem;">Trabalhos classificados</a>
             </div>
           </article>
 
@@ -141,7 +143,20 @@
       </div>
     </section>
 
-    <section class="section section-areia" id="programacao">
+    <section class="section section-areia" id="inscritos">
+      <div class="container">
+        <div class="section-header">
+          <span class="eyebrow">Confirmados</span>
+          <h2>Inscritos não-sócios</h2>
+          <p style="font-size:0.95rem;color:var(--texto-suave);">Lista nominal das pessoas <strong>não-sócias</strong> com inscrição <strong>confirmada e regularizada</strong> no IX ENEON. A lista é atualizada automaticamente. Sócias da ABENFO-RJ acompanham suas inscrições pela <a href="/login">área da associada</a>.</p>
+        </div>
+        <div id="lista-inscritos" class="inscritos-bloco">
+          <p class="inscritos-status">Carregando lista…</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="programacao">
       <div class="container">
         <div class="section-header">
           <span class="eyebrow">Programação preliminar</span>
@@ -271,7 +286,8 @@
 
     <section class="section section-areia" style="text-align:center;">
       <div class="container" style="max-width:720px;">
-        <a href="https://doity.com.br/ix-encontro-de-enfermagem-obsttrica-e-neonatal-do-estado-do-rio-de-janeiro" class="btn btn-solid" target="_blank" rel="noopener" style="font-size:1.05rem;padding:1rem 2rem;">Garanta já sua inscrição!</a>
+        <h2 style="color:var(--verde-escuro);margin:0;">Inscrições encerradas</h2>
+        <p style="color:var(--texto-suave);margin:0.5rem 0 0;">As inscrições no IX ENEON foram encerradas. Veja abaixo o que continua disponível para quem já garantiu sua vaga.</p>
 
         <div style="margin-top:1.5rem;padding:1.1rem 1.25rem;background:var(--verde-pastel);border-radius:10px;text-align:left;">
           <strong style="color:var(--verde-escuro);">Já se inscreveu? Escolha agora seus cursos pré-encontro</strong>
@@ -378,6 +394,57 @@
   </footer>
 
   <script>document.getElementById('ano').textContent = new Date().getFullYear();</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/supabase-client.js"></script>
   <script src="js/main.js"></script>
+  <script>
+    // Lista pública de inscritos não-sócios confirmados (RPC inscritos_externos_publicos).
+    (function () {
+      var alvo = document.getElementById('lista-inscritos');
+      if (!alvo) return;
+
+      function escapar(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+          return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+      }
+      function status(msg) {
+        alvo.innerHTML = '<p class="inscritos-status">' + escapar(msg) + '</p>';
+      }
+
+      if (!window.SUPABASE_PRONTO || !window.abenfo || !window.abenfo.sb) {
+        status('Lista temporariamente indisponível. Tente novamente em instantes.');
+        return;
+      }
+
+      var sb = window.abenfo.sb;
+      var tituloPt = (window.abenfo.utils && window.abenfo.utils.tituloPt) || function (s) { return s; };
+
+      sb.rpc('inscritos_externos_publicos').then(function (r) {
+        if (r.error) {
+          status('Não foi possível carregar a lista agora. Tente novamente mais tarde.');
+          return;
+        }
+        var nomes = (r.data || [])
+          .map(function (x) { return tituloPt((x && x.nome) || ''); })
+          .filter(Boolean);
+
+        if (nomes.length === 0) {
+          status('A lista de inscritos confirmados será publicada aqui em breve.');
+          return;
+        }
+
+        var html = '<p class="inscritos-contagem">' + nomes.length +
+          (nomes.length === 1 ? ' inscrição confirmada' : ' inscrições confirmadas') + '</p>';
+        html += '<ol class="inscritos-grid">';
+        nomes.forEach(function (nome) { html += '<li>' + escapar(nome) + '</li>'; });
+        html += '</ol>';
+        alvo.innerHTML = html;
+      }, function () {
+        status('Não foi possível carregar a lista agora. Tente novamente mais tarde.');
+      });
+    })();
+  </script>
 </body>
 </html>
