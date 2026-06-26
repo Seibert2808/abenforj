@@ -625,6 +625,21 @@ form textarea { min-height: 140px; resize: vertical; }
   margin-bottom: 1rem;
 }
 
+/* Aviso de vagas esgotadas (cursos pré-encontro) */
+.aviso-vagas {
+  background: #fdecec;
+  border: 1px solid #e3a0a0;
+  border-left: 4px solid #c53030;
+  color: #742020;
+  border-radius: 8px;
+  padding: 0.7rem 0.95rem;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  margin: 0.85rem 0;
+  text-align: left;
+}
+.aviso-vagas strong { color: #8a1f1f; }
+
 /* Pop-up centrado em imagem (aviso visual) */
 .modal-imagem { max-width: 420px; padding: 0.85rem; }
 .modal-imagem .modal-img {
