@@ -73,6 +73,10 @@
             <a id="btn-banner-docs" href="https://docs.google.com/forms/d/e/1FAIpQLScPA6_k5juFb6ipfHcXicmYzS00Cm8LFwj_76iPt1XcEkqD3Q/viewform" target="_blank" rel="noopener" class="btn btn-solid" style="min-height:0;padding:0.6rem 1.1rem;" hidden>Abrir formulário de documentos</a>
             <a id="btn-banner-perfil" href="/area/perfil" class="btn btn-ghost" style="min-height:0;padding:0.6rem 1.1rem;" hidden>Ir para meu perfil</a>
           </p>
+          <p id="aviso-docs-login" style="margin:0.75rem 0 0;color:var(--texto-suave);font-size:0.86rem;line-height:1.5;" hidden>
+            ⚠️ O formulário tem anexo de arquivo, então o Google <strong>exige login em uma conta Google (Gmail)</strong> para abrir. Se ele não abrir ou pedir login, faça login no seu Gmail e tente de novo — ou envie seus documentos por e-mail para
+            <a href="mailto:abenforio@gmail.com?subject=Documentos%20-%20associa%C3%A7%C3%A3o%20ABENFO-RJ">abenforio@gmail.com</a>.
+          </p>
         </div>
       </div>
     </section>
@@ -182,6 +186,7 @@
         document.getElementById('passo-foto').hidden = !precisaFoto;
         document.getElementById('passo-docs').hidden = !precisaDocs;
         document.getElementById('btn-banner-docs').hidden = !precisaDocs;
+        document.getElementById('aviso-docs-login').hidden = !precisaDocs;
         document.getElementById('btn-banner-perfil').hidden = !precisaFoto;
         if (precisaFoto && precisaDocs) {
           document.getElementById('banner-intro').textContent = 'Faltam dois passos para finalizar sua filiação:';
