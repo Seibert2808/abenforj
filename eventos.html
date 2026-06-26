@@ -144,15 +144,13 @@
     </section>
 
     <section class="section section-areia" id="inscritos">
-      <div class="container">
+      <div class="container" style="text-align:center;max-width:720px;">
         <div class="section-header">
           <span class="eyebrow">Confirmados</span>
           <h2>Inscritos não-sócios</h2>
-          <p style="font-size:0.95rem;color:var(--texto-suave);">Lista nominal das pessoas <strong>não-sócias</strong> com inscrição <strong>confirmada e regularizada</strong> no IX ENEON. A lista é atualizada automaticamente. Sócias da ABENFO-RJ acompanham suas inscrições pela <a href="/login">área da associada</a>.</p>
+          <p style="font-size:0.95rem;color:var(--texto-suave);">A lista nominal das pessoas <strong>não-sócias</strong> com inscrição <strong>confirmada e regularizada</strong> no IX ENEON fica em uma página própria. Sócias da ABENFO-RJ acompanham suas inscrições pela <a href="/login">área da associada</a>.</p>
         </div>
-        <div id="lista-inscritos" class="inscritos-bloco">
-          <p class="inscritos-status">Carregando lista…</p>
-        </div>
+        <a href="inscritos-eneon.html" class="btn btn-solid" style="margin-top:0.5rem;">Ver lista de inscritos não-sócios</a>
       </div>
     </section>
 
@@ -394,57 +392,6 @@
   </footer>
 
   <script>document.getElementById('ano').textContent = new Date().getFullYear();</script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/config.js"></script>
-  <script src="js/supabase-client.js"></script>
   <script src="js/main.js"></script>
-  <script>
-    // Lista pública de inscritos não-sócios confirmados (RPC inscritos_externos_publicos).
-    (function () {
-      var alvo = document.getElementById('lista-inscritos');
-      if (!alvo) return;
-
-      function escapar(s) {
-        return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-          return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-        });
-      }
-      function status(msg) {
-        alvo.innerHTML = '<p class="inscritos-status">' + escapar(msg) + '</p>';
-      }
-
-      if (!window.SUPABASE_PRONTO || !window.abenfo || !window.abenfo.sb) {
-        status('Lista temporariamente indisponível. Tente novamente em instantes.');
-        return;
-      }
-
-      var sb = window.abenfo.sb;
-      var tituloPt = (window.abenfo.utils && window.abenfo.utils.tituloPt) || function (s) { return s; };
-
-      sb.rpc('inscritos_externos_publicos').then(function (r) {
-        if (r.error) {
-          status('Não foi possível carregar a lista agora. Tente novamente mais tarde.');
-          return;
-        }
-        var nomes = (r.data || [])
-          .map(function (x) { return tituloPt((x && x.nome) || ''); })
-          .filter(Boolean);
-
-        if (nomes.length === 0) {
-          status('A lista de inscritos confirmados será publicada aqui em breve.');
-          return;
-        }
-
-        var html = '<p class="inscritos-contagem">' + nomes.length +
-          (nomes.length === 1 ? ' inscrição confirmada' : ' inscrições confirmadas') + '</p>';
-        html += '<ol class="inscritos-grid">';
-        nomes.forEach(function (nome) { html += '<li>' + escapar(nome) + '</li>'; });
-        html += '</ol>';
-        alvo.innerHTML = html;
-      }, function () {
-        status('Não foi possível carregar a lista agora. Tente novamente mais tarde.');
-      });
-    })();
-  </script>
 </body>
 </html>
