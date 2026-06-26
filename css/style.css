@@ -625,6 +625,20 @@ form textarea { min-height: 140px; resize: vertical; }
   margin-bottom: 1rem;
 }
 
+/* Pop-up centrado em imagem (aviso visual) */
+.modal-imagem { max-width: 420px; padding: 0.85rem; }
+.modal-imagem .modal-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+.modal-imagem .modal-close {
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+.modal-imagem .modal-close:hover { background: #fff; }
+
 /* ==========================================================================
    Footer
    ========================================================================== */

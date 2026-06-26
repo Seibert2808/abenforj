@@ -13,15 +13,15 @@ returns table (nome text)
 language sql
 security definer
 set search_path = public
-as $$
+as '
   select ie.nome
   from public.inscritos_externos ie
   join public.eventos e on e.id = ie.evento_id
-  where e.nome = 'IX ENEON 2026'
+  where e.nome = ''IX ENEON 2026''
     and ie.cancelado = false
     and ie.pendente_verificacao_socia = false
   order by lower(ie.nome);
-$$;
+';
 
 grant execute on function public.inscritos_externos_publicos() to anon, authenticated;
 

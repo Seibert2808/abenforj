@@ -24,21 +24,13 @@
   });
 
   // ============================================================
-  // Pop-up de boas-vindas — aparece só na primeira visita
-  // Chave localStorage: 'abenfo_modal_ix_v1'
-  // Se quiser forçar a reaparição (ex.: após troca de conteúdo),
-  // basta mudar 'v1' para 'v2' no HTML e neste JS.
+  // Pop-up — aparece só na primeira visita (por versão de conteúdo).
+  // Conteúdo atual: aviso "Inscrições encerradas" do IX ENEON.
+  // Para forçar a reaparição após trocar o conteúdo, incremente o
+  // sufixo da chave (v6 -> v7).
   // ============================================================
   var modal = document.getElementById('modal-boas-vindas');
-  var STORAGE_KEY = 'abenfo_modal_ix_v5';
-
-  // Aviso de prazo de trabalhos: aparece só até o fim de 23/06/2026,
-  // depois some sozinho (modal volta a ser só as boas-vindas do IX ENEON).
-  var avisoPrazo = document.getElementById('aviso-prazo-trabalhos');
-  if (avisoPrazo) {
-    var limitePrazo = new Date(2026, 5, 23, 23, 59, 59); // mês 0-based: 5 = junho
-    if (new Date() <= limitePrazo) avisoPrazo.hidden = false;
-  }
+  var STORAGE_KEY = 'abenfo_modal_ix_v6';
 
   if (modal) {
     var jaViu = false;

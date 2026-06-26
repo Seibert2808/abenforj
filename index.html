@@ -188,22 +188,14 @@
     </div>
   </footer>
 
-  <!-- Pop-up de boas-vindas: aparece apenas na 1ª visita (localStorage). -->
+  <!-- Pop-up: aparece apenas na 1ª visita (localStorage). -->
   <div id="modal-boas-vindas" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-titulo" hidden>
-    <div class="modal">
+    <div class="modal modal-imagem">
       <button class="modal-close" type="button" aria-label="Fechar">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
       </button>
-      <div id="aviso-prazo-trabalhos" style="background:var(--areia);border:1px solid var(--verde-escuro);border-radius:12px;padding:1rem 1.1rem;margin-bottom:1.25rem;text-align:center;" hidden>
-        <strong style="display:block;color:var(--verde-escuro);font-size:1.05rem;margin-bottom:0.35rem;">⏰ Hoje é o último dia!</strong>
-        <p style="margin:0 0 0.85rem;">As inscrições de trabalhos para apresentação no <strong>IX ENEON</strong> encerram <strong>hoje, 23 de junho</strong>.</p>
-        <a href="submeter-trabalho.html" class="btn btn-solid btn-block">Enviar meu trabalho</a>
-      </div>
-      <img src="assets/eneon/logo-eneon-horizontal.png" alt="IX ENEON — Diversidade, Equidade e Acesso — ABENFO-RJ" id="modal-titulo" style="display:block;max-width:100%;width:340px;margin:0 auto 1rem;">
-      <span class="modal-data" style="display:block;text-align:center;">15 a 17 de julho de 2026 · UERJ · Rio de Janeiro</span>
-      <p style="margin:0.75rem 0 0.5rem;"><strong>Encontro de Enfermagem Obstétrica e Neonatal do Estado do Rio de Janeiro.</strong></p>
-      <p>Cursos pré-encontro, painéis e mesas com pesquisadoras, autoridades e movimentos sociais — três dias na UERJ.</p>
-      <a href="eventos.html" class="btn btn-solid btn-block">Conheça o IX ENEON</a>
+      <img src="assets/eneon/inscricoes-encerradas.png" alt="IX ENEON — Inscrições encerradas. Quem se inscreveu corretamente: aguardar até 17h de 28/06 para regularização de pendências de documentação. Confirme sua inscrição em abenforj.org.br — não-sócios na lista nominal da página do evento; sócios na área do associado em Meus Eventos. Contato: abenforio@gmail.com." id="modal-titulo" class="modal-img">
+      <a href="eventos.html" class="btn btn-solid btn-block" style="margin-top:1rem;">Ver a página do IX ENEON</a>
     </div>
   </div>
 
