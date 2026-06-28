@@ -144,6 +144,17 @@
       color: #8a1f1f;
       border-color: #c53030;
     }
+    /* Botão de WhatsApp — verde da marca, abre conversa pré-preenchida */
+    .btn-whatsapp {
+      color: #fff;
+      background: #25D366;
+      border-color: #25D366;
+    }
+    .btn-whatsapp:hover {
+      background: #1ebe5d;
+      border-color: #1ebe5d;
+      color: #fff;
+    }
     .assoc-acoes input[type="number"]:focus {
       outline: 0;
       border-color: var(--verde-claro);
@@ -1617,6 +1628,37 @@
         return '<div><span class="label">' + label + ':</span><span class="valor">' + valor + '</span></div>';
       }
 
+      // ============================================================
+      // >>> MENSAGEM DO BOTÃO WHATSAPP (associadas pendentes de aprovação)
+      // Edite o texto abaixo à vontade. Use {nome} onde quiser que entre o
+      // PRIMEIRO NOME da pessoa (preenchido automaticamente).
+      // ============================================================
+      var MSG_WHATSAPP_PENDENTE =
+        'Olá {nome}, bom dia! 😊\n\n' +
+        'Aqui quem fala é a Sabrina, atual vice-presidente da ABENFO-RJ. ' +
+        'Vi que você iniciou seu cadastro de associada, mas ele ainda está pendente. ' +
+        'Para que a gente possa confirmar a sua inscrição no IX ENEON, precisamos que você finalize o cadastro no nosso site.\n\n' +
+        'Acesse www.abenforj.org.br, clique em "Associe-se" e conclua a criação da sua conta.\n\n' +
+        'Qualquer dúvida, estou à disposição. Obrigada! 💚';
+
+      // Normaliza telefone BR para o formato do wa.me (só dígitos, com DDI 55).
+      // Retorna '' quando não dá pra montar com segurança.
+      function telefoneWhatsapp(tel) {
+        var d = String(tel || '').replace(/\D+/g, '').replace(/^0+/, '');
+        if (!d) return '';
+        if (d.indexOf('55') === 0 && (d.length === 12 || d.length === 13)) return d;
+        if (d.length === 10 || d.length === 11) return '55' + d; // DDD + número
+        return '';
+      }
+
+      function linkWhatsapp(tel, nomeCompleto) {
+        var fone = telefoneWhatsapp(tel);
+        if (!fone) return '';
+        var primeiro = String(nomeCompleto || '').trim().split(/\s+/)[0] || '';
+        var texto = MSG_WHATSAPP_PENDENTE.replace(/\{nome\}/g, primeiro);
+        return 'https://wa.me/' + fone + '?text=' + encodeURIComponent(texto);
+      }
+
       function renderCard(p, tipo) {
         var anoAtual = new Date().getFullYear();
 
@@ -1714,6 +1756,16 @@
             encodeURIComponent(p.email) + '" target="_blank" rel="noopener"' + atrLog + '>Enviar e-mail</a>';
         }
 
+        // WhatsApp pré-preenchido para associadas pendentes (com telefone válido)
+        var btnWhatsapp = '';
+        if (tipo === 'pendente' && p.telefone) {
+          var hrefWa = linkWhatsapp(p.telefone, p.nome_completo || nomeBase);
+          if (hrefWa) {
+            btnWhatsapp = '<a class="btn btn-ghost btn-whatsapp" href="' + hrefWa +
+              '" target="_blank" rel="noopener">WhatsApp</a>';
+          }
+        }
+
         var btnCarteirinha =
           '<a class="btn btn-ghost" href="carteirinha.html?id=' + p.id + '" target="_blank" rel="noopener">Ver carteirinha</a>';
 
@@ -1748,6 +1800,7 @@
               acoesSec +
               btnDocs +
               btnEmail +
+              btnWhatsapp +
               btnCarteirinha +
               '<span class="sep"></span>' +
               btnExcluir +
