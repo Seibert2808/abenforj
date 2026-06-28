@@ -641,11 +641,14 @@ form textarea { min-height: 140px; resize: vertical; }
 .aviso-vagas strong { color: #8a1f1f; }
 
 /* Pop-up centrado em imagem (aviso visual) */
-.modal-imagem { max-width: 420px; padding: 0.85rem; }
+.modal-imagem { max-width: 420px; padding: 0.85rem; max-height: 92vh; overflow-y: auto; }
 .modal-imagem .modal-img {
   display: block;
-  width: 100%;
+  width: auto;
+  max-width: 100%;
   height: auto;
+  max-height: 72vh;
+  margin: 0 auto;
   border-radius: 8px;
 }
 .modal-imagem .modal-close {

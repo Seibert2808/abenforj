@@ -30,7 +30,7 @@
   // sufixo da chave (v6 -> v7).
   // ============================================================
   var modal = document.getElementById('modal-boas-vindas');
-  var STORAGE_KEY = 'abenfo_modal_ix_v6';
+  var STORAGE_KEY = 'abenfo_modal_ix_v7';
 
   if (modal) {
     var jaViu = false;
