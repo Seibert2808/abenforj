@@ -134,6 +134,16 @@
       border: 1px solid var(--borda);
       border-radius: 6px;
     }
+    /* Botão de cancelar inscrição — ação destrutiva, destacada em vermelho discreto */
+    .btn-cancelar-insc {
+      color: #b00020;
+      border-color: #e3a0a0;
+    }
+    .btn-cancelar-insc:hover {
+      background: #fdecec;
+      color: #8a1f1f;
+      border-color: #c53030;
+    }
     .assoc-acoes input[type="number"]:focus {
       outline: 0;
       border-color: var(--verde-claro);
@@ -2825,6 +2835,8 @@
           'data-pend-nome="' + escapar(p.nome) + '" data-pend-evento-id="' + escapar(p.evento_id || '') + '">Associar a sócia cadastrada</button>';
         var btnResolver =
           '<button class="btn btn-ghost" data-pend-acao="resolver" data-pend-id="' + p.id + '" data-pend-nome="' + escapar(p.nome) + '">Marcar regularizada</button>';
+        var btnCancelarInsc =
+          '<button class="btn btn-ghost btn-cancelar-insc" data-acao-cancelar="ext" data-id="' + p.id + '" data-nome="' + escapar(p.nome) + '">Cancelar inscrição</button>';
 
         // Histórico de notificações (chips, igual ao das associadas pendentes)
         var historicoEmails = '';
@@ -2853,6 +2865,7 @@
               btnNotificar +
               btnAssociar +
               btnResolver +
+              btnCancelarInsc +
             '</div>' +
           '</div>'
         );
