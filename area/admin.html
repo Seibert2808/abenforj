@@ -1630,16 +1630,40 @@
 
       // ============================================================
       // >>> MENSAGEM DO BOTÃO WHATSAPP (associadas pendentes de aprovação)
-      // Edite o texto abaixo à vontade. Use {nome} onde quiser que entre o
-      // PRIMEIRO NOME da pessoa (preenchido automaticamente).
+      // Edite o texto abaixo à vontade. Placeholders preenchidos automaticamente:
+      //   {nome}      → primeiro nome da PESSOA que vai receber
+      //   {saudacao}  → "bom dia" / "boa tarde" / "boa noite" conforme o horário
+      //   {remetente} → primeiro nome de QUEM está logado (Sabrina ou Marcele)
+      //   {cargo}     → cargo de quem está logado (vice-presidente / presidente)
       // ============================================================
       var MSG_WHATSAPP_PENDENTE =
-        'Olá {nome}, bom dia! 😊\n\n' +
-        'Aqui quem fala é a Sabrina, atual vice-presidente da ABENFO-RJ. ' +
+        'Olá {nome}, {saudacao}! 😊\n\n' +
+        'Aqui quem fala é a {remetente}, atual {cargo} da ABENFO-RJ. ' +
         'Vi que você iniciou seu cadastro de associada, mas ele ainda está pendente. ' +
         'Para que a gente possa confirmar a sua inscrição no IX ENEON, precisamos que você finalize o cadastro no nosso site.\n\n' +
         'Acesse www.abenforj.org.br, clique em "Associe-se" e conclua a criação da sua conta.\n\n' +
         'Qualquer dúvida, estou à disposição. Obrigada! 💚';
+
+      // Quem pode estar logado como admin → nome + cargo usados no remetente.
+      var REMETENTES_ADMIN = {
+        'sabrinalinsseibert@gmail.com': { nome: 'Sabrina', cargo: 'vice-presidente' },
+        'marcelezveiter@hotmail.com':   { nome: 'Marcele', cargo: 'presidente' }
+      };
+      var remetenteAtual = null; // perfil do admin logado (setado no 'perfil-pronto')
+
+      function infoRemetente() {
+        var email = String(remetenteAtual && remetenteAtual.email || '').toLowerCase();
+        if (REMETENTES_ADMIN[email]) return REMETENTES_ADMIN[email];
+        var primeiro = String(remetenteAtual && remetenteAtual.nome_completo || '').trim().split(/\s+/)[0] || '';
+        return { nome: primeiro, cargo: 'integrante da diretoria' };
+      }
+
+      function saudacaoHora() {
+        var h = new Date().getHours();
+        if (h >= 6 && h < 12) return 'bom dia';
+        if (h >= 12 && h < 18) return 'boa tarde';
+        return 'boa noite';
+      }
 
       // Normaliza telefone BR para o formato do wa.me (só dígitos, com DDI 55).
       // Retorna '' quando não dá pra montar com segurança.
@@ -1655,7 +1679,12 @@
         var fone = telefoneWhatsapp(tel);
         if (!fone) return '';
         var primeiro = String(nomeCompleto || '').trim().split(/\s+/)[0] || '';
-        var texto = MSG_WHATSAPP_PENDENTE.replace(/\{nome\}/g, primeiro);
+        var rem = infoRemetente();
+        var texto = MSG_WHATSAPP_PENDENTE
+          .replace(/\{nome\}/g, primeiro)
+          .replace(/\{saudacao\}/g, saudacaoHora())
+          .replace(/\{remetente\}/g, rem.nome)
+          .replace(/\{cargo\}/g, rem.cargo);
         return 'https://wa.me/' + fone + '?text=' + encodeURIComponent(texto);
       }
 
@@ -4619,6 +4648,7 @@
           window.location.href = 'index.html';
           return;
         }
+        remetenteAtual = e.detail; // identifica quem está logado (p/ o WhatsApp)
         carregar();
         carregarEventos();
         atualizarResumoInscricoes();
