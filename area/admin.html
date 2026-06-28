@@ -1785,10 +1785,18 @@
             encodeURIComponent(p.email) + '" target="_blank" rel="noopener"' + atrLog + '>Enviar e-mail</a>';
         }
 
-        // WhatsApp pré-preenchido para associadas pendentes (com telefone válido)
+        // WhatsApp (com telefone válido):
+        //  - pendentes: mensagem pré-preenchida (cobrança de cadastro)
+        //  - ativas: abre a conversa SEM texto, para a diretoria escrever livremente
         var btnWhatsapp = '';
-        if (tipo === 'pendente' && p.telefone) {
-          var hrefWa = linkWhatsapp(p.telefone, p.nome_completo || nomeBase);
+        if (p.telefone) {
+          var hrefWa = '';
+          if (tipo === 'pendente') {
+            hrefWa = linkWhatsapp(p.telefone, p.nome_completo || nomeBase);
+          } else if (tipo === 'ativo') {
+            var foneWa = telefoneWhatsapp(p.telefone);
+            if (foneWa) hrefWa = 'https://wa.me/' + foneWa;
+          }
           if (hrefWa) {
             btnWhatsapp = '<a class="btn btn-ghost btn-whatsapp" href="' + hrefWa +
               '" target="_blank" rel="noopener">WhatsApp</a>';
