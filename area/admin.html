@@ -2990,16 +2990,22 @@
           dados.forEach(function (p) { p._emails_enviados = porInscrito[p.id] || []; });
         }
 
-        // Sinaliza quem JÁ está com a anuidade 2026 paga (lista oficial socias_anuidade),
-        // cruzando por e-mail. Usado no selo do card e no e-mail de regularização.
+        // Sinaliza quem JÁ está com a anuidade 2026 paga (lista oficial socias_anuidade).
+        // Cruza por E-MAIL ou por NOME (normalizado, sem acento) — assim o selo verde
+        // aparece mesmo quando o e-mail usado no Doity difere do e-mail da lista de sócias.
         if (dados.length > 0) {
-          var emailsPend = dados.map(function (p) { return (p.email || '').toLowerCase(); }).filter(Boolean);
-          if (emailsPend.length > 0) {
-            var rAnu = await sb.from('socias_anuidade').select('email').in('email', emailsPend);
-            var pagas = {};
-            (rAnu.data || []).forEach(function (a) { if (a.email) pagas[a.email.toLowerCase()] = true; });
-            dados.forEach(function (p) { p._anuidadePaga = !!pagas[(p.email || '').toLowerCase()]; });
-          }
+          var normAnu = function (s) {
+            return String(s || '').toLowerCase().trim().normalize('NFD').replace(/[̀-ͯ]/g, '');
+          };
+          var rAnu = await sb.from('socias_anuidade').select('email, nome');
+          var pagasEmail = {}, pagasNome = {};
+          (rAnu.data || []).forEach(function (a) {
+            if (a.email) pagasEmail[normAnu(a.email)] = true;
+            if (a.nome) pagasNome[normAnu(a.nome)] = true;
+          });
+          dados.forEach(function (p) {
+            p._anuidadePaga = !!(pagasEmail[normAnu(p.email)] || pagasNome[normAnu(p.nome)]);
+          });
         }
 
         contador.textContent = dados.length > 0 ? '(' + dados.length + ')' : '';
