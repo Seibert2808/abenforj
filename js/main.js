@@ -25,18 +25,22 @@
 
   // ============================================================
   // Pop-up — aparece só na primeira visita (por versão de conteúdo).
-  // Conteúdo atual: aviso "Inscrições encerradas" do IX ENEON.
+  // Conteúdo atual: cartaz da 3ª Reunião do Fórum de EO (30/06/2026).
   // Para forçar a reaparição após trocar o conteúdo, incremente o
-  // sufixo da chave (v6 -> v7).
+  // sufixo da chave (v7 -> v8).
   // ============================================================
   var modal = document.getElementById('modal-boas-vindas');
-  var STORAGE_KEY = 'abenfo_modal_ix_v7';
+  var STORAGE_KEY = 'abenfo_modal_ix_v8';
+  // Cartaz do Fórum some sozinho a partir de 01/07/2026 (fórum é dia 30/06).
+  var EXPIRA_MODAL = new Date('2026-07-01T00:00:00-03:00');
 
   if (modal) {
     var jaViu = false;
     try { jaViu = localStorage.getItem(STORAGE_KEY) === 'true'; } catch (e) { /* localStorage off */ }
 
-    if (!jaViu) {
+    var expirado = new Date() >= EXPIRA_MODAL;
+
+    if (!jaViu && !expirado) {
       // Atraso pequeno para não poluir o primeiro paint
       setTimeout(function () {
         modal.hidden = false;
