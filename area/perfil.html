@@ -234,20 +234,49 @@
       var FORM_DOCS_URL = 'https://docs.google.com/forms/d/e/1FAIpQLScPA6_k5juFb6ipfHcXicmYzS00Cm8LFwj_76iPt1XcEkqD3Q/viewform';
       var FORM_ENTRY_NOME = 'entry.1200616275';
 
+      // Cada item tem 'tipos': as chaves canônicas que SATISFAZEM o item.
+      // (enfermeira/obstetriz aceita diploma de graduação OU COREN — daí dois tipos.)
       function documentosNecessarios(p) {
-        var docs = ['Comprovante de pagamento da anuidade'];
+        var itens = [{ label: 'Comprovante de pagamento da anuidade', tipos: ['anuidade'] }];
         var cat = p.categoria;
         if (cat === 'estudante') {
-          docs.push('Comprovante de matrícula atualizado');
+          itens.push({ label: 'Comprovante de matrícula atualizado', tipos: ['matricula'] });
         } else if (cat === 'enfermeira' || cat === 'obstetriz') {
-          docs.push('Diploma de graduação <em>ou</em> carteira/CIP do COREN <span style="color:var(--texto-suave);">(um dos dois)</span>');
+          itens.push({ label: 'Diploma de graduação <em>ou</em> carteira/CIP do COREN <span style="color:var(--texto-suave);">(um dos dois)</span>', tipos: ['graduacao', 'coren'] });
         } else if (cat === 'tecnica' || cat === 'auxiliar') {
-          docs.push('Carteira/CIP ou certidão do COREN');
+          itens.push({ label: 'Carteira/CIP ou certidão do COREN', tipos: ['coren'] });
         }
         if (['especializacao', 'mestrado', 'doutorado'].indexOf(p.formacao) >= 0) {
-          docs.push('Diploma ou declaração de conclusão da pós-graduação');
+          itens.push({ label: 'Diploma ou declaração de conclusão da pós-graduação', tipos: ['pos'] });
         }
-        return docs;
+        return itens;
+      }
+
+      // Conjunto de tipos já enviados (lido da RPC). null = ainda não carregado.
+      var docsEnviadosSet = null;
+
+      function carregarDocsEnviados() {
+        if (!window.abenfo || !window.abenfo.sb) return Promise.resolve({});
+        return window.abenfo.sb.rpc('meus_documentos_enviados').then(function (res) {
+          var set = {};
+          if (res && res.data) {
+            res.data.forEach(function (r) { if (r && r.tipo) set[r.tipo] = true; });
+          }
+          return set;
+        }).catch(function () { return {}; });
+      }
+
+      function itemEnviado(item, set) {
+        set = set || {};
+        return item.tipos.some(function (t) { return set[t]; });
+      }
+
+      // true se ainda falta ALGUM documento exigido (considerando o que já chegou).
+      function faltamDocumentos() {
+        if (!perfil) return false;
+        return documentosNecessarios(perfil).some(function (item) {
+          return !itemEnviado(item, docsEnviadosSet || {});
+        });
       }
 
       function linkFormDocs(p) {
@@ -259,10 +288,22 @@
       }
 
       function renderDocsNecessarios(p) {
+        var set = docsEnviadosSet || {};
+        var conferido = !!p.cadastro_completo; // admin já validou tudo
         var ul = document.getElementById('lista-docs-necessarios');
         if (ul) {
-          ul.innerHTML = documentosNecessarios(p).map(function (d) {
-            return '<li>' + d + '</li>';
+          ul.innerHTML = documentosNecessarios(p).map(function (item) {
+            if (conferido) {
+              return '<li style="list-style:none;margin-left:-1.2rem;">' +
+                '<span style="color:#2e7d4f;font-weight:600;">✓ Conferido</span> — ' + item.label + '</li>';
+            }
+            if (itemEnviado(item, set)) {
+              return '<li style="list-style:none;margin-left:-1.2rem;">' +
+                '<span style="color:#2e7d4f;font-weight:600;">✓ Recebido</span> — ' + item.label +
+                ' <span style="color:var(--texto-suave);font-size:0.85rem;">(em conferência — reenvie só se precisar atualizar)</span></li>';
+            }
+            return '<li>' +
+              '<span style="color:#b9770e;font-weight:600;">Pendente</span> — ' + item.label + '</li>';
           }).join('');
         }
         var btn = document.getElementById('btn-docs');
@@ -345,7 +386,8 @@
       function atualizarBanner() {
         if (!perfil) return;
         var precisaFoto = !perfil.foto_url;
-        var precisaDocs = !perfil.cadastro_completo;
+        // Só cobra documentos se ainda faltar algum (o que já chegou não é cobrado).
+        var precisaDocs = !perfil.cadastro_completo && faltamDocumentos();
         var banner = document.getElementById('banner-cadastro');
         if (!precisaFoto && !precisaDocs) {
           banner.hidden = true;
@@ -378,8 +420,15 @@
         document.getElementById('tipo_socio').value = perfil.tipo_socio || '';
         setPreview(perfil.foto_url);
         ajustarCoren();
-        atualizarBanner();
+        // Render imediato (estado "carregando" do que chegou) e, ao ler a RPC,
+        // atualiza o checklist (✓ Recebido / Pendente) e o banner de cobrança.
         renderDocsNecessarios(perfil);
+        atualizarBanner();
+        carregarDocsEnviados().then(function (set) {
+          docsEnviadosSet = set;
+          renderDocsNecessarios(perfil);
+          atualizarBanner();
+        });
 
         // Email vem do auth, não do profile
         window.abenfo.auth.usuario().then(function (u) {
