@@ -1701,7 +1701,7 @@
         var nsEf = window.abenfo.utils.nomeSocialEfetivo(p);
         var nomeExibido = escapar(p.nome_completo || '(sem nome)');
         if (nsEf) {
-          nomeExibido = escapar(nsEf) + ' <span style="font-weight:400;color:var(--texto-suave);">(' + escapar(p.nome_completo) + ')</span>';
+          nomeExibido = escapar(p.nome_completo || '(sem nome)') + ' <span style="font-weight:400;color:var(--texto-suave);">(nome social: ' + escapar(nsEf) + ')</span>';
         }
 
         var badges = '<span class="badge badge-' + p.status + '">' + p.status + '</span>';
