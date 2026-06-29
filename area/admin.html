@@ -1220,8 +1220,8 @@
       function ordenarPorNome(lista, campoFallback) {
         var fb = campoFallback || 'nome_completo';
         return lista.slice().sort(function (a, b) {
-          var na = (a.nome_social || a[fb] || '').toLowerCase();
-          var nb = (b.nome_social || b[fb] || '').toLowerCase();
+          var na = (a[fb] || a.nome_social || '').toLowerCase();
+          var nb = (b[fb] || b.nome_social || '').toLowerCase();
           return na.localeCompare(nb, 'pt-BR');
         });
       }
@@ -1240,7 +1240,8 @@
         }
         var html = '<div class="lista-nomes">';
         perfis.forEach(function (p) {
-          var nomeBase = p.nome_social || p.nome_completo || '(sem nome)';
+          var nomeBase = p.nome_completo || p.nome_social || '(sem nome)';
+          var socialDist = nomeSocialSeDistinto(p);
           var avatar = p.foto_url
             ? '<span class="mini-avatar"><img src="' + escapar(p.foto_url) + '" alt=""></span>'
             : '<span class="mini-avatar">' + escapar(iniciaisDe(nomeBase)) + '</span>';
@@ -1249,7 +1250,7 @@
           html += '<button type="button" data-acao-modal="ver-perfil" data-id="' + escapar(p.id) + '">' +
             avatar +
             '<span class="nome-info">' +
-              '<strong>' + escapar(nomeBase) + '</strong>' +
+              '<strong>' + escapar(nomeBase) + (socialDist ? ' <span style="font-weight:400;color:var(--texto-suave);font-size:0.85em;">(social: ' + escapar(socialDist) + ')</span>' : '') + '</strong>' +
               (sub ? '<span>' + escapar(sub) + '</span>' : '') +
             '</span>' +
           '</button>' +
@@ -1688,6 +1689,18 @@
         return 'https://wa.me/' + fone + '?text=' + encodeURIComponent(texto);
       }
 
+      // No ADMIN, o nome social só aparece quando for REALMENTE diferente do nome de
+      // registro (primeiro nome diferente — caso de pessoas trans). Caso contrário,
+      // usa-se só o nome completo. (Carteirinha e telas públicas seguem com o nome
+      // social sempre, respeitando a pessoa.)
+      function nomeSocialSeDistinto(p) {
+        var ns = window.abenfo.utils.nomeSocialEfetivo(p);
+        if (!ns) return '';
+        var pNs = ns.toLowerCase().trim().split(/\s+/)[0] || '';
+        var pNc = String((p && p.nome_completo) || '').toLowerCase().trim().split(/\s+/)[0] || '';
+        return (pNs && pNs !== pNc) ? ns : '';
+      }
+
       function renderCard(p, tipo) {
         var anoAtual = new Date().getFullYear();
 
@@ -1698,7 +1711,7 @@
           : '<div class="assoc-avatar">' + escapar(iniciaisDe(nomeBase)) + '</div>';
 
         // Nome + badges no header
-        var nsEf = window.abenfo.utils.nomeSocialEfetivo(p);
+        var nsEf = nomeSocialSeDistinto(p);
         var nomeExibido = escapar(p.nome_completo || '(sem nome)');
         if (nsEf) {
           nomeExibido = escapar(p.nome_completo || '(sem nome)') + ' <span style="font-weight:400;color:var(--texto-suave);">(nome social: ' + escapar(nsEf) + ')</span>';
@@ -2703,7 +2716,7 @@
         });
         (rSoc.data || []).forEach(function (x) {
           lista.push({
-            nome: x.profile && (x.profile.nome_social || x.profile.nome_completo),
+            nome: x.profile && ((x.profile.nome_completo || x.profile.nome_social || '') + (nomeSocialSeDistinto(x.profile) ? ' (social: ' + nomeSocialSeDistinto(x.profile) + ')' : '')),
             email: x.profile && x.profile.email,
             evento: x.eventos && x.eventos.nome,
             origem: 'Sócia',
@@ -3132,7 +3145,8 @@
         if (!perfis.length) return intro + '<p class="lista-vazia">Nenhuma associada cadastrada.</p>';
         var html = intro + '<div class="lista-nomes">';
         perfis.forEach(function (p) {
-          var nomeBase = p.nome_social || p.nome_completo || '(sem nome)';
+          var nomeBase = p.nome_completo || p.nome_social || '(sem nome)';
+          var socialDist = nomeSocialSeDistinto(p);
           var avatar = p.foto_url
             ? '<span class="mini-avatar"><img src="' + escapar(p.foto_url) + '" alt=""></span>'
             : '<span class="mini-avatar">' + escapar(iniciaisDe(nomeBase)) + '</span>';
@@ -3143,7 +3157,7 @@
           html += '<button type="button" class="btn-selecionar-socia" data-acao-modal="confirmar-associacao" data-id="' + escapar(p.id) + '">' +
             avatar +
             '<span class="nome-info">' +
-              '<strong>' + escapar(nomeBase) + '</strong>' +
+              '<strong>' + escapar(nomeBase) + (socialDist ? ' <span style="font-weight:400;color:var(--texto-suave);font-size:0.85em;">(social: ' + escapar(socialDist) + ')</span>' : '') + '</strong>' +
               (sub ? '<span>' + escapar(sub) + '</span>' : '') +
               (p.email ? '<span style="font-size:0.75rem;">' + escapar(p.email) + '</span>' : '') +
               seloPendente +
