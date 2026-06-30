@@ -143,11 +143,90 @@
         return;
       }
 
-      // O Supabase já processa o token via URL (detectSessionInUrl: true).
-      // Quando a sessão estiver pronta, o user pode trocar a senha.
+      var sb = window.abenfo.sb;
+      var prontoParaTrocar = false;
+
+      var LINK_NOVO = ' <a href="recuperar-senha.html">Clique aqui para pedir um novo link.</a>';
+
+      function bloquear(htmlErro) {
+        form.style.display = 'none';
+        mostrarAviso(htmlErro, 'erro');
+      }
+
+      // Lê parâmetros tanto da query (?a=b) quanto do hash (#a=b).
+      function lerParametros() {
+        var out = {};
+        try {
+          new URLSearchParams(window.location.search).forEach(function (v, k) { out[k] = v; });
+          var h = window.location.hash ? window.location.hash.substring(1) : '';
+          new URLSearchParams(h).forEach(function (v, k) { out[k] = v; });
+        } catch (e) { /* navegador muito antigo */ }
+        return out;
+      }
+
+      // Espera a sessão aparecer (o fluxo implícito processa o hash de forma assíncrona).
+      async function esperarSessao(tentativas) {
+        for (var i = 0; i < tentativas; i++) {
+          var s = await window.abenfo.auth.sessao();
+          if (s) return s;
+          await new Promise(function (r) { setTimeout(r, 250); });
+        }
+        return null;
+      }
+
+      async function inicializar() {
+        btn.disabled = true;
+        btn.textContent = 'Validando link…';
+
+        var p = lerParametros();
+
+        // 1) Link com erro explícito (expirado, já usado, prévia do e-mail queimou o token)
+        if (p.error || p.error_code) {
+          var expirou = p.error_code === 'otp_expired' || /expired|invalid/i.test(p.error_description || '');
+          bloquear(
+            (expirou
+              ? '<strong>Este link expirou ou já foi usado.</strong> Os links de redefinição valem por 1 hora e funcionam só uma vez.'
+              : '<strong>Não foi possível validar o link.</strong>') + LINK_NOVO
+          );
+          return;
+        }
+
+        try {
+          // 2) Formato novo: token_hash na URL → validamos aqui (prévia de e-mail não consome)
+          if (p.token_hash && p.type) {
+            var rv = await sb.auth.verifyOtp({ type: p.type, token_hash: p.token_hash });
+            if (rv.error) throw rv.error;
+          } else if (p.code) {
+            // 3) Formato PKCE (?code=) — troca o code por sessão
+            var rc = await sb.auth.exchangeCodeForSession(p.code);
+            if (rc.error) throw rc.error;
+          }
+          // 4) Formato implícito (#access_token=...): detectSessionInUrl já cuida — só esperamos.
+        } catch (err) {
+          bloquear('<strong>Não foi possível validar o link.</strong> Ele pode ter expirado ou já ter sido aberto antes.' + LINK_NOVO);
+          return;
+        }
+
+        var sess = await esperarSessao(12); // ~3s
+        if (!sess) {
+          bloquear('<strong>Link inválido ou expirado.</strong> Abra o link mais recente do seu e-mail.' + LINK_NOVO);
+          return;
+        }
+
+        // Limpa o token da URL para não reprocessar/vazar ao recarregar.
+        try { history.replaceState(null, '', window.location.pathname); } catch (e) { /* ok */ }
+
+        prontoParaTrocar = true;
+        btn.disabled = false;
+        btn.textContent = 'Salvar nova senha';
+      }
 
       form.addEventListener('submit', async function (e) {
         e.preventDefault();
+        if (!prontoParaTrocar) {
+          mostrarAviso('Aguarde a validação do link…', 'info');
+          return;
+        }
         var s1 = document.getElementById('senha').value;
         var s2 = document.getElementById('senha2').value;
         if (s1 !== s2) {
@@ -168,6 +247,8 @@
           btn.textContent = 'Salvar nova senha';
         }
       });
+
+      inicializar();
     })();
   </script>
 </body>
