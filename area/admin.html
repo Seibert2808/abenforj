@@ -634,12 +634,16 @@
           .sub-aba{background:transparent;border:1px solid var(--borda);color:var(--texto-suave);padding:0.35rem 0.8rem;border-radius:6px;cursor:pointer;font-size:0.9rem;}
           .sub-aba.ativa{background:var(--verde-pastel);color:var(--verde-escuro);border-color:var(--verde-pastel);font-weight:600;}
           .sub-aba:hover{border-color:var(--verde-escuro);}
+          .evento-dropdown{padding:0.5rem 0.9rem;border:1px solid var(--borda);border-radius:8px;font-weight:600;font-size:0.95rem;background:#fff;color:var(--texto);min-width:240px;cursor:pointer;}
+          .evento-dropdown:focus{outline:2px solid var(--verde-escuro);outline-offset:1px;}
         </style>
-        <div class="admin-abas" role="tablist" style="display:flex;gap:0.5rem;flex-wrap:wrap;margin:0 0 1.25rem;">
+        <div class="admin-abas" style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;margin:0 0 1rem;">
           <button type="button" class="aba-evento ativa" data-aba="geral">Geral</button>
-          <button type="button" class="aba-evento" data-aba="eneon">IX ENEON 2026</button>
-          <button type="button" class="aba-evento" data-aba="forum">3º Fórum de Enfermagem Obstétrica</button>
+          <select id="evento-dropdown" class="evento-dropdown" aria-label="Selecionar evento">
+            <option value="">Selecione um evento…</option>
+          </select>
         </div>
+        <div id="sub-abas-dinamicas" class="sub-abas" hidden></div>
 
         <div data-grupo="geral">
         <h2>Estatísticas <span style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;">(sócias ativas)</span></h2>
@@ -711,6 +715,14 @@
               <label for="novo-evento-nome">Nome do evento <span style="color:#b00020;">*</span></label>
               <input id="novo-evento-nome" type="text" placeholder="Ex.: X ENEON 2027" autocomplete="off">
 
+              <label for="novo-evento-tipo">Tipo do evento</label>
+              <select id="novo-evento-tipo">
+                <option value="congresso">Congressos / Encontros</option>
+                <option value="forum">Fórum / Assembleias / Reuniões</option>
+                <option value="curso">Cursos / Simpósios</option>
+                <option value="outro">Outros</option>
+              </select>
+
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
                 <div>
                   <label for="novo-evento-inicio">Data de início</label>
@@ -735,15 +747,6 @@
             </div>
           </div>
         </details>
-
-        <div class="sub-abas" data-grupo="eneon">
-          <button type="button" class="sub-aba ativa" data-subaba="inscricoes">Inscrições</button>
-          <button type="button" class="sub-aba" data-subaba="cancelamentos">Cancelamentos</button>
-          <button type="button" class="sub-aba" data-subaba="pendencias">Pendências</button>
-          <button type="button" class="sub-aba" data-subaba="cursos">Cursos</button>
-          <button type="button" class="sub-aba" data-subaba="trabalhos">Trabalhos científicos</button>
-          <button type="button" class="sub-aba" data-subaba="certificados">Certificados</button>
-        </div>
 
         <details class="secao" data-grupo="eneon" data-sub="inscricoes">
           <summary><h2>Inscrições</h2></summary>
@@ -1132,10 +1135,6 @@
             <p id="cert-status" style="font-size:0.875rem;color:var(--texto-suave);margin:0.6rem 0 0;"></p>
           </div>
         </details>
-
-        <div class="sub-abas" data-grupo="forum">
-          <button type="button" class="sub-aba ativa" data-subaba="participantes">Participantes</button>
-        </div>
 
         <details class="secao" data-grupo="forum" data-sub="participantes">
           <summary><h2>Participantes / Presença <span id="contador-participantes" style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;"></span></h2></summary>
@@ -2323,6 +2322,7 @@
         }
         var dados = {
           nome: nome,
+          tipo: document.getElementById('novo-evento-tipo').value || 'congresso',
           data_inicio: document.getElementById('novo-evento-inicio').value || null,
           data_fim: document.getElementById('novo-evento-fim').value || null,
           local: document.getElementById('novo-evento-local').value.trim() || null,
@@ -2345,6 +2345,7 @@
           .forEach(function (id) { document.getElementById(id).value = ''; });
         document.getElementById('novo-evento-bloco').hidden = true;
         await carregarEventos(r.data.id);
+        await carregarEventoDropdown();
       }
 
       async function processarInscricoes() {
@@ -4903,55 +4904,117 @@
       }
 
       // ── Abas por evento (Geral · IX ENEON · 3º Fórum) ────────────────────────
-      var abaAtual = 'geral';
-      var subAtual = { eneon: 'inscricoes', forum: 'participantes' };
+      // Sub-abas que cada TIPO de evento mostra (fácil de ajustar aqui).
+      var TIPOS_EVENTO = {
+        congresso: [
+          { key: 'inscricoes', label: 'Inscrições' },
+          { key: 'cancelamentos', label: 'Cancelamentos' },
+          { key: 'pendencias', label: 'Pendências' },
+          { key: 'cursos', label: 'Cursos' },
+          { key: 'trabalhos', label: 'Trabalhos científicos' },
+          { key: 'certificados', label: 'Certificados' }
+        ],
+        forum: [
+          { key: 'participantes', label: 'Participantes' }
+        ],
+        curso: [
+          { key: 'inscricoes', label: 'Inscrições' },
+          { key: 'certificados', label: 'Certificados' }
+        ],
+        outro: [
+          { key: 'inscricoes', label: 'Inscrições' },
+          { key: 'certificados', label: 'Certificados' }
+        ]
+      };
+      var eventosNavCache = {};
 
-      function ativarAba(grupo) {
-        abaAtual = grupo;
+      async function carregarEventoDropdown() {
+        var sb = window.abenfo.sb;
+        var sel = document.getElementById('evento-dropdown');
+        if (!sel) return;
+        var r = await sb.from('eventos')
+          .select('id, nome, data_inicio, tipo')
+          .order('data_inicio', { ascending: false, nullsFirst: false });
+        if (r.error || !r.data) return;
+        eventosNavCache = {};
+        var html = '<option value="">Selecione um evento…</option>';
+        r.data.forEach(function (e) {
+          eventosNavCache[e.id] = e;
+          var rotulo = escapar(e.nome) + (e.data_inicio ? ' (' + fmtDataBR(e.data_inicio) + ')' : '');
+          html += '<option value="' + e.id + '">' + rotulo + '</option>';
+        });
+        sel.innerHTML = html;
+      }
+
+      function mostrarGeral() {
         document.querySelectorAll('.aba-evento').forEach(function (b) {
-          b.classList.toggle('ativa', b.getAttribute('data-aba') === grupo);
+          b.classList.toggle('ativa', b.getAttribute('data-aba') === 'geral');
         });
-        document.querySelectorAll('[data-grupo]').forEach(function (el) {
-          if (el.getAttribute('data-grupo') !== grupo) { el.style.display = 'none'; return; }
-          var sub = el.getAttribute('data-sub');
-          if (sub === null) { el.style.display = ''; return; } // barra de sub-abas ou seção sem sub-aba
-          var mostra = (sub === subAtual[grupo]);
+        var dd = document.getElementById('evento-dropdown');
+        if (dd) dd.value = '';
+        document.querySelectorAll('[data-grupo="geral"]').forEach(function (el) { el.style.display = ''; });
+        document.querySelectorAll('[data-sub]').forEach(function (el) { el.style.display = 'none'; });
+        document.getElementById('sub-abas-dinamicas').hidden = true;
+      }
+
+      function mostrarSubEvento(sub) {
+        document.querySelectorAll('#sub-abas-dinamicas .sub-aba').forEach(function (b) {
+          b.classList.toggle('ativa', b.getAttribute('data-subaba') === sub);
+        });
+        document.querySelectorAll('[data-sub]').forEach(function (el) {
+          var mostra = el.getAttribute('data-sub') === sub;
           el.style.display = mostra ? '' : 'none';
-          if (mostra && el.tagName === 'DETAILS') el.open = true; // sub-aba ativa = painel aberto
-        });
-        document.querySelectorAll('.sub-abas[data-grupo="' + grupo + '"] .sub-aba').forEach(function (b) {
-          b.classList.toggle('ativa', b.getAttribute('data-subaba') === subAtual[grupo]);
+          if (mostra && el.tagName === 'DETAILS') el.open = true;
         });
       }
 
-      function ativarSub(grupo, sub) {
-        subAtual[grupo] = sub;
-        ativarAba(grupo);
+      function selecionarEventoNav(eventoId) {
+        var ev = eventosNavCache[eventoId];
+        if (!ev) { mostrarGeral(); return; }
+        document.querySelectorAll('.aba-evento').forEach(function (b) { b.classList.remove('ativa'); });
+        document.querySelectorAll('[data-grupo="geral"]').forEach(function (el) { el.style.display = 'none'; });
+        var subs = TIPOS_EVENTO[ev.tipo] || TIPOS_EVENTO.outro;
+        var bar = document.getElementById('sub-abas-dinamicas');
+        bar.hidden = false;
+        bar.innerHTML = subs.map(function (s, i) {
+          return '<button type="button" class="sub-aba' + (i === 0 ? ' ativa' : '') + '" data-subaba="' + s.key + '">' + escapar(s.label) + '</button>';
+        }).join('');
+        bar.querySelectorAll('.sub-aba').forEach(function (b) {
+          b.addEventListener('click', function () { mostrarSubEvento(b.getAttribute('data-subaba')); });
+        });
+        mostrarSubEvento(subs[0].key);
+        sincronizarSeletoresEvento(eventoId);
       }
 
-      document.querySelectorAll('.aba-evento').forEach(function (b) {
-        b.addEventListener('click', function () { ativarAba(b.getAttribute('data-aba')); });
-      });
-      document.querySelectorAll('.sub-aba').forEach(function (b) {
-        b.addEventListener('click', function () {
-          var bar = b.closest('.sub-abas');
-          if (bar) ativarSub(bar.getAttribute('data-grupo'), b.getAttribute('data-subaba'));
+      // Faz os seletores internos das seções apontarem para o evento escolhido.
+      function sincronizarSeletoresEvento(eventoId) {
+        ['evento-id', 'cert-evento', 'part-evento'].forEach(function (id) {
+          var sel = document.getElementById(id);
+          if (!sel) return;
+          var tem = Array.prototype.some.call(sel.options, function (o) { return o.value === eventoId; });
+          if (tem) { sel.value = eventoId; sel.dispatchEvent(new Event('change')); }
         });
-      });
-      // Durante a busca, revela todos os grupos/seções (senão um resultado "sumiria" em outra aba).
+      }
+
       (function () {
+        var geralBtn = document.querySelector('.aba-evento[data-aba="geral"]');
+        if (geralBtn) geralBtn.addEventListener('click', mostrarGeral);
+        var dd = document.getElementById('evento-dropdown');
+        if (dd) dd.addEventListener('change', function () {
+          if (this.value) selecionarEventoNav(this.value); else mostrarGeral();
+        });
+        // Durante a busca, revela tudo (senão um resultado "sumiria" fora da seleção atual).
         var busca = document.getElementById('admin-busca');
-        if (busca) {
-          busca.addEventListener('input', function () {
-            if (this.value.trim()) {
-              document.querySelectorAll('[data-grupo]').forEach(function (el) { el.style.display = ''; });
-            } else {
-              ativarAba(abaAtual);
-            }
-          });
-        }
+        if (busca) busca.addEventListener('input', function () {
+          if (this.value.trim()) {
+            document.querySelectorAll('[data-grupo], [data-sub]').forEach(function (el) { el.style.display = ''; });
+          } else {
+            var d = document.getElementById('evento-dropdown');
+            if (d && d.value) selecionarEventoNav(d.value); else mostrarGeral();
+          }
+        });
       })();
-      ativarAba('geral');
+      mostrarGeral();
 
       document.addEventListener('perfil-pronto', function (e) {
         if (!e.detail.is_admin) {
@@ -4961,6 +5024,7 @@
         remetenteAtual = e.detail; // identifica quem está logado (p/ o WhatsApp)
         carregar();
         carregarEventos();
+        carregarEventoDropdown();
         atualizarResumoInscricoes();
         carregarPendentes();
         carregarCancelamentos();
