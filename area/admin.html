@@ -1094,6 +1094,44 @@
           </div>
         </details>
 
+        <details class="secao">
+          <summary><h2>Participantes / Presença <span id="contador-participantes" style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;"></span></h2></summary>
+          <p class="descricao-secao">
+            Presença dos eventos (ex.: Fórum de EO). As sócias registram a própria presença na área
+            logada enquanto a janela está aberta; aqui você <strong>abre/fecha a janela</strong>, confere
+            a lista e remove enganos. Também dá pra cadastrar <strong>participantes externos</strong>
+            (sem conta no site — ex.: médicos/CRM) por nome e e-mail: eles entram na lista/ata e poderão
+            receber a declaração.
+          </p>
+
+          <div class="import-card">
+            <label for="part-evento">Evento</label>
+            <select id="part-evento"><option value="" disabled selected>Carregando…</option></select>
+
+            <div id="part-janela" style="margin-top:1rem;font-size:0.9rem;color:var(--texto-suave);"></div>
+            <div style="margin-top:0.75rem;display:flex;gap:0.5rem;flex-wrap:wrap;">
+              <button type="button" id="btn-part-abrir" class="btn btn-solid" style="min-height:0;padding:0.55rem 0.9rem;">Abrir registro por 24h</button>
+              <button type="button" id="btn-part-fechar" class="btn btn-ghost" style="min-height:0;padding:0.55rem 0.9rem;">Fechar registro agora</button>
+            </div>
+
+            <hr style="border:0;border-top:1px solid var(--borda);margin:1.25rem 0;">
+
+            <h3 style="font-size:1rem;color:var(--texto-suave);margin:0 0 0.5rem;">Adicionar participante externo</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;">
+              <input id="part-ext-nome" type="text" placeholder="Nome completo" autocomplete="off">
+              <input id="part-ext-email" type="email" placeholder="E-mail" autocomplete="off">
+              <input id="part-ext-doc" type="text" placeholder="Documento (CRM/COREN) — opcional" autocomplete="off" style="grid-column:1 / -1;">
+            </div>
+            <div style="margin-top:0.6rem;">
+              <button type="button" id="btn-part-ext-add" class="btn btn-solid" style="min-height:0;padding:0.55rem 0.9rem;">Cadastrar externo</button>
+            </div>
+            <p id="part-feedback" style="font-size:0.875rem;color:var(--texto-suave);margin:0.6rem 0 0;"></p>
+
+            <h3 style="font-size:1rem;color:var(--texto-suave);margin:1.5rem 0 0.5rem;">Lista de presença</h3>
+            <div id="lista-participantes-admin"><p style="color:var(--texto-suave);">Selecione um evento.</p></div>
+          </div>
+        </details>
+
       </div>
     </section>
   </main>
@@ -4671,6 +4709,141 @@
         input.focus();
       });
 
+      // ── Participantes / Presença ─────────────────────────────────────────────
+      var eventosPartCache = {};
+      function partEl(id) { return document.getElementById(id); }
+
+      async function carregarParticipantesEventos() {
+        var sb = window.abenfo.sb;
+        var sel = partEl('part-evento');
+        if (!sel) return;
+        var r = await sb.from('eventos')
+          .select('id, nome, data_inicio, permite_presenca, presenca_fecha_em')
+          .order('data_inicio', { ascending: false });
+        if (r.error || !r.data || !r.data.length) {
+          sel.innerHTML = '<option value="" disabled selected>Nenhum evento</option>';
+          return;
+        }
+        eventosPartCache = {};
+        sel.innerHTML = r.data.map(function (e) {
+          eventosPartCache[e.id] = e;
+          return '<option value="' + e.id + '">' + escapar(e.nome) + '</option>';
+        }).join('');
+        sel.value = r.data[0].id;
+        await aoTrocarEventoParticipantes();
+      }
+
+      function descreverJanela(ev) {
+        if (!ev) return '';
+        if (!ev.permite_presenca) return 'Registro <strong>desabilitado</strong> neste evento. Clique em "Abrir registro por 24h" para habilitar.';
+        var fecha = ev.presenca_fecha_em ? new Date(ev.presenca_fecha_em) : null;
+        if (!fecha) return 'Registro <strong>aberto</strong> (sem prazo de fechamento).';
+        if (fecha > new Date()) return 'Registro <strong>aberto</strong> até ' + fecha.toLocaleString('pt-BR') + '.';
+        return 'Registro <strong>fechado</strong> (encerrou em ' + fecha.toLocaleString('pt-BR') + ').';
+      }
+
+      async function aoTrocarEventoParticipantes() {
+        var id = partEl('part-evento').value;
+        var ev = eventosPartCache[id];
+        partEl('part-janela').innerHTML = descreverJanela(ev);
+        await carregarListaParticipantes(id);
+      }
+
+      async function carregarListaParticipantes(eventoId) {
+        var sb = window.abenfo.sb;
+        var cont = partEl('lista-participantes-admin');
+        if (!eventoId) { cont.innerHTML = '<p style="color:var(--texto-suave);">Selecione um evento.</p>'; return; }
+        cont.innerHTML = '<p style="color:var(--texto-suave);">Carregando…</p>';
+
+        var rS = await sb.from('participacoes_evento')
+          .select('id, registrado_em, profiles(nome_completo, email)')
+          .eq('evento_id', eventoId).order('registrado_em', { ascending: true });
+        var rE = await sb.from('participantes_externos')
+          .select('id, nome, email, documento, registrado_em')
+          .eq('evento_id', eventoId).order('nome', { ascending: true });
+
+        if (rS.error || rE.error) {
+          cont.innerHTML = '<p style="color:#c53030;">Erro: ' + escapar((rS.error || rE.error).message) + '</p>';
+          return;
+        }
+        var socios = (rS.data || []).map(function (p) {
+          var pr = p.profiles || {};
+          return { id: p.id, tipo: 'socia', nome: pr.nome_completo || '(sem nome)', email: pr.email || '', doc: '', data: p.registrado_em };
+        });
+        var ext = (rE.data || []).map(function (x) {
+          return { id: x.id, tipo: 'externo', nome: x.nome, email: x.email || '', doc: x.documento || '', data: x.registrado_em };
+        });
+        var total = socios.length + ext.length;
+        partEl('contador-participantes').textContent = total ? '(' + total + ')' : '';
+
+        if (!total) { cont.innerHTML = '<p style="color:var(--texto-suave);">Ninguém registrado ainda.</p>'; return; }
+
+        function linha(x) {
+          var badge = x.tipo === 'socia'
+            ? '<span style="font-size:0.72rem;background:var(--verde-pastel);color:var(--verde-escuro);padding:0.1rem 0.4rem;border-radius:4px;">sócia</span>'
+            : '<span style="font-size:0.72rem;background:#f0e6d2;color:#7a5a10;padding:0.1rem 0.4rem;border-radius:4px;">externo</span>';
+          var det = [x.email, x.doc].filter(Boolean).join(' · ');
+          return '<div style="display:flex;justify-content:space-between;align-items:center;gap:0.75rem;padding:0.5rem 0;border-bottom:1px solid var(--borda);">' +
+            '<div><strong>' + escapar(x.nome) + '</strong> ' + badge +
+            (det ? '<br><span style="color:var(--texto-suave);font-size:0.85rem;">' + escapar(det) + '</span>' : '') + '</div>' +
+            '<button type="button" class="btn btn-ghost" data-remover="' + x.tipo + ':' + x.id + '" style="min-height:0;padding:0.35rem 0.7rem;font-size:0.85rem;">Remover</button>' +
+          '</div>';
+        }
+        cont.innerHTML = socios.map(linha).join('') + ext.map(linha).join('');
+        cont.querySelectorAll('button[data-remover]').forEach(function (b) {
+          b.addEventListener('click', function () { removerParticipante(b.getAttribute('data-remover'), eventoId); });
+        });
+      }
+
+      async function removerParticipante(ref, eventoId) {
+        var sb = window.abenfo.sb;
+        var partes = ref.split(':'); var tipo = partes[0]; var id = partes[1];
+        if (!confirm('Remover este participante da lista?')) return;
+        var tabela = tipo === 'socia' ? 'participacoes_evento' : 'participantes_externos';
+        var r = await sb.from(tabela).delete().eq('id', id);
+        if (r.error) { alert('Erro ao remover: ' + r.error.message); return; }
+        await carregarListaParticipantes(eventoId);
+      }
+
+      async function abrirFecharPresenca(abrir) {
+        var sb = window.abenfo.sb;
+        var id = partEl('part-evento').value;
+        if (!id) return;
+        var patch = abrir
+          ? { permite_presenca: true, presenca_fecha_em: new Date(Date.now() + 24 * 3600 * 1000).toISOString() }
+          : { presenca_fecha_em: new Date().toISOString() };
+        var r = await sb.from('eventos').update(patch).eq('id', id);
+        if (r.error) { alert('Erro: ' + r.error.message); return; }
+        if (eventosPartCache[id]) { Object.assign(eventosPartCache[id], patch); }
+        partEl('part-janela').innerHTML = descreverJanela(eventosPartCache[id]);
+      }
+
+      async function adicionarExterno() {
+        var sb = window.abenfo.sb;
+        var id = partEl('part-evento').value;
+        var nome = partEl('part-ext-nome').value.trim();
+        var email = partEl('part-ext-email').value.trim();
+        var doc = partEl('part-ext-doc').value.trim();
+        var fb = partEl('part-feedback');
+        if (!id) { fb.textContent = 'Selecione um evento primeiro.'; return; }
+        if (!nome) { fb.textContent = 'Informe o nome.'; return; }
+        var r = await sb.from('participantes_externos')
+          .insert({ evento_id: id, nome: nome, email: email || null, documento: doc || null });
+        if (r.error) { fb.textContent = 'Erro: ' + r.error.message; return; }
+        partEl('part-ext-nome').value = '';
+        partEl('part-ext-email').value = '';
+        partEl('part-ext-doc').value = '';
+        fb.textContent = 'Participante externo cadastrado.';
+        await carregarListaParticipantes(id);
+      }
+
+      if (partEl('part-evento')) {
+        partEl('part-evento').addEventListener('change', aoTrocarEventoParticipantes);
+        partEl('btn-part-abrir').addEventListener('click', function () { abrirFecharPresenca(true); });
+        partEl('btn-part-fechar').addEventListener('click', function () { abrirFecharPresenca(false); });
+        partEl('btn-part-ext-add').addEventListener('click', adicionarExterno);
+      }
+
       document.addEventListener('perfil-pronto', function (e) {
         if (!e.detail.is_admin) {
           window.location.href = 'index.html';
@@ -4689,6 +4862,7 @@
         carregarBibliotecaAdmin();
         carregarAvisosAdmin();
         carregarCertificadosEventos();
+        carregarParticipantesEventos();
       });
     })();
   </script>
