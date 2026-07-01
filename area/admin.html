@@ -4715,6 +4715,16 @@
       var eventosPartCache = {};
       function partEl(id) { return document.getElementById(id); }
 
+      // Máscara BR: (DD) 9XXXX-XXXX (celular) ou (DD) XXXX-XXXX (fixo).
+      function formatarTelefone(v) {
+        v = String(v || '').replace(/\D/g, '').slice(0, 11);
+        if (!v) return '';
+        if (v.length <= 2) return '(' + v;
+        if (v.length <= 6) return '(' + v.slice(0, 2) + ') ' + v.slice(2);
+        if (v.length <= 10) return '(' + v.slice(0, 2) + ') ' + v.slice(2, 6) + '-' + v.slice(6);
+        return '(' + v.slice(0, 2) + ') ' + v.slice(2, 7) + '-' + v.slice(7);
+      }
+
       async function carregarParticipantesEventos() {
         var sb = window.abenfo.sb;
         var sel = partEl('part-evento');
@@ -4773,7 +4783,7 @@
           return { id: p.id, tipo: 'socia', nome: pr.nome_completo || '(sem nome)', email: pr.email || '', doc: '', data: p.registrado_em };
         });
         var ext = (rE.data || []).map(function (x) {
-          return { id: x.id, tipo: 'externo', nome: x.nome, email: x.email || '', tel: x.telefone || '', doc: x.documento || '', data: x.registrado_em };
+          return { id: x.id, tipo: 'externo', nome: x.nome, email: x.email || '', tel: x.telefone ? formatarTelefone(x.telefone) : '', doc: x.documento || '', data: x.registrado_em };
         });
         var total = socios.length + ext.length;
         partEl('contador-participantes').textContent = total ? '(' + total + ')' : '';
@@ -4846,6 +4856,7 @@
         partEl('btn-part-abrir').addEventListener('click', function () { abrirFecharPresenca(true); });
         partEl('btn-part-fechar').addEventListener('click', function () { abrirFecharPresenca(false); });
         partEl('btn-part-ext-add').addEventListener('click', adicionarExterno);
+        partEl('part-ext-tel').addEventListener('input', function () { this.value = formatarTelefone(this.value); });
       }
 
       document.addEventListener('perfil-pronto', function (e) {
