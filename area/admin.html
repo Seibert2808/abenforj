@@ -790,6 +790,19 @@
         <div id="resumo-inscricoes" style="margin-bottom:1rem;">
           <div class="lista-vazia">Carregando…</div>
         </div>
+
+        <h3 style="font-size:1rem;color:var(--texto-suave);margin-top:1.5rem;">Inscritos <span id="contador-inscritos" style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;"></span></h3>
+        <p style="color:var(--texto-suave);max-width:680px;">
+          Sócias e não-sócias com inscrição confirmada no evento escolhido no seletor acima
+          (não inclui canceladas nem pendentes de verificação). Útil para o credenciamento.
+        </p>
+        <div style="margin:0.5rem 0 0.75rem;display:flex;gap:0.5rem;flex-wrap:wrap;">
+          <button type="button" id="btn-imprimir-inscritos" class="btn btn-ghost" style="min-height:0;padding:0.55rem 0.9rem;">Imprimir</button>
+          <button type="button" id="btn-excel-inscritos" class="btn btn-ghost" style="min-height:0;padding:0.55rem 0.9rem;">Salvar em Excel</button>
+        </div>
+        <div id="lista-inscritos" style="margin-bottom:2rem;">
+          <div class="lista-vazia">Selecione um evento no seletor acima.</div>
+        </div>
         </details>
 
         <details class="secao" data-grupo="eneon" data-sub="cancelamentos">
@@ -2893,6 +2906,116 @@
       var btnImprimirCanc = document.getElementById('btn-imprimir-cancelamentos');
       if (btnImprimirCanc) btnImprimirCanc.addEventListener('click', imprimirCancelamentos);
 
+      // ── Lista de inscritos do evento selecionado (imprimir + Excel) ──────────
+      var inscritosCache = [];
+      var inscritosEventoNome = '';
+
+      async function carregarInscritos(eventoId) {
+        var sb = window.abenfo.sb;
+        var alvo = document.getElementById('lista-inscritos');
+        var contador = document.getElementById('contador-inscritos');
+        if (!alvo) return;
+        var selEv = document.getElementById('evento-id');
+        inscritosEventoNome = (eventoId && selEv && selEv.options[selEv.selectedIndex]) ? selEv.options[selEv.selectedIndex].textContent : '';
+        if (!eventoId) {
+          alvo.innerHTML = '<div class="lista-vazia">Selecione um evento no seletor acima.</div>';
+          if (contador) contador.textContent = '';
+          inscritosCache = [];
+          return;
+        }
+        alvo.innerHTML = '<div class="lista-vazia">Carregando…</div>';
+
+        var rSoc = await sb.from('inscricoes_evento')
+          .select('profile:profile_id(nome_completo, nome_social, email, telefone)')
+          .eq('evento_id', eventoId).eq('cancelado', false);
+        var rExt = await sb.from('inscritos_externos')
+          .select('nome, email, telefone')
+          .eq('evento_id', eventoId).eq('cancelado', false).eq('pendente_verificacao_socia', false);
+        if (rSoc.error || rExt.error) {
+          alvo.innerHTML = '<div class="lista-vazia">Erro: ' + escapar((rSoc.error || rExt.error).message) + '</div>';
+          return;
+        }
+
+        var lista = [];
+        (rSoc.data || []).forEach(function (x) {
+          var p = x.profile || {};
+          lista.push({ nome: p.nome_completo || p.nome_social || '(sem nome)', tipo: 'Sócia', email: p.email || '', telefone: p.telefone || '' });
+        });
+        (rExt.data || []).forEach(function (x) {
+          lista.push({ nome: x.nome, tipo: 'Não-sócia', email: x.email || '', telefone: x.telefone || '' });
+        });
+        lista.sort(function (a, b) { return normalizarBusca(a.nome).localeCompare(normalizarBusca(b.nome)); });
+        inscritosCache = lista;
+        if (contador) contador.textContent = lista.length ? '(' + lista.length + ')' : '';
+
+        if (!lista.length) {
+          alvo.innerHTML = '<div class="lista-vazia">Nenhum inscrito confirmado neste evento.</div>';
+          return;
+        }
+        var td = 'padding:0.5rem 0.6rem;border-bottom:1px solid var(--borda);';
+        var th = 'text-align:left;padding:0.55rem 0.6rem;border-bottom:2px solid var(--borda);color:var(--texto-suave);';
+        var linhas = lista.map(function (c) {
+          return '<tr class="inscrito-linha">' +
+            '<td style="' + td + '">' + escapar(c.nome) + '</td>' +
+            '<td style="' + td + '">' + escapar(c.tipo) + '</td>' +
+            '<td style="' + td + '">' + escapar(c.email) + '</td>' +
+            '<td style="' + td + 'white-space:nowrap;">' + escapar(c.telefone) + '</td>' +
+          '</tr>';
+        }).join('');
+        alvo.innerHTML =
+          '<div style="overflow-x:auto;">' +
+            '<table style="width:100%;border-collapse:collapse;font-size:0.9rem;background:var(--branco);border:1px solid var(--borda);border-radius:8px;">' +
+              '<thead><tr>' +
+                '<th style="' + th + '">Nome</th><th style="' + th + '">Tipo</th><th style="' + th + '">E-mail</th><th style="' + th + '">Telefone</th>' +
+              '</tr></thead><tbody>' + linhas + '</tbody></table>' +
+          '</div>';
+      }
+
+      function imprimirInscritos() {
+        if (!inscritosCache.length) { mostrarAviso('Não há inscritos para imprimir.', 'erro'); return; }
+        var titulo = 'Inscritos — ' + (inscritosEventoNome || 'Evento');
+        var linhas = inscritosCache.map(function (c) {
+          return '<tr><td>' + escapar(c.nome) + '</td><td>' + escapar(c.tipo) + '</td><td>' + escapar(c.email) + '</td><td>' + escapar(c.telefone) + '</td></tr>';
+        }).join('');
+        var win = window.open('', '_blank');
+        if (!win) { mostrarAviso('Não foi possível abrir a janela de impressão.', 'erro'); return; }
+        win.document.write(
+          '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>' + escapar(titulo) + '</title>' +
+          '<style>body{font-family:Arial,Helvetica,sans-serif;color:#222;margin:24px;}h1{font-size:18px;margin:0 0 16px;}' +
+          'table{width:100%;border-collapse:collapse;font-size:12px;}th,td{border:1px solid #999;padding:6px 8px;text-align:left;}th{background:#eee;}</style>' +
+          '</head><body><h1>' + escapar(titulo) + ' (' + inscritosCache.length + ')</h1>' +
+          '<table><thead><tr><th>Nome</th><th>Tipo</th><th>E-mail</th><th>Telefone</th></tr></thead><tbody>' + linhas + '</tbody></table>' +
+          '</body></html>'
+        );
+        win.document.close(); win.focus(); win.print();
+      }
+
+      async function exportarInscritosExcel() {
+        if (!inscritosCache.length) { mostrarAviso('Não há inscritos para exportar.', 'erro'); return; }
+        try {
+          var XLSX = await carregarXLSX();
+          var dados = inscritosCache.map(function (c) {
+            return { Nome: c.nome, Tipo: c.tipo, 'E-mail': c.email, Telefone: c.telefone };
+          });
+          var ws = XLSX.utils.json_to_sheet(dados);
+          var wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, ws, 'Inscritos');
+          var base = (inscritosEventoNome || 'evento').replace(/[^\w\-]+/g, '-').toLowerCase().replace(/^-+|-+$/g, '').slice(0, 40);
+          XLSX.writeFile(wb, 'inscritos-' + base + '.xlsx');
+        } catch (err) {
+          mostrarAviso('Erro ao gerar Excel: ' + err.message, 'erro');
+        }
+      }
+
+      (function () {
+        var selEv = document.getElementById('evento-id');
+        if (selEv) selEv.addEventListener('change', function () { carregarInscritos(this.value); });
+        var bi = document.getElementById('btn-imprimir-inscritos');
+        if (bi) bi.addEventListener('click', imprimirInscritos);
+        var be = document.getElementById('btn-excel-inscritos');
+        if (be) be.addEventListener('click', exportarInscritosExcel);
+      })();
+
       // ============================================================
       // Inscrições pendentes de verificação
       // (pagou como sócia mas não está em profiles)
@@ -4672,6 +4795,7 @@
       var buscaViewAtual = 'geral';
       var BUSCA_ALVOS = {
         geral: ['#lista-pendentes .assoc-card', '#lista-ativos .assoc-card', '#lista-inativos .assoc-card', '#lista-biblioteca .obra-admin-card', '#lista-avisos .obra-admin-card'],
+        inscricoes: ['#lista-inscritos tbody tr'],
         pendencias: ['#lista-inscricoes-pendentes .assoc-card'],
         trabalhos: ['#lista-trabalhos-admin .assoc-card'],
         cancelamentos: ['#lista-cancelamentos tbody tr'],
