@@ -46,7 +46,6 @@
     .admin-busca #admin-busca-limpar:hover { background: var(--borda); color: var(--texto); }
     /* Card escondido pela busca / seção sem resultado */
     .busca-oculto { display: none !important; }
-    .secao.busca-oculta { display: none; }
 
     /* Card de obra da biblioteca (sem avatar — layout em coluna simples) */
     .obra-admin-card {
@@ -4669,6 +4668,16 @@
         return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
       }
 
+      // Busca CONTEXTUAL: procura só nas listas do local onde você está.
+      var buscaViewAtual = 'geral';
+      var BUSCA_ALVOS = {
+        geral: ['#lista-pendentes .assoc-card', '#lista-ativos .assoc-card', '#lista-inativos .assoc-card', '#lista-biblioteca .obra-admin-card', '#lista-avisos .obra-admin-card'],
+        pendencias: ['#lista-inscricoes-pendentes .assoc-card'],
+        trabalhos: ['#lista-trabalhos-admin .assoc-card'],
+        cancelamentos: ['#lista-cancelamentos tbody tr'],
+        participantes: ['#lista-participantes-admin .part-linha']
+      };
+
       function aplicarBuscaAdmin() {
         var input = document.getElementById('admin-busca');
         var q = normalizarBusca(input.value.trim());
@@ -4676,61 +4685,30 @@
         var limpar = document.getElementById('admin-busca-limpar');
         limpar.hidden = !q;
 
-        // Seções pesquisáveis: cada uma com seu container de cards.
-        var alvos = [
-          { secao: 'lista-pendentes', cards: '.assoc-card' },
-          { secao: 'lista-ativos', cards: '.assoc-card' },
-          { secao: 'lista-inativos', cards: '.assoc-card' },
-          { secao: 'lista-inscricoes-pendentes', cards: '.assoc-card' },
-          { secao: 'lista-trabalhos-admin', cards: '.assoc-card' },
-          { secao: 'lista-biblioteca', cards: '.obra-admin-card' },
-          { secao: 'lista-avisos', cards: '.obra-admin-card' }
-        ];
-
-        var totalEncontrado = 0;
-
-        alvos.forEach(function (alvo) {
-          var container = document.getElementById(alvo.secao);
-          if (!container) return;
-          var details = container.closest('details.secao');
-          var cards = container.querySelectorAll(alvo.cards);
-          var visiveis = 0;
-
-          cards.forEach(function (card) {
-            if (!q) {
-              card.classList.remove('busca-oculto');
-              return;
+        var seletores = BUSCA_ALVOS[buscaViewAtual] || [];
+        var total = 0;
+        var abrir = [];
+        seletores.forEach(function (sel) {
+          document.querySelectorAll(sel).forEach(function (item) {
+            if (!q) { item.classList.remove('busca-oculto'); return; }
+            var bate = normalizarBusca(item.textContent).indexOf(q) !== -1;
+            item.classList.toggle('busca-oculto', !bate);
+            if (bate) {
+              total++;
+              var d = item.closest('details.secao');
+              if (d && abrir.indexOf(d) === -1) abrir.push(d);
             }
-            var texto = normalizarBusca(card.textContent);
-            var bate = texto.indexOf(q) !== -1;
-            card.classList.toggle('busca-oculto', !bate);
-            if (bate) visiveis++;
           });
-
-          totalEncontrado += visiveis;
-
-          if (details) {
-            if (!q) {
-              // Sem busca: tira o controle da busca, volta ao estado manual (fechado).
-              details.classList.remove('busca-oculta');
-              details.open = false;
-            } else if (visiveis > 0) {
-              details.classList.remove('busca-oculta');
-              details.open = true; // abre seção com resultado
-            } else {
-              details.classList.add('busca-oculta'); // esconde seção sem resultado
-            }
-          }
         });
+        if (q) abrir.forEach(function (d) { d.open = true; }); // abre accordions (Geral) com resultado
 
-        if (!q) {
-          status.hidden = true;
-        } else {
-          status.hidden = false;
-          status.textContent = totalEncontrado === 0
-            ? 'Nenhum resultado para "' + input.value.trim() + '".'
-            : totalEncontrado + ' resultado(s) para "' + input.value.trim() + '".';
-        }
+        if (!q) { status.hidden = true; return; }
+        status.hidden = false;
+        status.textContent = !seletores.length
+          ? 'A busca não se aplica a esta aba.'
+          : (total === 0
+              ? 'Nenhum resultado para "' + input.value.trim() + '".'
+              : total + ' resultado(s) para "' + input.value.trim() + '".');
       }
 
       document.getElementById('admin-busca').addEventListener('input', aplicarBuscaAdmin);
@@ -4738,14 +4716,9 @@
       document.getElementById('admin-busca').addEventListener('keydown', function (e) {
         if (e.key !== 'Enter') return;
         e.preventDefault();
-        var primeiro = document.querySelector(
-          '#lista-pendentes .assoc-card:not(.busca-oculto), ' +
-          '#lista-ativos .assoc-card:not(.busca-oculto), ' +
-          '#lista-inativos .assoc-card:not(.busca-oculto), ' +
-          '#lista-inscricoes-pendentes .assoc-card:not(.busca-oculto), ' +
-          '#lista-trabalhos-admin .assoc-card:not(.busca-oculto), ' +
-          '#lista-biblioteca .obra-admin-card:not(.busca-oculto), ' +
-          '#lista-avisos .obra-admin-card:not(.busca-oculto)');
+        var seletores = (BUSCA_ALVOS[buscaViewAtual] || []).map(function (s) { return s + ':not(.busca-oculto)'; });
+        if (!seletores.length) return;
+        var primeiro = document.querySelector(seletores.join(', '));
         if (primeiro) primeiro.scrollIntoView({ behavior: 'smooth', block: 'center' });
       });
       document.getElementById('admin-busca-limpar').addEventListener('click', function () {
@@ -4839,7 +4812,7 @@
             ? '<span style="font-size:0.72rem;background:var(--verde-pastel);color:var(--verde-escuro);padding:0.1rem 0.4rem;border-radius:4px;">sócia</span>'
             : '<span style="font-size:0.72rem;background:#f0e6d2;color:#7a5a10;padding:0.1rem 0.4rem;border-radius:4px;">externo</span>';
           var det = [x.email, x.tel, x.doc].filter(Boolean).join(' · ');
-          return '<div style="display:flex;justify-content:space-between;align-items:center;gap:0.75rem;padding:0.5rem 0;border-bottom:1px solid var(--borda);">' +
+          return '<div class="part-linha" style="display:flex;justify-content:space-between;align-items:center;gap:0.75rem;padding:0.5rem 0;border-bottom:1px solid var(--borda);">' +
             '<div><strong>' + escapar(x.nome) + '</strong> ' + badge +
             (det ? '<br><span style="color:var(--texto-suave);font-size:0.85rem;">' + escapar(det) + '</span>' : '') + '</div>' +
             '<button type="button" class="btn btn-ghost" data-remover="' + x.tipo + ':' + x.id + '" style="min-height:0;padding:0.35rem 0.7rem;font-size:0.85rem;">Remover</button>' +
@@ -4955,6 +4928,8 @@
         document.querySelectorAll('[data-grupo="geral"]').forEach(function (el) { el.style.display = ''; });
         document.querySelectorAll('[data-sub]').forEach(function (el) { el.style.display = 'none'; });
         document.getElementById('sub-abas-dinamicas').hidden = true;
+        buscaViewAtual = 'geral';
+        if (typeof aplicarBuscaAdmin === 'function') aplicarBuscaAdmin();
       }
 
       function mostrarSubEvento(sub) {
@@ -4966,6 +4941,8 @@
           el.style.display = mostra ? '' : 'none';
           if (mostra && el.tagName === 'DETAILS') el.open = true;
         });
+        buscaViewAtual = sub;
+        if (typeof aplicarBuscaAdmin === 'function') aplicarBuscaAdmin();
       }
 
       function selecionarEventoNav(eventoId) {
@@ -5002,16 +4979,6 @@
         var dd = document.getElementById('evento-dropdown');
         if (dd) dd.addEventListener('change', function () {
           if (this.value) selecionarEventoNav(this.value); else mostrarGeral();
-        });
-        // Durante a busca, revela tudo (senão um resultado "sumiria" fora da seleção atual).
-        var busca = document.getElementById('admin-busca');
-        if (busca) busca.addEventListener('input', function () {
-          if (this.value.trim()) {
-            document.querySelectorAll('[data-grupo], [data-sub]').forEach(function (el) { el.style.display = ''; });
-          } else {
-            var d = document.getElementById('evento-dropdown');
-            if (d && d.value) selecionarEventoNav(d.value); else mostrarGeral();
-          }
         });
       })();
       mostrarGeral();
