@@ -133,6 +133,13 @@
     <section class="section" style="padding-top:1rem;">
       <div class="container">
 
+        <div id="bloco-presenca" hidden style="margin-bottom:1.75rem;">
+          <h2 style="margin-top:0;">Registrar presença</h2>
+          <p style="color:var(--texto-suave);">Está participando de um evento aberto? Confirme sua presença abaixo — ela entra no seu histórico.</p>
+          <div id="feedback-presenca" aria-live="polite"></div>
+          <div id="presenca-eventos"></div>
+        </div>
+
         <p style="color:var(--texto-suave);">
           As inscrições são feitas em plataformas externas e semanalmente são atualizadas nesta página.
           Caso não veja seu evento, aguarde um pouco, ou entre em contato com a diretoria.
@@ -159,9 +166,9 @@
         </ul>
 
         <h2 style="margin-top:2.5rem;">Histórico de participações</h2>
-        <p style="color:var(--texto-suave);">Eventos e cursos que você já participou, com link para baixar certificados e materiais.</p>
-        <ul class="doc-list">
-          <li><div class="doc-info"><strong>Sem histórico ainda</strong><span>Suas participações passadas aparecerão aqui.</span></div></li>
+        <p style="color:var(--texto-suave);">Eventos em que você registrou presença.</p>
+        <ul class="doc-list" id="lista-participacoes">
+          <li><div class="doc-info"><strong>Carregando…</strong></div></li>
         </ul>
 
         <h2 style="margin-top:2.5rem;">Certificados</h2>
@@ -600,12 +607,115 @@
         }).join('');
       }
 
+      // ── Registro de presença (Fórum de EO e outros eventos abertos) ──────────
+      async function carregarPresenca(perfil) {
+        var sb = window.abenfo.sb;
+        var bloco = document.getElementById('bloco-presenca');
+        var cont = document.getElementById('presenca-eventos');
+        if (!bloco || !cont) return;
+
+        var rEv = await sb.from('eventos')
+          .select('id, nome, data_inicio, local, presenca_fecha_em')
+          .eq('permite_presenca', true)
+          .order('data_inicio', { ascending: false });
+        if (rEv.error || !rEv.data) { bloco.hidden = true; return; }
+
+        var agora = new Date();
+        var abertos = rEv.data.filter(function (e) {
+          return !e.presenca_fecha_em || new Date(e.presenca_fecha_em) > agora;
+        });
+        if (!abertos.length) { bloco.hidden = true; return; }
+
+        var rMy = await sb.from('participacoes_evento').select('evento_id').eq('profile_id', perfil.id);
+        var jaRegistrou = {};
+        (rMy.data || []).forEach(function (p) { jaRegistrou[p.evento_id] = true; });
+
+        bloco.hidden = false;
+        cont.innerHTML = abertos.map(function (e) {
+          var info = [];
+          if (e.data_inicio) info.push('📅 ' + formatarDataSimples(e.data_inicio));
+          if (e.local) info.push('📍 ' + e.local);
+          var acao = jaRegistrou[e.id]
+            ? '<span style="color:#2e7d4f;font-weight:600;">✓ Presença registrada</span>'
+            : '<button type="button" class="btn btn-solid" data-evento="' + escapar(e.id) + '" style="min-height:0;padding:0.55rem 1.1rem;">Registrar Participação</button>';
+          return '<div class="convite-evento">' +
+            '<h3>' + escapar(e.nome) + '</h3>' +
+            (info.length ? '<p style="color:var(--texto-suave);">' + escapar(info.join(' · ')) + '</p>' : '') +
+            '<div>' + acao + '</div>' +
+          '</div>';
+        }).join('');
+
+        cont.querySelectorAll('button[data-evento]').forEach(function (b) {
+          b.addEventListener('click', function () {
+            registrarPresenca(perfil, b.getAttribute('data-evento'), b);
+          });
+        });
+      }
+
+      async function registrarPresenca(perfil, eventoId, botao) {
+        var sb = window.abenfo.sb;
+        var fb = document.getElementById('feedback-presenca');
+        botao.disabled = true;
+        botao.textContent = 'Registrando…';
+        var r = await sb.from('participacoes_evento').insert({ profile_id: perfil.id, evento_id: eventoId });
+        if (r.error) {
+          var jaTinha = /duplicate|unique/i.test(r.error.message || '');
+          var msg = jaTinha ? 'Você já registrou presença neste evento.'
+                            : ('Não foi possível registrar: ' + r.error.message);
+          fb.innerHTML = '<div class="aviso" style="background:' + (jaTinha ? '#e6f4ea' : '#fde8e8') +
+            ';border-left-color:' + (jaTinha ? '#2e7d4f' : '#c53030') + ';color:' + (jaTinha ? '#1f5d3a' : '#742020') + ';">' +
+            escapar(msg) + '</div>';
+          if (!jaTinha) { botao.disabled = false; botao.textContent = 'Registrar Participação'; }
+          if (jaTinha) { carregarPresenca(perfil); }
+          return;
+        }
+        fb.innerHTML = '<div class="aviso" style="background:#e6f4ea;border-left-color:#2e7d4f;color:#1f5d3a;">' +
+          '<strong>Presença registrada!</strong> Obrigada por confirmar sua participação.</div>';
+        carregarPresenca(perfil);
+        carregarParticipacoes(perfil);
+      }
+
+      async function carregarParticipacoes(perfil) {
+        var sb = window.abenfo.sb;
+        var lista = document.getElementById('lista-participacoes');
+        if (!lista) return;
+        var r = await sb.from('participacoes_evento')
+          .select('registrado_em, eventos(nome, data_inicio, local)')
+          .eq('profile_id', perfil.id)
+          .order('registrado_em', { ascending: false });
+        if (r.error) {
+          lista.innerHTML = '<li><div class="doc-info"><strong>Não foi possível carregar</strong>' +
+            '<span>' + escapar(r.error.message) + '</span></div></li>';
+          return;
+        }
+        var parts = r.data || [];
+        if (!parts.length) {
+          lista.innerHTML = '<li><div class="doc-info"><strong>Sem histórico ainda</strong>' +
+            '<span>Suas participações registradas aparecerão aqui.</span></div></li>';
+          return;
+        }
+        lista.innerHTML = parts.map(function (p) {
+          var ev = p.eventos || {};
+          var info = [];
+          if (ev.data_inicio) info.push('📅 ' + formatarDataSimples(ev.data_inicio));
+          if (ev.local) info.push('📍 ' + ev.local);
+          return '<li><div class="doc-info">' +
+            '<strong>' + escapar(ev.nome || '(evento)') + '</strong>' +
+            (info.length ? '<span>' + escapar(info.join(' · ')) + '</span>' : '') +
+            '<span style="color:var(--texto-suave);font-size:0.85rem;">Presença registrada em ' +
+            escapar(formatarData(p.registrado_em)) + '</span>' +
+          '</div></li>';
+        }).join('');
+      }
+
       document.addEventListener('perfil-pronto', function (e) {
         carregarInscricoes(e.detail);
         carregarInscricoesCursos(e.detail);
         carregarConvitesEventos(e.detail);
         montarConvitesTrabalhos(e.detail);
         montarPainelConvites(e.detail);
+        carregarPresenca(e.detail);
+        carregarParticipacoes(e.detail);
       });
     })();
   </script>
