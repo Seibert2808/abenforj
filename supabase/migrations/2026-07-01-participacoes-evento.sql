@@ -1,4 +1,4 @@
--- Registro de PARTICIPAÇÃO/PRESENÇA em eventos (ex.: Fórum de EO).
+-- Registro de PARTICIPAÇÃO/PRESENÇA em eventos (ex.: Fórum de Enfermagem Obstétrica).
 -- A sócia registra a PRÓPRIA presença na área logada; o admin só remove enganos.
 -- A janela de registro é controlada por evento: interruptor permite_presenca +
 -- horário opcional de fechamento (presenca_fecha_em). Assim dá pra abrir o registro
