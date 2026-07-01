@@ -233,6 +233,10 @@
           mostrarAviso('As senhas não conferem.', 'erro');
           return;
         }
+        if (s1.length < 8) {
+          mostrarAviso('A senha precisa ter pelo menos 8 caracteres.', 'erro');
+          return;
+        }
         btn.disabled = true;
         btn.textContent = 'Salvando…';
         try {
@@ -242,11 +246,28 @@
           form.style.display = 'none';
           setTimeout(function () { window.location.href = '/area'; }, 1500);
         } catch (err) {
-          mostrarAviso('Erro ao atualizar a senha: ' + (err.message || 'tente novamente'), 'erro');
+          mostrarAviso(traduzErroSenha(err), 'erro');
           btn.disabled = false;
           btn.textContent = 'Salvar nova senha';
         }
       });
+
+      // Traduz os erros mais comuns do Supabase para português amigável.
+      function traduzErroSenha(err) {
+        var m = (err && err.message) || '';
+        var code = (err && err.code) || '';
+        if (code === 'same_password' || /different from the old password/i.test(m)) {
+          return 'A nova senha precisa ser <strong>diferente da senha atual</strong>. Escolha uma senha nova.';
+        }
+        if (code === 'weak_password' || /at least|should be at least|password.*(short|weak)/i.test(m)) {
+          return 'A senha precisa ter pelo menos 8 caracteres. Tente uma senha um pouco maior.';
+        }
+        if (/session|not authenticated|jwt/i.test(m)) {
+          return 'Sua sessão expirou. Abra novamente o link mais recente do seu e-mail.' +
+            ' <a href="recuperar-senha.html">Pedir um novo link.</a>';
+        }
+        return 'Não foi possível atualizar a senha: ' + (m || 'tente novamente') + '.';
+      }
 
       inicializar();
     })();
