@@ -630,6 +630,10 @@
           .aba-evento{background:var(--areia);border:1px solid var(--borda);color:var(--texto);padding:0.5rem 1rem;border-radius:8px;cursor:pointer;font-weight:600;font-size:0.95rem;}
           .aba-evento.ativa{background:var(--verde-escuro);color:#fff;border-color:var(--verde-escuro);}
           .aba-evento:hover{border-color:var(--verde-escuro);}
+          .sub-abas{display:flex;gap:0.4rem;flex-wrap:wrap;margin:0 0 1rem;}
+          .sub-aba{background:transparent;border:1px solid var(--borda);color:var(--texto-suave);padding:0.35rem 0.8rem;border-radius:6px;cursor:pointer;font-size:0.9rem;}
+          .sub-aba.ativa{background:var(--verde-pastel);color:var(--verde-escuro);border-color:var(--verde-pastel);font-weight:600;}
+          .sub-aba:hover{border-color:var(--verde-escuro);}
         </style>
         <div class="admin-abas" role="tablist" style="display:flex;gap:0.5rem;flex-wrap:wrap;margin:0 0 1.25rem;">
           <button type="button" class="aba-evento ativa" data-aba="geral">Geral</button>
@@ -694,8 +698,55 @@
           </div>
         </details>
 
-        <details class="secao" data-grupo="eneon">
-          <summary><h2>Inscrições em eventos</h2></summary>
+        <details class="secao" data-grupo="geral">
+          <summary><h2>Eventos</h2></summary>
+          <p class="descricao-secao">
+            Crie e gerencie os eventos da Abenfo RJ (ENEON, Fórum, cursos etc.). Depois de criado,
+            o evento aparece nas abas e nos seletores das outras seções.
+          </p>
+          <div class="import-card">
+            <button type="button" id="btn-novo-evento" class="btn btn-solid" style="min-height:0;padding:0.55rem 0.9rem;">+ Novo evento</button>
+
+            <div id="novo-evento-bloco" hidden style="margin-top:1rem;padding:1rem;background:var(--areia);border-radius:8px;">
+              <label for="novo-evento-nome">Nome do evento <span style="color:#b00020;">*</span></label>
+              <input id="novo-evento-nome" type="text" placeholder="Ex.: X ENEON 2027" autocomplete="off">
+
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+                <div>
+                  <label for="novo-evento-inicio">Data de início</label>
+                  <input id="novo-evento-inicio" type="date">
+                </div>
+                <div>
+                  <label for="novo-evento-fim">Data de fim</label>
+                  <input id="novo-evento-fim" type="date">
+                </div>
+              </div>
+
+              <label for="novo-evento-local">Local</label>
+              <input id="novo-evento-local" type="text" placeholder="Ex.: UERJ — Rio de Janeiro" autocomplete="off">
+
+              <label for="novo-evento-link">Link externo (inscrição na Doity, Sympla etc.)</label>
+              <input id="novo-evento-link" type="text" placeholder="https://..." autocomplete="off">
+
+              <div style="margin-top:0.75rem;display:flex;gap:0.5rem;">
+                <button type="button" id="btn-salvar-evento" class="btn btn-solid" style="min-height:0;padding:0.55rem 0.9rem;">Salvar evento</button>
+                <button type="button" id="btn-cancelar-evento" class="btn btn-ghost" style="min-height:0;padding:0.55rem 0.9rem;">Cancelar</button>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <div class="sub-abas" data-grupo="eneon">
+          <button type="button" class="sub-aba ativa" data-subaba="inscricoes">Inscrições</button>
+          <button type="button" class="sub-aba" data-subaba="cancelamentos">Cancelamentos</button>
+          <button type="button" class="sub-aba" data-subaba="pendencias">Pendências</button>
+          <button type="button" class="sub-aba" data-subaba="cursos">Cursos</button>
+          <button type="button" class="sub-aba" data-subaba="trabalhos">Trabalhos científicos</button>
+          <button type="button" class="sub-aba" data-subaba="certificados">Certificados</button>
+        </div>
+
+        <details class="secao" data-grupo="eneon" data-sub="inscricoes">
+          <summary><h2>Inscrições</h2></summary>
           <p class="descricao-secao">
             Importe a lista de inscritas vinda do Doity (ou de outra plataforma externa)
             para que cada sócia veja sua inscrição em <em>Meus Eventos</em>.
@@ -705,41 +756,14 @@
 
         <div class="import-card">
           <label for="evento-id">Evento</label>
-          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
-            <select id="evento-id" style="flex:1;min-width:220px;">
-              <option value="" disabled selected>Carregando eventos…</option>
-            </select>
-            <button type="button" id="btn-novo-evento" class="btn btn-ghost" style="min-height:0;padding:0.55rem 0.9rem;">+ Novo evento</button>
-          </div>
+          <select id="evento-id" style="width:100%;min-width:220px;">
+            <option value="" disabled selected>Carregando eventos…</option>
+          </select>
+          <p style="font-size:0.825rem;color:var(--texto-suave);margin:0.35rem 0 0;">
+            Para criar um novo evento, use <strong>Geral → Eventos</strong>.
+          </p>
 
-          <div id="novo-evento-bloco" hidden style="margin-top:1rem;padding:1rem;background:var(--areia);border-radius:8px;">
-            <label for="novo-evento-nome">Nome do evento <span style="color:#b00020;">*</span></label>
-            <input id="novo-evento-nome" type="text" placeholder="Ex.: X ENEON 2027" autocomplete="off">
-
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
-              <div>
-                <label for="novo-evento-inicio">Data de início</label>
-                <input id="novo-evento-inicio" type="date">
-              </div>
-              <div>
-                <label for="novo-evento-fim">Data de fim</label>
-                <input id="novo-evento-fim" type="date">
-              </div>
-            </div>
-
-            <label for="novo-evento-local">Local</label>
-            <input id="novo-evento-local" type="text" placeholder="Ex.: UERJ — Rio de Janeiro" autocomplete="off">
-
-            <label for="novo-evento-link">Link externo (inscrição na Doity, Sympla etc.)</label>
-            <input id="novo-evento-link" type="text" placeholder="https://..." autocomplete="off">
-
-            <div style="margin-top:0.75rem;display:flex;gap:0.5rem;">
-              <button type="button" id="btn-salvar-evento" class="btn btn-solid" style="min-height:0;padding:0.55rem 0.9rem;">Salvar evento</button>
-              <button type="button" id="btn-cancelar-evento" class="btn btn-ghost" style="min-height:0;padding:0.55rem 0.9rem;">Cancelar</button>
-            </div>
-          </div>
-
-          <label>Importar planilha (opcional)</label>
+          <label style="margin-top:1rem;display:block;">Importar planilha (opcional)</label>
           <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
             <input type="file" id="arquivo-inscritas" accept=".xlsx,.xls,.csv" hidden>
             <button type="button" id="btn-escolher-arquivo" class="btn btn-ghost" style="min-height:0;padding:0.55rem 0.9rem;">Escolher planilha…</button>
@@ -764,22 +788,24 @@
         <div id="resumo-inscricoes" style="margin-bottom:1rem;">
           <div class="lista-vazia">Carregando…</div>
         </div>
-
-        <h3 style="font-size:1rem;color:var(--texto-suave);margin-top:1.5rem;">Cancelamentos <span id="contador-cancelamentos" style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;"></span></h3>
-        <p style="color:var(--texto-suave);max-width:680px;">
-          Inscrições canceladas (sócias e não-sócias). Elas não aparecem no credenciamento normal.
-          Imprima esta lista para deixar na mesa de cadastramento, junto com as listas de sócias e não-sócias do Resumo.
-        </p>
-        <div style="margin:0.5rem 0 0.75rem;">
-          <button type="button" id="btn-imprimir-cancelamentos" class="btn btn-ghost" style="min-height:0;padding:0.55rem 0.9rem;">Imprimir cancelamentos</button>
-        </div>
-        <div id="lista-cancelamentos" style="margin-bottom:2.5rem;">
-          <div class="lista-vazia">Carregando…</div>
-        </div>
         </details>
 
-        <details class="secao" id="bloco-pendentes" data-grupo="eneon">
-          <summary><h2>Inscrições pendentes de verificação <span id="contador-inscricoes-pendentes" style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;"></span></h2></summary>
+        <details class="secao" data-grupo="eneon" data-sub="cancelamentos">
+          <summary><h2>Cancelamentos <span id="contador-cancelamentos" style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;"></span></h2></summary>
+          <p style="color:var(--texto-suave);max-width:680px;">
+            Inscrições canceladas (sócias e não-sócias). Elas não aparecem no credenciamento normal.
+            Imprima esta lista para deixar na mesa de cadastramento, junto com as listas de sócias e não-sócias do Resumo.
+          </p>
+          <div style="margin:0.5rem 0 0.75rem;">
+            <button type="button" id="btn-imprimir-cancelamentos" class="btn btn-ghost" style="min-height:0;padding:0.55rem 0.9rem;">Imprimir cancelamentos</button>
+          </div>
+          <div id="lista-cancelamentos" style="margin-bottom:2.5rem;">
+            <div class="lista-vazia">Carregando…</div>
+          </div>
+        </details>
+
+        <details class="secao" id="bloco-pendentes" data-grupo="eneon" data-sub="pendencias">
+          <summary><h2>Pendências <span id="contador-inscricoes-pendentes" style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;"></span></h2></summary>
           <p class="descricao-secao">
             Pessoas que escolheram a cota de sócia da Abenfo-RJ no Doity mas
             <strong>não constam como associadas cadastradas</strong> no site.
@@ -792,8 +818,8 @@
           </div>
         </details>
 
-        <details class="secao" data-grupo="eneon">
-          <summary><h2>Inscrições em cursos</h2></summary>
+        <details class="secao" data-grupo="eneon" data-sub="cursos">
+          <summary><h2>Cursos</h2></summary>
           <p class="descricao-secao">
             Cursos são unidades menores. Podem pertencer a um evento (como os
             cursos pré-encontro do IX ENEON) ou existir de forma independente.
@@ -873,7 +899,7 @@
         </div>
         </details>
 
-        <details class="secao" data-grupo="eneon">
+        <details class="secao" data-grupo="eneon" data-sub="trabalhos">
           <summary><h2>Trabalhos científicos <span id="contador-trabalhos-admin" style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;"></span></h2></summary>
           <p class="descricao-secao">
             Trabalhos submetidos para o IX ENEON 2026. Use os filtros para localizar,
@@ -1036,7 +1062,7 @@
           </div>
         </details>
 
-        <details class="secao" data-grupo="eneon">
+        <details class="secao" data-grupo="eneon" data-sub="certificados">
           <summary><h2>Certificados</h2></summary>
           <p class="descricao-secao">
             Modelo de certificado por <strong>evento × tipo</strong>. Você sobe a arte base
@@ -1107,7 +1133,11 @@
           </div>
         </details>
 
-        <details class="secao" data-grupo="forum">
+        <div class="sub-abas" data-grupo="forum">
+          <button type="button" class="sub-aba ativa" data-subaba="participantes">Participantes</button>
+        </div>
+
+        <details class="secao" data-grupo="forum" data-sub="participantes">
           <summary><h2>Participantes / Presença <span id="contador-participantes" style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;"></span></h2></summary>
           <p class="descricao-secao">
             Presença dos eventos (ex.: Fórum de Enfermagem Obstétrica). As sócias registram a própria presença na área
@@ -4874,19 +4904,41 @@
 
       // ── Abas por evento (Geral · IX ENEON · 3º Fórum) ────────────────────────
       var abaAtual = 'geral';
+      var subAtual = { eneon: 'inscricoes', forum: 'participantes' };
+
       function ativarAba(grupo) {
         abaAtual = grupo;
         document.querySelectorAll('.aba-evento').forEach(function (b) {
           b.classList.toggle('ativa', b.getAttribute('data-aba') === grupo);
         });
         document.querySelectorAll('[data-grupo]').forEach(function (el) {
-          el.style.display = (el.getAttribute('data-grupo') === grupo) ? '' : 'none';
+          if (el.getAttribute('data-grupo') !== grupo) { el.style.display = 'none'; return; }
+          var sub = el.getAttribute('data-sub');
+          if (sub === null) { el.style.display = ''; return; } // barra de sub-abas ou seção sem sub-aba
+          var mostra = (sub === subAtual[grupo]);
+          el.style.display = mostra ? '' : 'none';
+          if (mostra && el.tagName === 'DETAILS') el.open = true; // sub-aba ativa = painel aberto
+        });
+        document.querySelectorAll('.sub-abas[data-grupo="' + grupo + '"] .sub-aba').forEach(function (b) {
+          b.classList.toggle('ativa', b.getAttribute('data-subaba') === subAtual[grupo]);
         });
       }
+
+      function ativarSub(grupo, sub) {
+        subAtual[grupo] = sub;
+        ativarAba(grupo);
+      }
+
       document.querySelectorAll('.aba-evento').forEach(function (b) {
         b.addEventListener('click', function () { ativarAba(b.getAttribute('data-aba')); });
       });
-      // Durante a busca, revela todos os grupos (senão um resultado em outra aba "sumiria").
+      document.querySelectorAll('.sub-aba').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var bar = b.closest('.sub-abas');
+          if (bar) ativarSub(bar.getAttribute('data-grupo'), b.getAttribute('data-subaba'));
+        });
+      });
+      // Durante a busca, revela todos os grupos/seções (senão um resultado "sumiria" em outra aba).
       (function () {
         var busca = document.getElementById('admin-busca');
         if (busca) {
