@@ -7,7 +7,8 @@ create table if not exists public.participantes_externos (
   evento_id     uuid        not null references public.eventos(id) on delete cascade,
   nome          text        not null,
   email         text,
-  documento     text,       -- CRM/COREN/CPF, opcional
+  telefone      text,
+  documento     text,       -- COREN/CPF, opcional
   observacao    text,
   registrado_em timestamptz not null default now(),
   criado_por    uuid        references auth.users(id) on delete set null

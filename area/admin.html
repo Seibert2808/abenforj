@@ -1100,8 +1100,9 @@
             Presença dos eventos (ex.: Fórum de EO). As sócias registram a própria presença na área
             logada enquanto a janela está aberta; aqui você <strong>abre/fecha a janela</strong>, confere
             a lista e remove enganos. Também dá pra cadastrar <strong>participantes externos</strong>
-            (sem conta no site — ex.: médicos/CRM) por nome e e-mail: eles entram na lista/ata e poderão
-            receber a declaração.
+            (sem conta no site — ex.: enfermeiro/COREN) por nome, com <strong>e-mail e telefone
+            opcionais</strong>: eles entram na lista/ata, poderão receber a declaração e ficam no nosso
+            <strong>cadastro de contatos</strong> (para divulgar eventos, cursos etc.).
           </p>
 
           <div class="import-card">
@@ -1118,9 +1119,10 @@
 
             <h3 style="font-size:1rem;color:var(--texto-suave);margin:0 0 0.5rem;">Adicionar participante externo</h3>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;">
-              <input id="part-ext-nome" type="text" placeholder="Nome completo" autocomplete="off">
-              <input id="part-ext-email" type="email" placeholder="E-mail" autocomplete="off">
-              <input id="part-ext-doc" type="text" placeholder="Documento (CRM/COREN) — opcional" autocomplete="off" style="grid-column:1 / -1;">
+              <input id="part-ext-nome" type="text" placeholder="Nome completo" autocomplete="off" style="grid-column:1 / -1;">
+              <input id="part-ext-email" type="email" placeholder="E-mail (opcional)" autocomplete="off">
+              <input id="part-ext-tel" type="tel" placeholder="Telefone (opcional)" autocomplete="off">
+              <input id="part-ext-doc" type="text" placeholder="COREN (opcional)" autocomplete="off" style="grid-column:1 / -1;">
             </div>
             <div style="margin-top:0.6rem;">
               <button type="button" id="btn-part-ext-add" class="btn btn-solid" style="min-height:0;padding:0.55rem 0.9rem;">Cadastrar externo</button>
@@ -4759,7 +4761,7 @@
           .select('id, registrado_em, profiles(nome_completo, email)')
           .eq('evento_id', eventoId).order('registrado_em', { ascending: true });
         var rE = await sb.from('participantes_externos')
-          .select('id, nome, email, documento, registrado_em')
+          .select('id, nome, email, telefone, documento, registrado_em')
           .eq('evento_id', eventoId).order('nome', { ascending: true });
 
         if (rS.error || rE.error) {
@@ -4771,7 +4773,7 @@
           return { id: p.id, tipo: 'socia', nome: pr.nome_completo || '(sem nome)', email: pr.email || '', doc: '', data: p.registrado_em };
         });
         var ext = (rE.data || []).map(function (x) {
-          return { id: x.id, tipo: 'externo', nome: x.nome, email: x.email || '', doc: x.documento || '', data: x.registrado_em };
+          return { id: x.id, tipo: 'externo', nome: x.nome, email: x.email || '', tel: x.telefone || '', doc: x.documento || '', data: x.registrado_em };
         });
         var total = socios.length + ext.length;
         partEl('contador-participantes').textContent = total ? '(' + total + ')' : '';
@@ -4782,7 +4784,7 @@
           var badge = x.tipo === 'socia'
             ? '<span style="font-size:0.72rem;background:var(--verde-pastel);color:var(--verde-escuro);padding:0.1rem 0.4rem;border-radius:4px;">sócia</span>'
             : '<span style="font-size:0.72rem;background:#f0e6d2;color:#7a5a10;padding:0.1rem 0.4rem;border-radius:4px;">externo</span>';
-          var det = [x.email, x.doc].filter(Boolean).join(' · ');
+          var det = [x.email, x.tel, x.doc].filter(Boolean).join(' · ');
           return '<div style="display:flex;justify-content:space-between;align-items:center;gap:0.75rem;padding:0.5rem 0;border-bottom:1px solid var(--borda);">' +
             '<div><strong>' + escapar(x.nome) + '</strong> ' + badge +
             (det ? '<br><span style="color:var(--texto-suave);font-size:0.85rem;">' + escapar(det) + '</span>' : '') + '</div>' +
@@ -4823,15 +4825,17 @@
         var id = partEl('part-evento').value;
         var nome = partEl('part-ext-nome').value.trim();
         var email = partEl('part-ext-email').value.trim();
+        var tel = partEl('part-ext-tel').value.trim();
         var doc = partEl('part-ext-doc').value.trim();
         var fb = partEl('part-feedback');
         if (!id) { fb.textContent = 'Selecione um evento primeiro.'; return; }
         if (!nome) { fb.textContent = 'Informe o nome.'; return; }
         var r = await sb.from('participantes_externos')
-          .insert({ evento_id: id, nome: nome, email: email || null, documento: doc || null });
+          .insert({ evento_id: id, nome: nome, email: email || null, telefone: tel || null, documento: doc || null });
         if (r.error) { fb.textContent = 'Erro: ' + r.error.message; return; }
         partEl('part-ext-nome').value = '';
         partEl('part-ext-email').value = '';
+        partEl('part-ext-tel').value = '';
         partEl('part-ext-doc').value = '';
         fb.textContent = 'Participante externo cadastrado.';
         await carregarListaParticipantes(id);
