@@ -626,6 +626,18 @@
         </div>
         <p id="admin-busca-status" style="color:var(--texto-suave);font-size:0.9rem;margin:0 0 1rem;" hidden></p>
 
+        <style>
+          .aba-evento{background:var(--areia);border:1px solid var(--borda);color:var(--texto);padding:0.5rem 1rem;border-radius:8px;cursor:pointer;font-weight:600;font-size:0.95rem;}
+          .aba-evento.ativa{background:var(--verde-escuro);color:#fff;border-color:var(--verde-escuro);}
+          .aba-evento:hover{border-color:var(--verde-escuro);}
+        </style>
+        <div class="admin-abas" role="tablist" style="display:flex;gap:0.5rem;flex-wrap:wrap;margin:0 0 1.25rem;">
+          <button type="button" class="aba-evento ativa" data-aba="geral">Geral</button>
+          <button type="button" class="aba-evento" data-aba="eneon">IX ENEON 2026</button>
+          <button type="button" class="aba-evento" data-aba="forum">3º Fórum de Enfermagem Obstétrica</button>
+        </div>
+
+        <div data-grupo="geral">
         <h2>Estatísticas <span style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;">(sócias ativas)</span></h2>
         <div id="stats-grid" class="stats-grid">
           <button type="button" class="stat-card" data-stat="total" aria-label="Ver lista de todas as sócias ativas">
@@ -649,6 +661,7 @@
             <span class="stat-hint">Especialistas e obstetrizes</span>
           </button>
         </div>
+        </div>
 
         <div id="modal-overlay" class="modal-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="modal-titulo">
           <div class="modal-box">
@@ -660,28 +673,28 @@
           </div>
         </div>
 
-        <details class="secao">
+        <details class="secao" data-grupo="geral">
           <summary><h2>Pendentes de aprovação <span id="contador-pendentes" style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;"></span></h2></summary>
           <div id="lista-pendentes" style="display:grid;gap:0.75rem;margin-bottom:1.5rem;">
             <div class="lista-vazia" id="vazio-pendentes">Carregando…</div>
           </div>
         </details>
 
-        <details class="secao">
+        <details class="secao" data-grupo="geral">
           <summary><h2>Associadas ativas <span id="contador-ativos" style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;"></span></h2></summary>
           <div id="lista-ativos" style="display:grid;gap:0.75rem;margin-bottom:1.5rem;">
             <div class="lista-vazia" id="vazio-ativos">Carregando…</div>
           </div>
         </details>
 
-        <details class="secao">
+        <details class="secao" data-grupo="geral">
           <summary><h2>Inativas <span id="contador-inativos" style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;"></span></h2></summary>
           <div id="lista-inativos" style="display:grid;gap:0.75rem;margin-bottom:1.5rem;">
             <div class="lista-vazia" id="vazio-inativos">Carregando…</div>
           </div>
         </details>
 
-        <details class="secao">
+        <details class="secao" data-grupo="eneon">
           <summary><h2>Inscrições em eventos</h2></summary>
           <p class="descricao-secao">
             Importe a lista de inscritas vinda do Doity (ou de outra plataforma externa)
@@ -765,7 +778,7 @@
         </div>
         </details>
 
-        <details class="secao" id="bloco-pendentes">
+        <details class="secao" id="bloco-pendentes" data-grupo="eneon">
           <summary><h2>Inscrições pendentes de verificação <span id="contador-inscricoes-pendentes" style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;"></span></h2></summary>
           <p class="descricao-secao">
             Pessoas que escolheram a cota de sócia da Abenfo-RJ no Doity mas
@@ -779,7 +792,7 @@
           </div>
         </details>
 
-        <details class="secao">
+        <details class="secao" data-grupo="eneon">
           <summary><h2>Inscrições em cursos</h2></summary>
           <p class="descricao-secao">
             Cursos são unidades menores. Podem pertencer a um evento (como os
@@ -860,7 +873,7 @@
         </div>
         </details>
 
-        <details class="secao">
+        <details class="secao" data-grupo="eneon">
           <summary><h2>Trabalhos científicos <span id="contador-trabalhos-admin" style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;"></span></h2></summary>
           <p class="descricao-secao">
             Trabalhos submetidos para o IX ENEON 2026. Use os filtros para localizar,
@@ -899,7 +912,7 @@
           </div>
         </details>
 
-        <details class="secao">
+        <details class="secao" data-grupo="geral">
           <summary><h2>Biblioteca <span id="contador-biblioteca" style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;"></span></h2></summary>
           <p class="descricao-secao">
             Acervo das associadas. O arquivo da obra fica no <strong>Google Drive</strong>
@@ -972,7 +985,7 @@
           </div>
         </details>
 
-        <details class="secao">
+        <details class="secao" data-grupo="geral">
           <summary><h2>Avisos <span id="contador-avisos" style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;"></span></h2></summary>
           <p class="descricao-secao">
             Recados que aparecem no card <strong>Avisos</strong> da área da associada.
@@ -1023,7 +1036,7 @@
           </div>
         </details>
 
-        <details class="secao">
+        <details class="secao" data-grupo="eneon">
           <summary><h2>Certificados</h2></summary>
           <p class="descricao-secao">
             Modelo de certificado por <strong>evento × tipo</strong>. Você sobe a arte base
@@ -1094,7 +1107,7 @@
           </div>
         </details>
 
-        <details class="secao">
+        <details class="secao" data-grupo="forum">
           <summary><h2>Participantes / Presença <span id="contador-participantes" style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;"></span></h2></summary>
           <p class="descricao-secao">
             Presença dos eventos (ex.: Fórum de Enfermagem Obstétrica). As sócias registram a própria presença na área
@@ -4858,6 +4871,35 @@
         partEl('btn-part-ext-add').addEventListener('click', adicionarExterno);
         partEl('part-ext-tel').addEventListener('input', function () { this.value = formatarTelefone(this.value); });
       }
+
+      // ── Abas por evento (Geral · IX ENEON · 3º Fórum) ────────────────────────
+      var abaAtual = 'geral';
+      function ativarAba(grupo) {
+        abaAtual = grupo;
+        document.querySelectorAll('.aba-evento').forEach(function (b) {
+          b.classList.toggle('ativa', b.getAttribute('data-aba') === grupo);
+        });
+        document.querySelectorAll('[data-grupo]').forEach(function (el) {
+          el.style.display = (el.getAttribute('data-grupo') === grupo) ? '' : 'none';
+        });
+      }
+      document.querySelectorAll('.aba-evento').forEach(function (b) {
+        b.addEventListener('click', function () { ativarAba(b.getAttribute('data-aba')); });
+      });
+      // Durante a busca, revela todos os grupos (senão um resultado em outra aba "sumiria").
+      (function () {
+        var busca = document.getElementById('admin-busca');
+        if (busca) {
+          busca.addEventListener('input', function () {
+            if (this.value.trim()) {
+              document.querySelectorAll('[data-grupo]').forEach(function (el) { el.style.display = ''; });
+            } else {
+              ativarAba(abaAtual);
+            }
+          });
+        }
+      })();
+      ativarAba('geral');
 
       document.addEventListener('perfil-pronto', function (e) {
         if (!e.detail.is_admin) {
