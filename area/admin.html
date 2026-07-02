@@ -4949,7 +4949,10 @@
             '</div>' +
           '</div>';
         }
-        cont.innerHTML = socios.map(linha).join('') + ext.map(linha).join('');
+        var todos = socios.concat(ext).sort(function (a, b) {
+          return normalizarBusca(a.nome).localeCompare(normalizarBusca(b.nome));
+        });
+        cont.innerHTML = todos.map(linha).join('');
         cont.querySelectorAll('button[data-remover]').forEach(function (b) {
           b.addEventListener('click', function () { removerParticipante(b.getAttribute('data-remover'), eventoId); });
         });
