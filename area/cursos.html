@@ -171,10 +171,10 @@
           <li><div class="doc-info"><strong>Carregando…</strong></div></li>
         </ul>
 
-        <h2 style="margin-top:2.5rem;">Certificados</h2>
-        <p style="color:var(--texto-suave);">Certificados emitidos pela Abenfo RJ para os eventos e cursos que você concluiu.</p>
-        <ul class="doc-list">
-          <li><div class="doc-info"><strong>Sem certificados emitidos</strong><span>Os certificados ficam disponíveis após o evento.</span></div></li>
+        <h2 style="margin-top:2.5rem;">Certificados e declarações</h2>
+        <p style="color:var(--texto-suave);">Emitidos pela Abenfo RJ para os eventos em que você participou. Ficam disponíveis quando a diretoria libera.</p>
+        <ul class="doc-list" id="lista-certificados">
+          <li><div class="doc-info"><strong>Carregando…</strong></div></li>
         </ul>
       </div>
     </section>
@@ -193,6 +193,7 @@
   <script src="../js/config.js"></script>
   <script src="../js/supabase-client.js"></script>
   <script src="../js/area-comum.js"></script>
+  <script src="../js/certificado.js"></script>
   <script>
     (function () {
       function escapar(s) {
@@ -708,6 +709,74 @@
         }).join('');
       }
 
+      // ── Certificados / declarações (gerados no navegador pelo motor abenfoCert) ──
+      async function carregarCertificados(perfil) {
+        var sb = window.abenfo.sb;
+        var lista = document.getElementById('lista-certificados');
+        if (!lista) return;
+        function vazio(msg) {
+          lista.innerHTML = '<li><div class="doc-info"><strong>Sem certificados disponíveis</strong>' +
+            '<span>' + escapar(msg) + '</span></div></li>';
+        }
+        try {
+          var rIns = await sb.from('inscricoes_evento').select('evento_id').eq('profile_id', perfil.id);
+          var rPart = await sb.from('participacoes_evento').select('evento_id').eq('profile_id', perfil.id);
+          var ids = {};
+          (rIns.data || []).forEach(function (x) { ids[x.evento_id] = true; });
+          (rPart.data || []).forEach(function (x) { ids[x.evento_id] = true; });
+          var lids = Object.keys(ids);
+          if (!lids.length) { vazio('Você ainda não tem participações registradas.'); return; }
+
+          var rEv = await sb.from('eventos').select('id, nome, certificados_liberados').in('id', lids);
+          var liberados = (rEv.data || []).filter(function (e) { return e.certificados_liberados; });
+          if (!liberados.length) { vazio('Ficam disponíveis quando a diretoria liberar.'); return; }
+
+          var rMod = await sb.from('certificado_modelos').select('*')
+            .eq('tipo', 'participacao').eq('ativo', true)
+            .in('evento_id', liberados.map(function (e) { return e.id; }));
+          var modBy = {}; (rMod.data || []).forEach(function (m) { modBy[m.evento_id] = m; });
+          var itens = liberados.filter(function (e) { return modBy[e.id]; });
+          if (!itens.length) { vazio('Ficam disponíveis quando a diretoria liberar.'); return; }
+
+          lista.innerHTML = itens.map(function (e) {
+            return '<li>' +
+              '<div class="doc-info"><strong>' + escapar(e.nome) + '</strong>' +
+              '<span>Declaração de participação disponível.</span></div>' +
+              '<a href="javascript:void(0)" data-cert="' + escapar(e.id) + '">Baixar declaração →</a>' +
+            '</li>';
+          }).join('');
+          lista.querySelectorAll('a[data-cert]').forEach(function (a) {
+            a.addEventListener('click', function () { baixarCertificado(perfil, modBy[a.getAttribute('data-cert')], a); });
+          });
+        } catch (err) {
+          vazio('Não foi possível carregar: ' + (err.message || ''));
+        }
+      }
+
+      async function baixarCertificado(perfil, modelo, link) {
+        if (!modelo || !window.abenfoCert) return;
+        var sb = window.abenfo.sb;
+        var txt = link.textContent;
+        link.textContent = 'Gerando…';
+        try {
+          var base = modelo.base_path
+            ? await window.abenfoCert.baseUrlDeStorage(sb, 'certificados-bases', modelo.base_path)
+            : null;
+          var nome = perfil.nome_completo || '';
+          await window.abenfoCert.baixarPDF({
+            baseUrl: base,
+            textoPre: modelo.texto_pre || '',
+            nome: nome,
+            textoCorpo: window.abenfoCert.aplicarCampos(modelo.texto_template || '', { nome: nome }),
+            config: modelo.config || {}
+          }, 'Declaração - ' + nome + '.pdf');
+        } catch (err) {
+          alert('Erro ao gerar a declaração: ' + (err.message || 'tente novamente'));
+        } finally {
+          link.textContent = txt;
+        }
+      }
+
       document.addEventListener('perfil-pronto', function (e) {
         carregarInscricoes(e.detail);
         carregarInscricoesCursos(e.detail);
@@ -716,6 +785,7 @@
         montarPainelConvites(e.detail);
         carregarPresenca(e.detail);
         carregarParticipacoes(e.detail);
+        carregarCertificados(e.detail);
       });
     })();
   </script>
