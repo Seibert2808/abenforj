@@ -631,14 +631,17 @@
         var jaRegistrou = {};
         (rMy.data || []).forEach(function (p) { jaRegistrou[p.evento_id] = true; });
 
+        // Mostra só eventos ainda NÃO registrados — some depois de confirmar a presença
+        // (a presença confirmada aparece no "Histórico de participações").
+        var pendentes = abertos.filter(function (e) { return !jaRegistrou[e.id]; });
+        if (!pendentes.length) { bloco.hidden = true; return; }
+
         bloco.hidden = false;
-        cont.innerHTML = abertos.map(function (e) {
+        cont.innerHTML = pendentes.map(function (e) {
           var info = [];
           if (e.data_inicio) info.push('📅 ' + formatarDataSimples(e.data_inicio));
           if (e.local) info.push('📍 ' + e.local);
-          var acao = jaRegistrou[e.id]
-            ? '<span style="color:#2e7d4f;font-weight:600;">✓ Presença registrada</span>'
-            : '<button type="button" class="btn btn-solid" data-evento="' + escapar(e.id) + '" style="min-height:0;padding:0.55rem 1.1rem;">Registrar Participação</button>';
+          var acao = '<button type="button" class="btn btn-solid" data-evento="' + escapar(e.id) + '" style="min-height:0;padding:0.55rem 1.1rem;">Registrar Participação</button>';
           return '<div class="convite-evento">' +
             '<h3>' + escapar(e.nome) + '</h3>' +
             (info.length ? '<p style="color:var(--texto-suave);">' + escapar(info.join(' · ')) + '</p>' : '') +
