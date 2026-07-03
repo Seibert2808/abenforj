@@ -1100,6 +1100,7 @@
             <label for="cert-tipo">Tipo de certificado</label>
             <select id="cert-tipo">
               <option value="participacao">Participação no evento</option>
+              <option value="monitoria">Monitoria</option>
               <option value="oficina">Oficina pré-evento</option>
               <option value="palestrante">Palestrante</option>
               <option value="comissao">Comissão / organização</option>
@@ -1120,6 +1121,13 @@
             <p style="font-size:0.825rem;color:var(--texto-suave);margin:0.35rem 0 0;">
               Campos automáticos: <code>{{nome}}</code> (vai grande, no centro), <code>{{oficina}}</code>,
               <code>{{carga_horaria}}</code>, <code>{{titulo_palestra}}</code>, <code>{{comissao}}</code>.
+            </p>
+
+            <label for="cert-carga" style="margin-top:1rem;">Carga horária</label>
+            <input id="cert-carga" type="text" autocomplete="off" placeholder="Ex.: 20" style="max-width:220px;">
+            <p style="font-size:0.825rem;color:var(--texto-suave);margin:0.35rem 0 0;">
+              Preenche o <code>{{carga_horaria}}</code> do texto (o mesmo valor vale para todo mundo desse tipo).
+              Deixe em branco se o texto não usar carga horária.
             </p>
 
             <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.75rem;margin-top:1rem;">
@@ -4599,6 +4607,10 @@
           pre: 'Certificamos que',
           corpo: 'participou do IX Encontro de Enfermagem Obstétrica e Neonatal do Estado do Rio de Janeiro – IX ENEON, realizado de 15 a 17 de julho de 2026, na UERJ, com o tema "Diversidade, Equidade e Acesso para mulheres e bebês no Estado do Rio de Janeiro", totalizando {{carga_horaria}} horas.'
         },
+        monitoria: {
+          pre: 'Certificamos que',
+          corpo: 'atuou como monitora no IX Encontro de Enfermagem Obstétrica e Neonatal do Estado do Rio de Janeiro – IX ENEON, realizado de 15 a 17 de julho de 2026, na UERJ.'
+        },
         oficina: {
           pre: 'Certificamos que',
           corpo: 'participou da oficina pré-evento "{{oficina}}", realizada em 15 de julho de 2026, no âmbito do IX ENEON, na UERJ, com carga horária de 4 horas.'
@@ -4665,6 +4677,7 @@
         certEl('cert-nome-size').value = cfg.nome_size || 130;
         certEl('cert-corpo-size').value = cfg.corpo_size || 64;
         certEl('cert-band-top').value = cfg.band_top || 1000;
+        certEl('cert-carga').value = cfg.carga_horaria || '';
         certEl('cert-base-status').textContent = (certModeloAtual && certModeloAtual.base_path)
           ? 'Arte salva (escolha outra para substituir).'
           : 'Sem arte: o teste sai com fundo branco.';
@@ -4676,7 +4689,11 @@
           corpo_size: parseInt(certEl('cert-corpo-size').value, 10) || 64,
           band_top: parseInt(certEl('cert-band-top').value, 10) || 1000,
           pre_size: 56,
-          margem: 380
+          margem: 380,
+          carga_horaria: certEl('cert-carga').value.trim() || null,
+          // aparência da marca (embutida — os certificados usam a fonte/cor da identidade)
+          fonte: "Calibri, Arial, sans-serif",
+          cor: "#4a5866"
         };
       }
 
@@ -4737,7 +4754,7 @@
           var campos = {
             nome: nome,
             oficina: 'Manejo Clínico da Amamentação com Laserterapia',
-            carga_horaria: '20',
+            carga_horaria: certEl('cert-carga').value.trim() || '20',
             titulo_palestra: 'Título da palestra apresentada',
             comissao: 'Comissão Executiva'
           };

@@ -722,34 +722,53 @@
             '<span>' + escapar(msg) + '</span></div></li>';
         }
         try {
-          var rIns = await sb.from('inscricoes_evento').select('evento_id').eq('profile_id', perfil.id);
+          // Fontes de elegibilidade:
+          //  - participação: qualquer inscrição, presença OU papel (palestrante/comissão/professor)
+          //  - monitoria: quem é monitora (inscricoes_evento.observacao ~ "monitor")
+          var rIns = await sb.from('inscricoes_evento').select('evento_id, observacao').eq('profile_id', perfil.id);
           var rPart = await sb.from('participacoes_evento').select('evento_id').eq('profile_id', perfil.id);
+          var rPap = await sb.from('certificado_papeis').select('evento_id').eq('profile_id', perfil.id);
           var ids = {};
-          (rIns.data || []).forEach(function (x) { ids[x.evento_id] = true; });
+          var ehMonitora = {};
+          (rIns.data || []).forEach(function (x) {
+            ids[x.evento_id] = true;
+            if (x.observacao && /monitor/i.test(x.observacao)) ehMonitora[x.evento_id] = true;
+          });
           (rPart.data || []).forEach(function (x) { ids[x.evento_id] = true; });
+          (rPap.data || []).forEach(function (x) { ids[x.evento_id] = true; });
           var lids = Object.keys(ids);
           if (!lids.length) { vazio('Você ainda não tem participações registradas.'); return; }
 
           var rEv = await sb.from('eventos').select('id, nome, certificados_liberados').in('id', lids);
           var liberados = (rEv.data || []).filter(function (e) { return e.certificados_liberados; });
           if (!liberados.length) { vazio('Ficam disponíveis quando a diretoria liberar.'); return; }
+          var libIds = liberados.map(function (e) { return e.id; });
+          var nomeEv = {}; liberados.forEach(function (e) { nomeEv[e.id] = e.nome; });
 
           var rMod = await sb.from('certificado_modelos').select('*')
-            .eq('tipo', 'participacao').eq('ativo', true)
-            .in('evento_id', liberados.map(function (e) { return e.id; }));
-          var modBy = {}; (rMod.data || []).forEach(function (m) { modBy[m.evento_id] = m; });
-          var itens = liberados.filter(function (e) { return modBy[e.id]; });
-          if (!itens.length) { vazio('Ficam disponíveis quando a diretoria liberar.'); return; }
+            .in('tipo', ['participacao', 'monitoria']).eq('ativo', true)
+            .in('evento_id', libIds);
 
-          lista.innerHTML = itens.map(function (e) {
+          var ROTULO = { participacao: 'Declaração de participação', monitoria: 'Certificado de monitoria' };
+          var modelos = {}; // chave "eventoId|tipo" -> modelo
+          (rMod.data || []).forEach(function (m) {
+            // monitoria só é ofertada a quem é monitora naquele evento
+            if (m.tipo === 'monitoria' && !ehMonitora[m.evento_id]) return;
+            modelos[m.evento_id + '|' + m.tipo] = m;
+          });
+          var chaves = Object.keys(modelos).sort();
+          if (!chaves.length) { vazio('Ficam disponíveis quando a diretoria liberar.'); return; }
+
+          lista.innerHTML = chaves.map(function (k) {
+            var m = modelos[k];
             return '<li>' +
-              '<div class="doc-info"><strong>' + escapar(e.nome) + '</strong>' +
-              '<span>Declaração de participação disponível.</span></div>' +
-              '<a href="javascript:void(0)" data-cert="' + escapar(e.id) + '">Baixar declaração →</a>' +
+              '<div class="doc-info"><strong>' + escapar(nomeEv[m.evento_id] || '') + '</strong>' +
+              '<span>' + escapar(ROTULO[m.tipo] || 'Certificado') + ' disponível.</span></div>' +
+              '<a href="javascript:void(0)" data-cert="' + escapar(k) + '">Baixar →</a>' +
             '</li>';
           }).join('');
           lista.querySelectorAll('a[data-cert]').forEach(function (a) {
-            a.addEventListener('click', function () { baixarCertificado(perfil, modBy[a.getAttribute('data-cert')], a); });
+            a.addEventListener('click', function () { baixarCertificado(perfil, modelos[a.getAttribute('data-cert')], a); });
           });
         } catch (err) {
           vazio('Não foi possível carregar: ' + (err.message || ''));
@@ -770,9 +789,12 @@
             baseUrl: base,
             textoPre: modelo.texto_pre || '',
             nome: nome,
-            textoCorpo: window.abenfoCert.aplicarCampos(modelo.texto_template || '', { nome: nome }),
+            textoCorpo: window.abenfoCert.aplicarCampos(modelo.texto_template || '', {
+              nome: nome,
+              carga_horaria: (modelo.config && modelo.config.carga_horaria) || ''
+            }),
             config: modelo.config || {}
-          }, 'Declaração - ' + nome + '.pdf');
+          }, ({ participacao: 'Declaração de participação', monitoria: 'Certificado de monitoria' }[modelo.tipo] || 'Certificado') + ' - ' + nome + '.pdf');
         } catch (err) {
           alert('Erro ao gerar a declaração: ' + (err.message || 'tente novamente'));
         } finally {
