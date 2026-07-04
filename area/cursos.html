@@ -474,12 +474,11 @@
           var ev = item.eventos;
           if (!ev) return;
           html += '<div class="convite-trabalhos" data-evento-id="' + ev.id + '">';
-          html += '<h3>📄 Envie seu trabalho para o ' + escapar(ev.nome) + '</h3>';
-          html += '<p>As inscrições de trabalhos científicos estão abertas! Clique abaixo para enviar o seu. ' +
-                  'Antes, confira as normas de submissão.</p>';
+          html += '<h3>📋 Resultado dos trabalhos — ' + escapar(ev.nome) + '</h3>';
+          html += '<p>As submissões de trabalhos científicos foram encerradas. ' +
+                  'O resultado da avaliação estará disponível a partir de <strong>06/07/2026</strong>.</p>';
           html += '<div class="acoes">';
-          html += '<a href="/area/trabalhos" class="btn btn-solid">Enviar meu trabalho →</a>';
-          html += '<a href="../regras-trabalhos.html" class="btn btn-ghost" target="_blank" rel="noopener">Ver normas de submissão</a>';
+          html += '<a href="../trabalhos-aprovados.html" class="btn btn-solid" target="_blank" rel="noopener">Ver resultado</a>';
           html += '</div>';
           html += '</div>';
         });
