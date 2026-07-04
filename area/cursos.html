@@ -279,12 +279,19 @@
             linkExterno = '<a href="' + escapar(ev.link_externo) + '" target="_blank" rel="noopener">Página da inscrição →</a>';
           }
 
+          var linkPrograma = '';
+          if (/ENEON/i.test(nome)) {
+            linkPrograma = '<a href="../programacao-ix-eneon.html" class="btn btn-cores-eneon" target="_blank" rel="noopener" ' +
+              'style="min-height:0;padding:0.55rem 1rem;font-size:0.9rem;">Ver programação completa →</a>';
+          }
+          var acoes = linkPrograma + linkExterno;
+
           return '<li>' +
             '<div class="doc-info">' +
               '<strong>' + escapar(nome) + '</strong>' +
               detalhes +
             '</div>' +
-            linkExterno +
+            (acoes ? '<div style="display:flex;flex-direction:column;gap:0.5rem;align-items:flex-end;flex-shrink:0;">' + acoes + '</div>' : '') +
           '</li>';
         }).join('');
       }
