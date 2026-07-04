@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Programação · IX ENEON — ABENFO-RJ</title>
+<style>
+  :root{
+    --verde-escuro:#3f5f4d; --verde:#607a6e; --verde-claro:#8fa599; --verde-pastel:#ecf2ee;
+    --areia:#f6f4ef; --texto:#1f2a23; --texto-suave:#4f5a54; --borda:#dde1dd; --branco:#fff;
+    --eneon-sage:#a8c9b0; --eneon-azul:#a5c9e0; --eneon-lavanda:#c0b0d8;
+    --eneon-pessego:#f0c9a5; --eneon-grafite:#7a8794;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body{
+    font-family:"Segoe UI",-apple-system,Helvetica,Arial,sans-serif;
+    color:var(--texto); background:#e7e9e6; line-height:1.32;
+  }
+
+  /* ---------- Folha A4 ---------- */
+  .page{
+    width:210mm; min-height:297mm; margin:8mm auto; padding:13mm 15mm;
+    background:var(--branco); position:relative;
+    box-shadow:0 2px 14px rgba(0,0,0,.12);
+    display:flex; flex-direction:column;
+  }
+
+  /* ---------- CAPA ---------- */
+  .capa{align-items:stretch; text-align:center; justify-content:space-between; min-height:290mm;
+    background:linear-gradient(160deg,#fbfaf7 0%,var(--areia) 60%,var(--verde-pastel) 100%);}
+  .capa-main{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center}
+  .capa .logo{width:115mm; max-width:88%; margin-bottom:9mm}
+  .capa .barra-cores{display:flex; width:70mm; height:5px; border-radius:5px; overflow:hidden; margin:0 auto 11mm}
+  .capa .barra-cores span{flex:1}
+  .capa h1{font-size:30pt; font-weight:700; letter-spacing:.5px; color:var(--verde-escuro); margin-bottom:4mm}
+  .capa .tema{font-size:14pt; font-style:italic; color:var(--eneon-grafite); margin-bottom:12mm}
+  .capa .datas{font-size:15pt; font-weight:600; color:var(--texto); margin-bottom:2mm}
+  .capa .local{font-size:12pt; color:var(--texto-suave)}
+  .capa .rodape-capa{display:flex; align-items:flex-end; justify-content:center; gap:16mm; padding-top:10mm}
+  .capa .rodape-capa img{height:15mm; opacity:.9}
+  .capa .rodape-capa .promo{font-size:8pt; letter-spacing:1px; text-transform:uppercase; color:var(--texto-suave); margin-bottom:2mm}
+
+  /* ---------- DIAS ---------- */
+  .dia-header{display:flex; align-items:stretch; border-radius:10px; overflow:hidden; margin-bottom:5mm;
+    box-shadow:0 1px 4px rgba(0,0,0,.08)}
+  .dia-header .data{display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:4mm 7mm; color:#fff; min-width:32mm}
+  .dia-header .data .dia-num{font-size:22pt; font-weight:700; line-height:1}
+  .dia-header .data .mes{font-size:9pt; text-transform:uppercase; letter-spacing:2px; margin-top:1mm}
+  .dia-header .data .semana{font-size:8pt; opacity:.9; margin-top:1mm}
+  .dia-header .titulo{display:flex; flex-direction:column; justify-content:center; padding:4mm 8mm; background:var(--areia); flex:1}
+  .dia-header .titulo .kicker{font-size:8.5pt; letter-spacing:2px; text-transform:uppercase; color:var(--eneon-grafite)}
+  .dia-header .titulo h2{font-size:15pt; font-weight:700; color:var(--verde-escuro)}
+
+  /* faixas de cor por dia */
+  .d15 .data{background:var(--eneon-azul)}    .d15 .titulo{border-left:4px solid var(--eneon-azul)}
+  .d16 .data{background:var(--eneon-lavanda)} .d16 .titulo{border-left:4px solid var(--eneon-lavanda)}
+  .d17 .data{background:var(--eneon-pessego)} .d17 .titulo{border-left:4px solid var(--eneon-pessego)}
+
+  /* tabela de programação */
+  table.prog{width:100%; border-collapse:collapse; font-size:9.5pt; line-height:1.22}
+  table.prog th{background:var(--verde-pastel); color:var(--verde-escuro); text-align:left;
+    font-size:8pt; text-transform:uppercase; letter-spacing:1px; padding:1.4mm 3.5mm; border-bottom:2px solid var(--verde-claro)}
+  table.prog td{padding:1.4mm 3.5mm; border-bottom:1px solid var(--borda); vertical-align:top}
+  table.prog tr:nth-child(even) td{background:#fbfbf9}
+  table.prog .hora{white-space:nowrap; font-weight:600; color:var(--verde); width:26mm}
+  table.prog.salas .hora{white-space:normal; width:42mm; font-size:9pt}
+  table.prog.paineis .hora{white-space:nowrap; width:24mm; color:var(--eneon-grafite); font-weight:700; font-size:8pt; text-transform:uppercase; letter-spacing:.5px}
+  table.prog.paineis .resp{width:46mm; color:var(--texto)}
+  table.prog.paineis .local{width:40mm; font-size:8.5pt}
+  table.prog .resp small{display:block; font-size:8.5pt; color:var(--texto-suave); margin-top:.5mm; font-weight:400}
+  table.prog .ativ{font-weight:600}
+  table.prog .ativ small{display:block; font-weight:400; color:var(--texto-suave); font-size:9pt; margin-top:.5mm}
+  table.prog .resp{width:52mm; color:var(--texto-suave)}
+  table.prog .local{width:26mm; color:var(--texto-suave); font-size:9pt}
+  /* linha de intervalo/destaque */
+  table.prog tr.marco td{background:var(--verde-pastel); font-weight:600; color:var(--verde-escuro); text-align:center; text-transform:uppercase; font-size:8.5pt; letter-spacing:1px}
+  /* placeholder a preencher */
+  .todo{color:#b08900; background:#fdf6e3; padding:0 3px; border-radius:3px; font-style:italic; font-weight:600}
+
+  /* painel da mesa de autoridades */
+  .mesa-panel{border:1px solid var(--borda); border-radius:10px; overflow:hidden; margin-top:2mm; box-shadow:0 1px 4px rgba(0,0,0,.06)}
+  .mesa-cabec{background:var(--eneon-lavanda); color:#3a2e4d; font-size:9pt; font-weight:700; text-transform:uppercase; letter-spacing:1.5px; padding:2mm 4mm}
+  .mesa-lista{list-style:none}
+  .mesa-lista li{display:flex; align-items:center; justify-content:space-between; gap:6mm; padding:2mm 4mm; border-top:1px solid var(--borda)}
+  .mesa-lista li:first-child{border-top:none}
+  .mesa-lista li:nth-child(even){background:#fbfbf9}
+  .m-info{display:flex; flex-direction:column}
+  .m-nome{font-weight:700; color:var(--verde-escuro); font-size:10pt}
+  .m-cargo{font-size:9pt; color:var(--texto-suave); margin-top:.5mm}
+  .m-inst{flex-shrink:0; background:var(--verde-pastel); color:var(--verde-escuro); font-size:8pt; font-weight:600; letter-spacing:.5px; padding:1.5mm 3mm; border-radius:20px; white-space:nowrap}
+
+  .nota-secao{font-size:8.5pt; color:var(--texto-suave); margin-top:3mm; padding-top:2mm; border-top:1px dashed var(--borda)}
+
+  /* rodapé de cada dia */
+  .pg-rodape{margin-top:auto; padding-top:5mm; display:flex; justify-content:space-between; align-items:center;
+    font-size:8pt; color:var(--texto-suave); border-top:1px solid var(--borda)}
+  .pg-rodape img{height:8mm; opacity:.85}
+
+  @media print{
+    body{background:#fff}
+    .page{margin:0; box-shadow:none; min-height:auto; page-break-before:always; break-before:page}
+    .page.capa{min-height:272mm; page-break-before:avoid; break-before:avoid}
+    .no-print{display:none !important}
+    tr, .dia-header, .mesa-panel, .mesa-lista li, .nota-secao{page-break-inside:avoid}
+    thead{display:table-header-group}
+  }
+  @page{size:A4 portrait; margin:0}
+
+  /* barra de aviso (só na tela) */
+  .aviso{max-width:210mm; margin:8mm auto 0; padding:4mm 6mm; background:#fdf6e3; border:1px solid #d4a72c;
+    border-radius:8px; font-size:10pt; color:#7a5c00}
+  .aviso b{color:#6b4f00}
+
+  /* barra de ação (só na tela) */
+  .barra-acao{max-width:210mm; margin:8mm auto 0; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:0 4mm}
+  .ba-link{color:var(--verde-escuro); text-decoration:none; font-size:14px; font-weight:600}
+  .ba-link:hover{text-decoration:underline}
+  .ba-btn{background:var(--verde-escuro); color:#fff; border:none; border-radius:8px; padding:10px 18px; font-size:14px; font-weight:600; cursor:pointer}
+  .ba-btn:hover{background:var(--verde)}
+
+  /* página de comissões */
+  .sec-title{border-radius:10px; background:var(--verde-pastel); padding:5mm 6mm; margin-bottom:6mm; box-shadow:0 1px 4px rgba(0,0,0,.08)}
+  .sec-title .kicker{font-size:8.5pt; letter-spacing:2px; text-transform:uppercase; color:var(--eneon-grafite)}
+  .sec-title h2{font-size:16pt; font-weight:700; color:var(--verde-escuro)}
+  .comissoes{display:grid; grid-template-columns:1fr 1fr; gap:5mm}
+  .com-card{border:1px solid var(--borda); border-radius:9px; padding:4mm 5mm; background:#fbfbf9}
+  .com-card h3{font-size:10.5pt; color:var(--verde-escuro); margin-bottom:2mm}
+  .com-card p{font-size:9.5pt; color:var(--texto); margin:1mm 0}
+  .com-card p strong{color:var(--texto-suave); font-weight:600}
+
+  /* rodapé final da última página */
+  .rodape-final{margin-top:auto; padding-top:8mm}
+  .scribia-doc{text-align:center; background:var(--branco); border:1px solid var(--borda); border-radius:12px; padding:7mm 6mm 6mm; box-shadow:0 1px 4px rgba(0,0,0,.06)}
+  .scribia-doc img{width:74mm; max-width:80%; height:auto; margin-bottom:3mm}
+  .scribia-doc .scribia-tag{font-size:9.5pt; color:var(--texto-suave); margin-bottom:2.5mm}
+  .scribia-doc .scribia-url{display:inline-block; font-size:12pt; font-weight:700; color:#6b4fb0; text-decoration:none; letter-spacing:.3px}
+  .rodape-linha{display:flex; justify-content:space-between; align-items:center; margin-top:5mm; padding-top:3mm; border-top:1px solid var(--borda); font-size:8.5pt; color:var(--texto-suave)}
+  .rodape-linha b{color:var(--verde-escuro)}
+</style>
+</head>
+<body>
+
+<div class="barra-acao no-print">
+  <a href="eventos.html" class="ba-link">← Voltar ao IX ENEON</a>
+  <button type="button" class="ba-btn" onclick="window.print()">Imprimir / Salvar em PDF</button>
+</div>
+
+<!-- ============ CAPA ============ -->
+<section class="page capa">
+  <div class="capa-main">
+    <img class="logo" src="assets/eneon/logo-eneon-vertical.png" alt="IX ENEON">
+    <div class="barra-cores">
+      <span style="background:var(--eneon-sage)"></span>
+      <span style="background:var(--eneon-azul)"></span>
+      <span style="background:var(--eneon-lavanda)"></span>
+      <span style="background:var(--eneon-pessego)"></span>
+    </div>
+    <h1>Programação Científica</h1>
+    <p class="tema">Diversidade, Equidade e Acesso</p>
+    <p class="datas">15, 16 e 17 de julho de 2026</p>
+    <p class="local">UERJ · Rio de Janeiro — RJ</p>
+  </div>
+
+  <div class="rodape-capa">
+    <div>
+      <div class="promo">Realização</div>
+      <img src="assets/logo-abenforj.png" alt="ABENFO-RJ">
+    </div>
+    <div>
+      <div class="promo">Apoio</div>
+      <img src="assets/logo-abenfo-nacional.jpg" alt="ABENFO Nacional">
+    </div>
+  </div>
+</section>
+
+<!-- ============ DIA 15/07 ============ -->
+<section class="page">
+  <div class="dia-header d15">
+    <div class="data"><span class="dia-num">15</span><span class="mes">Julho</span><span class="semana">Terça</span></div>
+    <div class="titulo"><span class="kicker">Dia 1</span><h2>Cursos Pré-Encontro</h2></div>
+  </div>
+
+  <table class="prog salas">
+    <thead><tr><th>Sala</th><th>Curso</th><th>Ministrante</th><th>Instituição</th></tr></thead>
+    <tbody>
+      <tr class="marco"><td colspan="4">Manhã · 08h às 12h · Faculdade de Enfermagem da UERJ</td></tr>
+      <tr>
+        <td class="hora">Sala 716</td>
+        <td class="ativ">Punção venosa neonatal com realidade aumentada (VeinViewer®)</td>
+        <td class="resp">Profª Drª Adriana Teixeira Reis</td>
+        <td class="local">UERJ</td>
+      </tr>
+      <tr>
+        <td class="hora">Espaço Raquel Haddock Lobo</td>
+        <td class="ativ">Manejo da HPP em cenários não hospitalares – Estabilização e Transporte Seguro</td>
+        <td class="resp">Prof.ª Ma. Anna Christina de Almeida Porréca</td>
+        <td class="local">UERJ</td>
+      </tr>
+      <tr>
+        <td class="hora">Sala 23 · Pav. Nalva Pereira Caldas</td>
+        <td class="ativ">Interpretação de Laudos Ultrassonográficos em Obstetrícia</td>
+        <td class="resp">Reginaldo Lemos Soares Ferreira<small>Enf. Obstétrico · Doutorando UFF</small></td>
+        <td class="local">IGE</td>
+      </tr>
+
+      <tr class="marco"><td colspan="4">Tarde · 13h às 17h · Faculdade de Enfermagem da UERJ</td></tr>
+      <tr>
+        <td class="hora">Sala 716</td>
+        <td class="ativ">Manejo Clínico dos Traumas Perineais associado à Laserterapia</td>
+        <td class="resp">Ana Luiza Zapponi</td>
+        <td class="local">Prof. Liberal</td>
+      </tr>
+      <tr>
+        <td class="hora">Sala 606</td>
+        <td class="ativ">Termoproteção do Recém-nascido</td>
+        <td class="resp">Prof. Dr. José Antônio de Sá Neto</td>
+        <td class="local">UERJ</td>
+      </tr>
+      <tr>
+        <td class="hora">Espaço Raquel Haddock Lobo</td>
+        <td class="ativ">Atualização em procedimentos de reconstrução perineal e segurança farmacológica</td>
+        <td class="resp">Prof.ª Ma. Anna Christina de Almeida Porréca</td>
+        <td class="local">UERJ</td>
+      </tr>
+      <tr>
+        <td class="hora">Sala 23 · Pav. Nalva Pereira Caldas</td>
+        <td class="ativ">Avaliação do RN em sala de parto e aplicação de Escalas para Exame Físico</td>
+        <td class="resp">Prof.ª Ma. Michele de Lima Janotti Quaresma</td>
+        <td class="local">UERJ</td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="nota-secao">Cursos paralelos com inscrição específica — cada participante escolhe um curso por turno. Manhã: 08h às 12h · Tarde: 13h às 17h.</p>
+
+  <div class="pg-rodape">
+    <span>IX ENEON · Diversidade, Equidade e Acesso</span>
+    <img src="assets/eneon/logo-eneon-horizontal.png" alt="IX ENEON">
+    <span>15/07/2026</span>
+  </div>
+</section>
+
+<!-- ============ DIA 16/07 ============ -->
+<section class="page">
+  <div class="dia-header d16">
+    <div class="data"><span class="dia-num">16</span><span class="mes">Julho</span><span class="semana">Quarta</span></div>
+    <div class="titulo"><span class="kicker">Dia 2</span><h2>Abertura &amp; Apresentação de Trabalhos</h2></div>
+  </div>
+
+  <table class="prog">
+    <thead><tr><th>Horário</th><th>Atividade</th><th>Responsável</th><th>Local</th></tr></thead>
+    <tbody>
+      <tr class="marco"><td colspan="4">Manhã · 08h às 12h</td></tr>
+      <tr>
+        <td class="hora">08h00</td>
+        <td class="ativ">Abertura Oficial<small>Solenidade de abertura com a mesa de autoridades (composição abaixo)</small></td>
+        <td class="resp">Mesa de autoridades</td>
+        <td class="local">Capela Ecumênica</td>
+      </tr>
+      <tr>
+        <td class="hora">11h00</td>
+        <td class="ativ">Conferência de Abertura<small>Cuidado perinatal especializado: impacto na qualidade e segurança da atenção materno-infantil</small></td>
+        <td class="resp">Conferencista: Dra. Marilanda Lopes de Lima · Prof. Liberal</td>
+        <td class="local">Capela Ecumênica</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="mesa-panel">
+    <div class="mesa-cabec">Mesa de Autoridades · Abertura Oficial</div>
+    <ul class="mesa-lista">
+      <li>
+        <div class="m-info"><span class="m-nome">Marcele Zveiter</span><span class="m-cargo">Presidente da Abenfo Rio de Janeiro</span></div>
+        <span class="m-inst">ABENFO-RJ</span>
+      </li>
+      <li>
+        <div class="m-info"><span class="m-nome">Solange Gonçalves Belchior</span><span class="m-cargo">Presidente da Aben</span></div>
+        <span class="m-inst">Aben</span>
+      </li>
+      <li>
+        <div class="m-info"><span class="m-nome">Claudia Messias</span><span class="m-cargo">Conselheira do Coren-RJ</span></div>
+        <span class="m-inst">COREN-RJ</span>
+      </li>
+      <li>
+        <div class="m-info"><span class="m-nome">Manoel Neri da Silva</span><span class="m-cargo">Presidente do Cofen</span></div>
+        <span class="m-inst">Cofen</span>
+      </li>
+      <li>
+        <div class="m-info"><span class="m-nome">Renata Alves de Lima Nunes Barbosa</span><span class="m-cargo">Enfª Obstétrica · Superintendência de Atenção Primária — Secretaria Estadual de Saúde</span></div>
+        <span class="m-inst">SES-RJ</span>
+      </li>
+      <li>
+        <div class="m-info"><span class="m-nome">Patrícia Santos Barbastefano</span><span class="m-cargo">Enfermeira · Assessora da Superintendência de Maternidades e Coordenadora da Câmara Técnica de Enfermagem Obstétrica do Município do Rio de Janeiro</span></div>
+        <span class="m-inst">SMS-RJ</span>
+      </li>
+    </ul>
+  </div>
+
+  <table class="prog" style="margin-top:5mm">
+    <thead><tr><th>Horário</th><th>Atividade</th><th>Responsável</th><th>Local</th></tr></thead>
+    <tbody>
+      <tr class="marco"><td colspan="4">Tarde · 13h às 17h · Apresentação de Trabalhos</td></tr>
+      <tr>
+        <td class="hora">13h às 17h</td>
+        <td class="ativ">Apresentação de Trabalhos<small>Sessões orais e pôsteres · distribuição por eixos temáticos a confirmar</small></td>
+        <td class="resp">Coordenação: Profª Drª Débora Chaves e Prof.ª Ma. Anna Christina de Almeida Porréca</td>
+        <td class="local">a definir</td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="nota-secao">Temos 120 trabalhos aprovados. Posso gerar automaticamente a grade de apresentações (título · autores · eixo) a partir da planilha-mestre quando você quiser.</p>
+
+  <div class="pg-rodape">
+    <span>IX ENEON · Diversidade, Equidade e Acesso</span>
+    <img src="assets/eneon/logo-eneon-horizontal.png" alt="IX ENEON">
+    <span>16/07/2026</span>
+  </div>
+</section>
+
+<!-- ============ DIA 17/07 ============ -->
+<section class="page">
+  <div class="dia-header d17">
+    <div class="data"><span class="dia-num">17</span><span class="mes">Julho</span><span class="semana">Quinta</span></div>
+    <div class="titulo"><span class="kicker">Dia 3</span><h2>Painéis</h2></div>
+  </div>
+
+  <table class="prog paineis">
+    <thead><tr><th>Debate</th><th>Tema em debate</th><th>Debatedor(a)</th><th>Instituição</th></tr></thead>
+    <tbody>
+      <tr class="marco"><td colspan="4">Painel 1 — Violações aos direitos das mulheres e dos recém-nascidos · 13h00–14h20 · Capela Ecumênica</td></tr>
+      <tr>
+        <td class="hora">Debatedor 1</td>
+        <td class="ativ">Violência obstétrica: atualidades sobre os caminhos para a tipificação deste crime e a construção do conceito</td>
+        <td class="resp">Exmª Srª Juíza Mariana Moreira Tangari</td>
+        <td class="local">TJRJ</td>
+      </tr>
+      <tr>
+        <td class="hora">Debatedor 2</td>
+        <td class="ativ">Caminhos da implementação de políticas públicas de saúde na garantia do acesso ao cuidado</td>
+        <td class="resp">Angela Mitrano Perazzini de Sá</td>
+        <td class="local">GSM</td>
+      </tr>
+      <tr>
+        <td class="hora">Debatedor 3</td>
+        <td class="ativ">Direitos dos recém-nascidos no Brasil</td>
+        <td class="resp">Enf.ª Dr.ª Adriana Teixeira Reis</td>
+        <td class="local">UERJ</td>
+      </tr>
+
+      <tr class="marco"><td colspan="4">Painel 2 — Segurança no cenário do cuidado obstétrico e neonatal · 14h20–15h40 · Capela Ecumênica</td></tr>
+      <tr>
+        <td class="hora">Debatedor 1</td>
+        <td class="ativ">Parto Domiciliar Planejado</td>
+        <td class="resp">Enf.ª Dr.ª Heloisa Lessa</td>
+        <td class="local">Casa Colo Acolhimento Familiar Ltda.</td>
+      </tr>
+      <tr>
+        <td class="hora">Debatedor 2</td>
+        <td class="ativ">Casa de Parto</td>
+        <td class="resp">Enf.ª Ma. Simone Pereira dos Santos</td>
+        <td class="local">Diretora da Casa de Parto David Capistrano Filho</td>
+      </tr>
+      <tr>
+        <td class="hora">Debatedor 3</td>
+        <td class="ativ">Maternidade hospitalar de natureza pública</td>
+        <td class="resp">Enf.ª Ma. Renata Alves de Lima Nunes Barbosa</td>
+        <td class="local">Superintendência de Atenção Primária — Secretaria Estadual de Saúde</td>
+      </tr>
+      <tr>
+        <td class="hora">Debatedor 4</td>
+        <td class="ativ">Maternidade hospitalar de natureza suplementar/privada – ANS</td>
+        <td class="resp">Enf.ª Dr.ª Jacqueline Alves Torres</td>
+        <td class="local">Agência Nacional de Saúde Suplementar</td>
+      </tr>
+
+      <tr class="marco"><td colspan="4">Painel 3 — Trabalho em equipe e competência para o cuidado · 15h40–17h00 · Capela Ecumênica</td></tr>
+      <tr>
+        <td class="hora">Debatedor 1</td>
+        <td class="ativ">CEEO – Rede Alyne</td>
+        <td class="resp">Prof.ª Claudia Messias</td>
+        <td class="local">UFF</td>
+      </tr>
+      <tr>
+        <td class="hora">Debatedor 2</td>
+        <td class="ativ">Residência em Enfermagem Obstétrica</td>
+        <td class="resp">Prof.ª Dr.ª Midian Oliveira Dias</td>
+        <td class="local">UERJ</td>
+      </tr>
+      <tr>
+        <td class="hora">Debatedor 3</td>
+        <td class="ativ">Residência em Enfermagem Neonatal</td>
+        <td class="resp">Prof.ª Dr.ª Marcele Sampaio de Freitas Guimarães Ribeiro</td>
+        <td class="local">UERJ</td>
+      </tr>
+      <tr>
+        <td class="hora">Debatedor 4</td>
+        <td class="ativ">Residência Multiprofissional em Saúde da Mulher — HESFA/UFRJ</td>
+        <td class="resp">Isabelle Mangueira de Paula Gaspar</td>
+        <td class="local">HESFA/UFRJ</td>
+      </tr>
+
+      <tr class="marco"><td colspan="4">Encerramento · 17h00</td></tr>
+      <tr>
+        <td class="hora">17h00</td>
+        <td class="ativ">Cerimônia de Encerramento</td>
+        <td class="resp">Comissão organizadora</td>
+        <td class="local">Capela Ecumênica</td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="nota-secao">Todos os painéis acontecem na Capela Ecumênica, no campus da UERJ, a partir das 13h — 1h20 de duração cada. Mediação/coordenação de cada painel a confirmar.</p>
+
+  <div class="pg-rodape">
+    <span>IX ENEON · Diversidade, Equidade e Acesso</span>
+    <img src="assets/eneon/logo-eneon-horizontal.png" alt="IX ENEON">
+    <span>17/07/2026</span>
+  </div>
+</section>
+
+<!-- ============ COMISSÕES ============ -->
+<section class="page">
+  <div class="sec-title">
+    <span class="kicker">Realização</span>
+    <h2>Comissões Organizadoras</h2>
+  </div>
+
+  <div class="comissoes">
+    <div class="com-card">
+      <h3>Comissão Executiva</h3>
+      <p><strong>Presidente:</strong> Prof.ª Dr.ª Marcele Zveiter</p>
+      <p><strong>Vice-Presidente:</strong> Prof.ª Dr.ª Sabrina Seibert</p>
+    </div>
+    <div class="com-card">
+      <h3>Comissão Científica</h3>
+      <p><strong>Coordenadora:</strong> Prof.ª Dr.ª Débora Cecília Chaves de Oliveira</p>
+      <p><strong>Vice-coordenadora:</strong> Prof.ª Ma. Anna Christina de Almeida Porréca</p>
+    </div>
+    <div class="com-card">
+      <h3>Comissão de Infraestrutura</h3>
+      <p><strong>Coordenadora:</strong> Prof.ª Dr.ª Midian Oliveira Dias</p>
+    </div>
+    <div class="com-card">
+      <h3>Comissão de Secretaria</h3>
+      <p><strong>Coordenadora:</strong> Prof.ª Ma. Michele de Lima Janotti Quaresma</p>
+    </div>
+    <div class="com-card">
+      <h3>Apoio ao Estudante e Monitoria</h3>
+      <p><strong>Coordenador:</strong> Prof. Dr. Alan Messala de Aguiar Britto</p>
+      <p><strong>Colaboradora:</strong> Acd. Enf. Ana Beatriz Morais</p>
+    </div>
+    <div class="com-card">
+      <h3>Comissão de Divulgação</h3>
+      <p><strong>Coordenadora:</strong> Prof.ª Dr.ª Sabrina Seibert</p>
+    </div>
+  </div>
+
+  <div class="rodape-final">
+    <div class="scribia-doc">
+      <img src="assets/scribia-logo.png" alt="ScribIA">
+      <p class="scribia-tag">Cobertura digital do IX ENEON realizada pelo ScribIA — áudios, Livebooks e materiais digitais.</p>
+      <a class="scribia-url" href="https://www.scribia.com.br">www.scribia.com.br</a>
+    </div>
+    <div class="rodape-linha">
+      <span>Site e materiais desenvolvidos por <b>S2 Soluções</b></span>
+      <span>IX ENEON · 15 a 17 de julho de 2026</span>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>
