@@ -466,13 +466,15 @@
         alvo.innerHTML = '';
 
         var rIns = await sb.from('inscricoes_evento')
-          .select('evento_id, eventos(id, nome)').eq('profile_id', perfil.id);
+          .select('evento_id, eventos(id, nome, tipo)').eq('profile_id', perfil.id);
         if (rIns.error || !rIns.data || rIns.data.length === 0) return;
 
         var html = '';
         rIns.data.forEach(function (item) {
           var ev = item.eventos;
           if (!ev) return;
+          // Só eventos do tipo "congresso" têm submissão/resultado de trabalhos
+          if (ev.tipo !== 'congresso') return;
           html += '<div class="convite-trabalhos" data-evento-id="' + ev.id + '">';
           html += '<h3>📋 Resultado dos trabalhos — ' + escapar(ev.nome) + '</h3>';
           html += '<p>As submissões de trabalhos científicos foram encerradas. ' +
