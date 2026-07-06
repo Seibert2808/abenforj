@@ -25,14 +25,14 @@
 
   // ============================================================
   // Pop-up — aparece só na primeira visita (por versão de conteúdo).
-  // Conteúdo atual: cartaz da 3ª Reunião do Fórum de EO (30/06/2026).
+  // Conteúdo atual: resultado dos trabalhos do IX ENEON (link p/ a lista).
   // Para forçar a reaparição após trocar o conteúdo, incremente o
-  // sufixo da chave (v7 -> v8).
+  // sufixo da chave (v8 -> v9).
   // ============================================================
   var modal = document.getElementById('modal-boas-vindas');
-  var STORAGE_KEY = 'abenfo_modal_ix_v8';
-  // Cartaz do Fórum some sozinho a partir de 01/07/2026 (fórum é dia 30/06).
-  var EXPIRA_MODAL = new Date('2026-07-01T00:00:00-03:00');
+  var STORAGE_KEY = 'abenfo_modal_ix_v9';
+  // Aviso do resultado some sozinho após o IX ENEON (evento em 16/07/2026).
+  var EXPIRA_MODAL = new Date('2026-07-17T00:00:00-03:00');
 
   if (modal) {
     var jaViu = false;
