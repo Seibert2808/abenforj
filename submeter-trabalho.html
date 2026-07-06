@@ -75,6 +75,7 @@
     .badge-status.submetido    { background: #ecf2ee; color: #3f5f4d; }
     .badge-status.em_avaliacao { background: #fff8e1; color: #856404; }
     .badge-status.aceito       { background: #e6f4ea; color: #1f5d3a; }
+    .badge-status.aceito_com_ressalva { background: #fff4e5; color: #8a5a00; }
     .badge-status.recusado     { background: #fde8e8; color: #742020; }
     .badge-bloq { background: var(--areia); color: var(--texto-suave); }
     .trabalho-acoes { display: flex; gap: 0.4rem; flex-wrap: wrap; }
@@ -393,6 +394,7 @@
       var inscritoAtual = null;
       var trabalhos = [];
       var pdfSelecionado = null;
+      var corrigindoId = null;
 
       var ROTULOS_AREA = {
         neonatal: 'Enfermagem Neonatal',
@@ -413,6 +415,14 @@
         nota_previa: 'Nota prévia',
         revisao_narrativa: 'Revisão narrativa / relato de caso',
         projeto_pesquisa: 'Projeto de pesquisa'
+      };
+
+      var ROTULOS_STATUS = {
+        submetido: 'Submetido',
+        em_avaliacao: 'Em avaliação',
+        aceito: 'Aprovado',
+        aceito_com_ressalva: 'Aprovado com ressalva',
+        recusado: 'Não aprovado'
       };
 
       var fb = document.getElementById('feedback');
@@ -541,24 +551,34 @@
           meta.push('<strong>Eixo:</strong> ' + escapar(ROTULOS_EIXO[t.eixo_tematico] || t.eixo_tematico));
           meta.push('<strong>Tipo:</strong> ' + escapar(ROTULOS_TIPO[t.tipo_trabalho] || t.tipo_trabalho));
           var podeEditar = !t.bloqueado && new Date() <= PRAZO_FIM;
+          var comRessalva = t.status === 'aceito_com_ressalva';
           var acoes = '';
           acoes += '<button class="btn btn-ghost" data-acao="editar" data-id="' + t.id + '"' + (podeEditar ? '' : ' disabled') + '>' + (podeEditar ? 'Editar' : 'Visualizar') + '</button>';
           acoes += '<button class="btn btn-ghost" data-acao="baixar-pdf" data-path="' + escapar(t.pdf_path) + '" data-nome="' + escapar(inscritoAtual.nome + ' - ' + t.titulo) + '">Baixar PDF</button>';
           if (podeEditar) {
             acoes += '<button class="btn btn-ghost btn-excluir" data-acao="excluir" data-id="' + t.id + '">Excluir</button>';
           }
+          if (comRessalva) {
+            acoes += '<button class="btn btn-solid" data-acao="corrigir" data-id="' + t.id + '">' +
+              (t.correcao_enviada_em ? 'Reenviar versão corrigida' : 'Enviar versão corrigida') + '</button>';
+          }
           var obs = t.observacao_avaliacao
-            ? '<div class="observacao"><strong>Comentário da comissão:</strong><br>' + escapar(t.observacao_avaliacao) + '</div>'
+            ? '<div class="observacao"><strong>' + (comRessalva ? 'Ressalvas da avaliação' : 'Comentário da comissão') + ':</strong><br>' + escapar(t.observacao_avaliacao) + '</div>'
             : '';
+          var correcaoInfo = t.correcao_enviada_em
+            ? '<div class="observacao" style="background:#e6f4ea;color:#1f5d3a;"><strong>Versão corrigida recebida</strong> em ' + fmtDataBR(t.correcao_enviada_em) + '. Você pode reenviar se precisar ajustar novamente.</div>'
+            : '';
+          var emAvaliacao = t.bloqueado && (t.status === 'submetido' || t.status === 'em_avaliacao');
           return '<div class="trabalho-card" data-id="' + t.id + '">' +
             '<h3>' + escapar(t.titulo) + '</h3>' +
             '<div class="status-row">' +
-              '<span class="badge-status ' + t.status + '">' + t.status.replace('_', ' ') + '</span>' +
-              (t.bloqueado ? '<span class="badge-status badge-bloq">em avaliação · não editável</span>' : '') +
+              '<span class="badge-status ' + t.status + '">' + (ROTULOS_STATUS[t.status] || t.status) + '</span>' +
+              (emAvaliacao ? '<span class="badge-status badge-bloq">em avaliação · não editável</span>' : '') +
             '</div>' +
             '<div class="meta">' + meta.join(' · ') + '</div>' +
             '<div class="trabalho-acoes">' + acoes + '</div>' +
             obs +
+            correcaoInfo +
           '</div>';
         }).join('');
       }
@@ -848,6 +868,53 @@
         URL.revokeObjectURL(url);
       }
 
+      // Reenvio do PDF corrigido (aprovado com ressalva). Substitui o
+      // arquivo no MESMO caminho e carimba a correção via RPC do externo —
+      // o texto do trabalho permanece bloqueado.
+      var inputCorrecao = document.createElement('input');
+      inputCorrecao.type = 'file';
+      inputCorrecao.accept = 'application/pdf';
+      inputCorrecao.hidden = true;
+      document.body.appendChild(inputCorrecao);
+
+      function iniciarCorrecao(id) {
+        corrigindoId = id;
+        inputCorrecao.value = '';
+        inputCorrecao.click();
+      }
+
+      async function enviarCorrecao(file) {
+        var trab = trabalhos.find(function (t) { return t.id === corrigindoId; });
+        if (!trab) { corrigindoId = null; return; }
+        if (file.type !== 'application/pdf') {
+          mostrarFeedback('Selecione um arquivo PDF.', 'erro'); corrigindoId = null; return;
+        }
+        if (file.size > PDF_MAX_BYTES) {
+          mostrarFeedback('PDF maior que 10MB. Comprima e tente novamente.', 'erro'); corrigindoId = null; return;
+        }
+        try {
+          mostrarFeedback('Enviando versão corrigida…', 'aviso');
+          await uploadPdf(trab.pdf_path, file); // upsert: substitui o PDF anterior
+          var rr = await sb.rpc('externo_registrar_correcao', {
+            p_email: emailAtual, p_doity_id: doityAtual, p_trabalho_id: corrigindoId
+          });
+          if (rr.error) throw new Error(rr.error.message);
+          if (rr.data && !rr.data.ok) throw new Error(rr.data.erro);
+          mostrarFeedback('Versão corrigida enviada com sucesso. Obrigada!', 'ok');
+          await recarregarTrabalhos();
+        } catch (err) {
+          mostrarFeedback('Não foi possível enviar a correção: ' + (err.message || err), 'erro');
+        } finally {
+          corrigindoId = null;
+        }
+      }
+
+      inputCorrecao.addEventListener('change', function (e) {
+        var f = e.target.files && e.target.files[0];
+        if (!f || !corrigindoId) return;
+        enviarCorrecao(f);
+      });
+
       // ============================================================
       // Wiring
       // ============================================================
@@ -914,6 +981,8 @@
           excluirTrabalho(id);
         } else if (acao === 'baixar-pdf') {
           baixarPdf(btn.getAttribute('data-path'), btn.getAttribute('data-nome'));
+        } else if (acao === 'corrigir') {
+          iniciarCorrecao(id);
         }
       });
     })();
