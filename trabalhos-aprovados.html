@@ -10,6 +10,37 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" type="image/png" href="assets/logo-abenforj.png">
+  <style>
+    .aviso-relatores {
+      background: var(--verde-pastel);
+      border-left: 4px solid var(--verde);
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      margin: 0 0 1.75rem;
+    }
+    .aviso-relatores p { margin: 0 0 0.5rem; color: var(--texto); font-size: 0.95rem; line-height: 1.55; }
+    .aviso-relatores p:last-child { margin-bottom: 0; }
+    .lista-aprovados .contagem {
+      font-size: 0.9rem; color: var(--texto-suave); margin: 0 0 0.75rem;
+    }
+    .lista-aprovados ol {
+      margin: 0; padding: 0; list-style: none;
+      counter-reset: item;
+    }
+    .lista-aprovados ol li {
+      counter-increment: item;
+      display: grid; grid-template-columns: 2.25rem 1fr; gap: 0.5rem;
+      padding: 0.7rem 0; border-top: 1px solid var(--borda);
+      font-size: 0.95rem; line-height: 1.4; color: var(--texto);
+    }
+    .lista-aprovados ol li:first-child { border-top: 0; }
+    .lista-aprovados ol li::before {
+      content: counter(item); color: var(--texto-suave);
+      font-size: 0.8rem; font-variant-numeric: tabular-nums; padding-top: 0.15rem;
+    }
+    .lista-aprovados .carregando,
+    .lista-aprovados .vazia { color: var(--texto-suave); font-size: 0.95rem; }
+  </style>
 </head>
 <body>
   <a href="#conteudo" class="skip-link">Pular para o conteúdo</a>
@@ -51,10 +82,14 @@
     <div class="eneon-faixa-cores" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
 
     <section class="section">
-      <div class="container" style="max-width:720px;text-align:center;">
-        <div class="em-breve">
-          <strong>EM BREVE</strong>
-          <p>A lista dos trabalhos aprovados será publicada aqui após a avaliação da Comissão Científica. Para dúvidas sobre submissão, escreva para <a href="mailto:abenforio@gmail.com">abenforio@gmail.com</a>.</p>
+      <div class="container" style="max-width:760px;">
+        <div class="aviso-relatores">
+          <p>Esta lista traz os trabalhos <strong>aprovados</strong> para apresentação no IX ENEON 2026.</p>
+          <p>Os <strong>pareceres e ressalvas</strong> da avaliação são individuais e confidenciais: cada relator(a) deve consultá-los na <strong>Área da Associada</strong>, em <a href="/area/trabalhos">Meus Eventos → Trabalhos</a>. Quem foi aprovado com ressalva encontra ali as orientações e pode enviar a versão corrigida.</p>
+        </div>
+
+        <div id="lista-aprovados" class="lista-aprovados">
+          <p class="carregando">Carregando lista…</p>
         </div>
 
         <p style="margin-top:2rem;display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap;">
@@ -105,5 +140,39 @@
 
   <script>document.getElementById('ano').textContent = new Date().getFullYear();</script>
   <script src="js/main.js"></script>
+  <script src="js/config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-client.js"></script>
+  <script>
+    (async function () {
+      var alvo = document.getElementById('lista-aprovados');
+      function escapar(s) {
+        return String(s || '').replace(/[&<>"']/g, function (c) {
+          return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+        });
+      }
+      if (!window.SUPABASE_PRONTO || !window.abenfo) {
+        alvo.innerHTML = '<p class="vazia">Não foi possível carregar a lista agora. Tente novamente mais tarde.</p>';
+        return;
+      }
+      try {
+        var r = await window.abenfo.sb.rpc('trabalhos_aprovados_publico');
+        if (r.error) throw r.error;
+        var lista = r.data || [];
+        if (!lista.length) {
+          alvo.innerHTML =
+            '<div class="em-breve"><strong>EM BREVE</strong>' +
+            '<p>A lista dos trabalhos aprovados será publicada aqui assim que a Comissão Científica concluir a avaliação.</p></div>';
+          return;
+        }
+        var itens = lista.map(function (t) { return '<li>' + escapar(t.titulo) + '</li>'; }).join('');
+        alvo.innerHTML =
+          '<p class="contagem">' + lista.length + ' trabalho' + (lista.length > 1 ? 's' : '') + ' aprovado' + (lista.length > 1 ? 's' : '') + '</p>' +
+          '<ol>' + itens + '</ol>';
+      } catch (e) {
+        alvo.innerHTML = '<p class="vazia">Não foi possível carregar a lista agora. Tente novamente mais tarde.</p>';
+      }
+    })();
+  </script>
 </body>
 </html>
