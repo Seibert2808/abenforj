@@ -81,6 +81,22 @@
   <script src="js/supabase-client.js"></script>
   <script src="js/main.js"></script>
   <script>
+    // Guard: se a pessoa já está logada e com cadastro aprovado (status 'ativo'),
+    // esta tela não se aplica — manda direto para a área da sócia. Evita que sócias
+    // já aprovadas fiquem presas aqui ao chegar por link antigo (e-mail de
+    // confirmação, favorito ou histórico), já que esta página não valida acesso.
+    (async function () {
+      if (!window.SUPABASE_PRONTO || !window.abenfo || !window.abenfo.auth) return;
+      try {
+        var perfil = await window.abenfo.auth.meuPerfil();
+        if (perfil && perfil.status === 'ativo') {
+          window.location.replace('/area');
+        }
+      } catch (e) {
+        // Silencioso: em caso de erro, mantém a tela de análise.
+      }
+    })();
+
     document.getElementById('btn-sair').addEventListener('click', async function () {
       if (window.SUPABASE_PRONTO && window.abenfo) {
         await window.abenfo.auth.sair();
