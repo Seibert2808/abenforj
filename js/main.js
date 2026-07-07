@@ -25,12 +25,12 @@
 
   // ============================================================
   // Pop-up — aparece só na primeira visita (por versão de conteúdo).
-  // Conteúdo atual: resultado dos trabalhos do IX ENEON (link p/ a lista).
+  // Conteúdo atual: resultado FINAL dos trabalhos do IX ENEON (link p/ a lista).
   // Para forçar a reaparição após trocar o conteúdo, incremente o
-  // sufixo da chave (v8 -> v9).
+  // sufixo da chave (v9 -> v10).
   // ============================================================
   var modal = document.getElementById('modal-boas-vindas');
-  var STORAGE_KEY = 'abenfo_modal_ix_v9';
+  var STORAGE_KEY = 'abenfo_modal_ix_v10';
   // Aviso do resultado some sozinho após o IX ENEON (evento em 16/07/2026).
   var EXPIRA_MODAL = new Date('2026-07-17T00:00:00-03:00');
 
