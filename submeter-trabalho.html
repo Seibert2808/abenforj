@@ -562,8 +562,10 @@
             acoes += '<button class="btn btn-solid" data-acao="corrigir" data-id="' + t.id + '">' +
               (t.correcao_enviada_em ? 'Reenviar versão corrigida' : 'Enviar versão corrigida') + '</button>';
           }
+          var rotuloObs = comRessalva ? 'Ressalvas da avaliação'
+            : (t.status === 'recusado' ? 'Motivo da não aprovação' : 'Comentário da comissão');
           var obs = t.observacao_avaliacao
-            ? '<div class="observacao"><strong>' + (comRessalva ? 'Ressalvas da avaliação' : 'Comentário da comissão') + ':</strong><br>' + escapar(t.observacao_avaliacao) + '</div>'
+            ? '<div class="observacao"><strong>' + rotuloObs + ':</strong><br>' + escapar(t.observacao_avaliacao) + '</div>'
             : '';
           var correcaoInfo = t.correcao_enviada_em
             ? '<div class="observacao" style="background:#e6f4ea;color:#1f5d3a;"><strong>Versão corrigida recebida</strong> em ' + fmtDataBR(t.correcao_enviada_em) + '. Você pode reenviar se precisar ajustar novamente.</div>'
