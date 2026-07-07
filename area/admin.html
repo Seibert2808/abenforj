@@ -1255,6 +1255,7 @@
       };
 
       var aviso = document.getElementById('admin-aviso');
+      aviso.addEventListener('click', function () { aviso.hidden = true; });
 
       // Estado dos perfis ativos para alimentar as estatísticas e o modal
       var ativosAtuais = [];
@@ -1704,11 +1705,26 @@
       function mostrarAviso(texto, tipo) {
         aviso.hidden = false;
         aviso.className = 'aviso';
+        // Toast flutuante fixo: sempre visível, não importa onde a página está rolada.
+        aviso.style.position = 'fixed';
+        aviso.style.top = '1rem';
+        aviso.style.left = '50%';
+        aviso.style.transform = 'translateX(-50%)';
+        aviso.style.zIndex = '9999';
+        aviso.style.maxWidth = 'min(92vw, 30rem)';
+        aviso.style.margin = '0';
+        aviso.style.padding = '0.85rem 1.1rem';
+        aviso.style.borderRadius = '8px';
+        aviso.style.borderLeft = '4px solid';
+        aviso.style.boxShadow = '0 4px 16px rgba(0,0,0,0.18)';
+        aviso.style.cursor = 'pointer';
         aviso.style.background = tipo === 'erro' ? '#fde8e8' : (tipo === 'sucesso' ? '#e6f4ea' : 'var(--aviso-bg)');
         aviso.style.borderLeftColor = tipo === 'erro' ? '#c53030' : (tipo === 'sucesso' ? '#2e7d4f' : 'var(--aviso-borda)');
         aviso.style.color = tipo === 'erro' ? '#742020' : (tipo === 'sucesso' ? '#1f5d3a' : '#5a4a10');
         aviso.innerHTML = texto;
-        setTimeout(function () { aviso.hidden = true; }, 4000);
+        // Sucesso/aviso somem sozinhos; erro fica até a pessoa clicar (não passa batido).
+        clearTimeout(aviso._t);
+        if (tipo !== 'erro') aviso._t = setTimeout(function () { aviso.hidden = true; }, 5000);
       }
 
       function escapar(s) {

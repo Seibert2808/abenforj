@@ -150,10 +150,18 @@
     .acoes-form { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--borda); display: flex; gap: 0.5rem; flex-wrap: wrap; }
 
     .feedback {
-      margin: 1rem 0;
-      padding: 0.85rem 1rem;
-      border-radius: 6px;
+      position: fixed;
+      top: 1rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      max-width: min(92vw, 30rem);
+      margin: 0;
+      padding: 0.85rem 1.1rem;
+      border-radius: 8px;
       font-size: 0.95rem;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+      cursor: pointer;
     }
     .feedback.ok    { background: #e6f4ea; color: #1f5d3a; border-left: 4px solid #2e7d4f; }
     .feedback.erro  { background: #fde8e8; color: #742020; border-left: 4px solid #c53030; }
@@ -426,11 +434,13 @@
       };
 
       var fb = document.getElementById('feedback');
+      fb.addEventListener('click', function () { fb.hidden = true; });
       function mostrarFeedback(texto, tipo) {
         fb.hidden = false;
         fb.className = 'feedback ' + (tipo || 'aviso');
         fb.textContent = texto;
-        if (tipo === 'ok') setTimeout(function () { fb.hidden = true; }, 4000);
+        clearTimeout(fb._t);
+        if (tipo === 'ok') fb._t = setTimeout(function () { fb.hidden = true; }, 5000);
       }
       function escapar(s) {
         if (!s) return '';
