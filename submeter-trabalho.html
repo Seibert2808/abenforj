@@ -395,6 +395,8 @@
       var RESUMO_MIN_LEN   = 1500;
       var RESUMO_MAX_LEN   = 3000;
       var PDF_MAX_BYTES    = 10 * 1024 * 1024;
+      var APRES_MAX_BYTES  = 30 * 1024 * 1024;
+      var PRAZO_APRESENTACAO = new Date('2026-07-14T23:59:59-03:00');
 
       var sb = window.abenfo.sb;
       var emailAtual = '';
@@ -403,6 +405,7 @@
       var trabalhos = [];
       var pdfSelecionado = null;
       var corrigindoId = null;
+      var apresentandoId = null;
 
       var ROTULOS_AREA = {
         neonatal: 'Enfermagem Neonatal',
@@ -572,6 +575,12 @@
             acoes += '<button class="btn btn-solid" data-acao="corrigir" data-id="' + t.id + '">' +
               (t.correcao_enviada_em ? 'Reenviar versão corrigida' : 'Enviar versão corrigida') + '</button>';
           }
+          var aprovado = t.status === 'aceito' || t.status === 'aceito_com_ressalva';
+          var prazoApresAberto = new Date() <= PRAZO_APRESENTACAO;
+          if (aprovado && prazoApresAberto) {
+            acoes += '<button class="btn ' + (t.apresentacao_enviada_em ? 'btn-ghost' : 'btn-solid') + '" data-acao="apresentacao" data-id="' + t.id + '">' +
+              (t.apresentacao_enviada_em ? 'Reenviar apresentação' : 'Enviar apresentação (PDF)') + '</button>';
+          }
           var rotuloObs = comRessalva ? 'Ressalvas da avaliação'
             : (t.status === 'recusado' ? 'Motivo da não aprovação' : 'Comentário da comissão');
           var obs = t.observacao_avaliacao
@@ -580,6 +589,14 @@
           var correcaoInfo = t.correcao_enviada_em
             ? '<div class="observacao" style="background:#e6f4ea;color:#1f5d3a;"><strong>Versão corrigida recebida</strong> em ' + fmtDataBR(t.correcao_enviada_em) + '. Você pode reenviar se precisar ajustar novamente.</div>'
             : '';
+          var apresInfo = '';
+          if (aprovado && t.apresentacao_enviada_em) {
+            apresInfo = '<div class="observacao" style="background:#e6f4ea;color:#1f5d3a;"><strong>Apresentação recebida</strong> em ' + fmtDataBR(t.apresentacao_enviada_em) + '.' + (prazoApresAberto ? ' Você pode reenviar até 14/07 às 23h59.' : '') + '</div>';
+          } else if (aprovado && prazoApresAberto) {
+            apresInfo = '<div class="observacao" style="background:#fdf3ec;color:#7a5c00;">Envie a sua <strong>apresentação em PDF</strong> (máx. 30 MB) até <strong>14/07 às 23h59</strong>.</div>';
+          } else if (aprovado) {
+            apresInfo = '<div class="observacao" style="background:#fde8e8;color:#742020;">Prazo de envio da apresentação encerrado (14/07 às 23h59).</div>';
+          }
           var emAvaliacao = t.bloqueado && (t.status === 'submetido' || t.status === 'em_avaliacao');
           return '<div class="trabalho-card" data-id="' + t.id + '">' +
             '<h3>' + escapar(t.titulo) + '</h3>' +
@@ -591,6 +608,7 @@
             '<div class="trabalho-acoes">' + acoes + '</div>' +
             obs +
             correcaoInfo +
+            apresInfo +
           '</div>';
         }).join('');
       }
@@ -927,6 +945,54 @@
         enviarCorrecao(f);
       });
 
+      // Envio da APRESENTAÇÃO (slides em PDF) — bucket 'apresentacoes', caminho '<id>.pdf'
+      var inputApresentacao = document.createElement('input');
+      inputApresentacao.type = 'file';
+      inputApresentacao.accept = 'application/pdf';
+      inputApresentacao.hidden = true;
+      document.body.appendChild(inputApresentacao);
+
+      function iniciarApresentacao(id) {
+        apresentandoId = id;
+        inputApresentacao.value = '';
+        inputApresentacao.click();
+      }
+
+      async function enviarApresentacao(file) {
+        var trab = trabalhos.find(function (t) { return t.id === apresentandoId; });
+        if (!trab) { apresentandoId = null; return; }
+        if (file.type !== 'application/pdf') {
+          mostrarFeedback('A apresentação deve ser um arquivo PDF.', 'erro'); apresentandoId = null; return;
+        }
+        if (file.size > APRES_MAX_BYTES) {
+          mostrarFeedback('PDF maior que 30 MB. Comprima e tente novamente.', 'erro'); apresentandoId = null; return;
+        }
+        try {
+          mostrarFeedback('Enviando apresentação…', 'aviso');
+          var up = await sb.storage.from('apresentacoes').upload(apresentandoId + '.pdf', file, {
+            contentType: 'application/pdf', upsert: true
+          });
+          if (up.error) throw new Error('Erro no upload: ' + up.error.message);
+          var rr = await sb.rpc('externo_registrar_apresentacao', {
+            p_email: emailAtual, p_doity_id: doityAtual, p_trabalho_id: apresentandoId
+          });
+          if (rr.error) throw new Error(rr.error.message);
+          if (rr.data && !rr.data.ok) throw new Error(rr.data.erro);
+          mostrarFeedback('Apresentação enviada com sucesso. Obrigada!', 'ok');
+          await recarregarTrabalhos();
+        } catch (err) {
+          mostrarFeedback('Não foi possível enviar a apresentação: ' + (err.message || err), 'erro');
+        } finally {
+          apresentandoId = null;
+        }
+      }
+
+      inputApresentacao.addEventListener('change', function (e) {
+        var f = e.target.files && e.target.files[0];
+        if (!f || !apresentandoId) return;
+        enviarApresentacao(f);
+      });
+
       // ============================================================
       // Wiring
       // ============================================================
@@ -995,6 +1061,8 @@
           baixarPdf(btn.getAttribute('data-path'), btn.getAttribute('data-nome'));
         } else if (acao === 'corrigir') {
           iniciarCorrecao(id);
+        } else if (acao === 'apresentacao') {
+          iniciarApresentacao(id);
         }
       });
     })();

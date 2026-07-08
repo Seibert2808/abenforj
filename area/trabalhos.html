@@ -185,6 +185,7 @@
 
         <!-- Reenvio de PDF corrigido (trabalhos aprovados com ressalva) -->
         <input type="file" id="pdf-correcao" accept="application/pdf" hidden>
+        <input type="file" id="pdf-apresentacao" accept="application/pdf" hidden>
 
         <div id="estado-prazo"></div>
 
@@ -327,6 +328,8 @@
       var RESUMO_MIN_LEN   = 1500;
       var RESUMO_MAX_LEN   = 3000;
       var PDF_MAX_BYTES    = 10 * 1024 * 1024;
+      var APRES_MAX_BYTES  = 30 * 1024 * 1024;
+      var PRAZO_APRESENTACAO = new Date('2026-07-14T23:59:59-03:00');
 
       // ============================================================
       // Estado
@@ -337,6 +340,7 @@
       var trabalhos = [];
       var pdfSelecionado = null;
       var corrigindoId = null;
+      var apresentandoId = null;
 
       var fb = document.getElementById('feedback');
       fb.addEventListener('click', function () { fb.hidden = true; });
@@ -499,6 +503,12 @@
             acoes += '<button class="btn btn-solid" data-acao="corrigir" data-id="' + t.id + '">' +
               (t.correcao_enviada_em ? 'Reenviar versão corrigida' : 'Enviar versão corrigida') + '</button>';
           }
+          var aprovado = t.status === 'aceito' || t.status === 'aceito_com_ressalva';
+          var prazoApresAberto = new Date() <= PRAZO_APRESENTACAO;
+          if (aprovado && prazoApresAberto) {
+            acoes += '<button class="btn ' + (t.apresentacao_enviada_em ? 'btn-ghost' : 'btn-solid') + '" data-acao="apresentacao" data-id="' + t.id + '">' +
+              (t.apresentacao_enviada_em ? 'Reenviar apresentação' : 'Enviar apresentação (PDF)') + '</button>';
+          }
           var rotuloObs = comRessalva ? 'Ressalvas da avaliação'
             : (t.status === 'recusado' ? 'Motivo da não aprovação' : 'Comentário da comissão');
           var obs = t.observacao_avaliacao
@@ -507,6 +517,14 @@
           var correcaoInfo = t.correcao_enviada_em
             ? '<div class="observacao" style="background:#e6f4ea;color:#1f5d3a;"><strong>Versão corrigida recebida</strong> em ' + fmtDataBR(t.correcao_enviada_em) + '. Você pode reenviar se precisar ajustar novamente.</div>'
             : '';
+          var apresInfo = '';
+          if (aprovado && t.apresentacao_enviada_em) {
+            apresInfo = '<div class="observacao" style="background:#e6f4ea;color:#1f5d3a;"><strong>Apresentação recebida</strong> em ' + fmtDataBR(t.apresentacao_enviada_em) + '.' + (prazoApresAberto ? ' Você pode reenviar até 14/07 às 23h59.' : '') + '</div>';
+          } else if (aprovado && prazoApresAberto) {
+            apresInfo = '<div class="observacao" style="background:#fdf3ec;color:#7a5c00;">Envie a sua <strong>apresentação em PDF</strong> (máx. 30 MB) até <strong>14/07 às 23h59</strong>.</div>';
+          } else if (aprovado) {
+            apresInfo = '<div class="observacao" style="background:#fde8e8;color:#742020;">Prazo de envio da apresentação encerrado (14/07 às 23h59).</div>';
+          }
           // Só mostra "em avaliação · não editável" enquanto não há resultado.
           var emAvaliacao = t.bloqueado && (t.status === 'submetido' || t.status === 'em_avaliacao');
           return '<div class="trabalho-card" data-id="' + t.id + '">' +
@@ -519,6 +537,7 @@
             '<div class="trabalho-acoes">' + acoes + '</div>' +
             obs +
             correcaoInfo +
+            apresInfo +
           '</div>';
         }).join('');
       }
@@ -865,6 +884,46 @@
         }
       }
 
+      // Envio da APRESENTAÇÃO (slides em PDF) dos trabalhos aprovados.
+      // Bucket separado 'apresentacoes'; caminho '<id-do-trabalho>.pdf'.
+      async function uploadApresentacao(trabId, file) {
+        var r = await window.abenfo.sb.storage.from('apresentacoes').upload(trabId + '.pdf', file, {
+          contentType: 'application/pdf', upsert: true
+        });
+        if (r.error) throw new Error('Erro no upload: ' + r.error.message);
+      }
+
+      function iniciarApresentacao(id) {
+        apresentandoId = id;
+        var inp = document.getElementById('pdf-apresentacao');
+        inp.value = '';
+        inp.click();
+      }
+
+      async function enviarApresentacao(file) {
+        var trab = trabalhos.find(function (t) { return t.id === apresentandoId; });
+        if (!trab) { apresentandoId = null; return; }
+        if (file.type !== 'application/pdf') {
+          mostrarFeedback('A apresentação deve ser um arquivo PDF.', 'erro'); apresentandoId = null; return;
+        }
+        if (file.size > APRES_MAX_BYTES) {
+          mostrarFeedback('PDF maior que 30 MB. Comprima e tente novamente.', 'erro'); apresentandoId = null; return;
+        }
+        try {
+          mostrarFeedback('Enviando apresentação…', 'aviso');
+          await uploadApresentacao(apresentandoId, file);
+          var rr = await window.abenfo.sb.rpc('registrar_apresentacao_trabalho', { p_trabalho_id: apresentandoId });
+          if (rr.error) throw new Error(rr.error.message);
+          mostrarFeedback('Apresentação enviada com sucesso. Obrigada!', 'ok');
+          await carregarTrabalhos();
+          renderListaTrabalhos();
+        } catch (err) {
+          mostrarFeedback('Não foi possível enviar a apresentação: ' + (err.message || err), 'erro');
+        } finally {
+          apresentandoId = null;
+        }
+      }
+
       // ============================================================
       // Wiring
       // ============================================================
@@ -943,6 +1002,13 @@
         enviarCorrecao(f);
       });
 
+      // Input oculto do envio da apresentação
+      document.getElementById('pdf-apresentacao').addEventListener('change', function (e) {
+        var f = e.target.files && e.target.files[0];
+        if (!f || !apresentandoId) return;
+        enviarApresentacao(f);
+      });
+
       document.getElementById('lista-trabalhos').addEventListener('click', function (e) {
         var btn = e.target.closest('button[data-acao]');
         if (!btn) return;
@@ -957,6 +1023,8 @@
           baixarPdf(btn.getAttribute('data-path'), btn.getAttribute('data-nome'));
         } else if (acao === 'corrigir') {
           iniciarCorrecao(id);
+        } else if (acao === 'apresentacao') {
+          iniciarApresentacao(id);
         }
       });
     })();
