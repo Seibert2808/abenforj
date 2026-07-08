@@ -40,6 +40,44 @@
     }
     .lista-aprovados .carregando,
     .lista-aprovados .vazia { color: var(--texto-suave); font-size: 0.95rem; }
+
+    .regras-apresentacao { margin: 0 0 2.25rem; }
+    .regras-apresentacao h2 { color: var(--eneon-grafite); font-size: 1.45rem; margin: 0 0 0.9rem; }
+    .regras-lista { list-style: none; padding: 0; margin: 0 0 1.5rem; }
+    .regras-lista li {
+      position: relative; padding: 0.65rem 0 0.65rem 1.55rem;
+      border-top: 1px solid var(--borda);
+      color: var(--texto); font-size: 0.98rem; line-height: 1.5;
+    }
+    .regras-lista li:first-child { border-top: 0; }
+    .regras-lista li::before {
+      content: ""; position: absolute; left: 0; top: 0.98rem;
+      width: 0.7rem; height: 0.7rem; border-radius: 50%;
+    }
+    .regras-lista li:nth-child(1)::before { background: var(--eneon-sage); }
+    .regras-lista li:nth-child(2)::before { background: var(--eneon-azul); }
+    .regras-lista li:nth-child(3)::before { background: var(--eneon-lavanda); }
+    .regras-lista li:nth-child(4)::before { background: var(--eneon-pessego); }
+    .regras-lista li:nth-child(5)::before { background: var(--eneon-sage); }
+
+    .modelo-download {
+      background: var(--branco); border: 1px solid var(--borda); border-radius: 12px;
+      padding: 1.1rem 1.25rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+    }
+    .modelo-download .info { flex: 1; min-width: 12rem; }
+    .modelo-download .info strong { display: block; color: var(--eneon-grafite); font-size: 1rem; }
+    .modelo-download .info span { color: var(--texto-suave); font-size: 0.85rem; }
+    .baixar-modelo {
+      display: inline-flex; align-items: center; gap: 0.55rem;
+      background: var(--eneon-grafite); color: #fff; text-decoration: none;
+      padding: 0.8rem 1.3rem; border-radius: 10px; font-weight: 600; font-size: 0.95rem;
+      transition: opacity var(--transicao);
+    }
+    .baixar-modelo:hover { opacity: 0.9; }
+    .baixar-modelo .ext {
+      font-size: 0.7rem; background: rgba(255,255,255,0.22);
+      padding: 0.15rem 0.45rem; border-radius: 4px; letter-spacing: 0.05em;
+    }
   </style>
 </head>
 <body>
@@ -86,6 +124,28 @@
         <div class="aviso-relatores">
           <p>A avaliação foi <strong>concluída</strong>. Esta é a <strong>lista final</strong> dos trabalhos aprovados para apresentação no IX ENEON 2026.</p>
           <p>Os <strong>pareceres e ressalvas</strong> da avaliação são individuais e confidenciais: cada relator(a) deve consultá-los na <strong>Área da Associada</strong>, em <a href="/area/trabalhos">Meus Eventos → Trabalhos</a>. Quem foi aprovado com ressalva encontra ali as orientações e pode enviar a versão corrigida.</p>
+        </div>
+
+        <div class="regras-apresentacao">
+          <h2>Como será a apresentação</h2>
+          <ul class="regras-lista">
+            <li>Apresentação <strong>oral e presencial</strong>, durante o IX ENEON 2026, na UERJ.</li>
+            <li>O tempo é <strong>rigorosamente de até 10 minutos</strong> para cada trabalho.</li>
+            <li>Sugestão de organização do tempo: <strong>cerca de 2 minutos por slide</strong>.</li>
+            <li>Utilize o <strong>Modelo Base de Apresentação</strong> abaixo — ele já vem no formato do evento e com o número de slides adequado ao tempo.</li>
+            <li>Leve a apresentação em <strong>PowerPoint (.pptx) ou PDF</strong>.</li>
+          </ul>
+
+          <div class="modelo-download">
+            <div class="info">
+              <strong>Modelo Base de Apresentação</strong>
+              <span>PowerPoint (.pptx) · capa + 5 slides · atualizado em jul/2026</span>
+            </div>
+            <a class="baixar-modelo" href="/downloads/modelo-apresentacao-trabalhos-ix-eneon.pptx" download>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Baixar modelo <span class="ext">PPTX</span>
+            </a>
+          </div>
         </div>
 
         <div id="lista-aprovados" class="lista-aprovados">
