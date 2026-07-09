@@ -2956,6 +2956,8 @@
         var rExt = await sb.from('inscritos_externos')
           .select('nome, email, telefone')
           .eq('evento_id', eventoId).eq('cancelado', false).eq('pendente_verificacao_socia', false);
+        // Monitores: tabela própria; não-fatal (pode não existir antes da migration).
+        var rMon = await sb.from('monitores_evento').select('nome').eq('evento_id', eventoId);
         if (rSoc.error || rExt.error) {
           alvo.innerHTML = '<div class="lista-vazia">Erro: ' + escapar((rSoc.error || rExt.error).message) + '</div>';
           return;
@@ -2968,6 +2970,9 @@
         });
         (rExt.data || []).forEach(function (x) {
           lista.push({ nome: x.nome, tipo: 'Não-sócia', email: x.email || '', telefone: x.telefone || '' });
+        });
+        (rMon && rMon.data ? rMon.data : []).forEach(function (x) {
+          lista.push({ nome: x.nome, tipo: 'Monitoria', email: '', telefone: '' });
         });
         lista.sort(function (a, b) { return normalizarBusca(a.nome).localeCompare(normalizarBusca(b.nome)); });
         inscritosCache = lista;
@@ -3087,7 +3092,7 @@
         return '<section class="grupo">' +
           '<header>' + (logoUrl ? '<img src="' + logoUrl + '" alt="IX ENEON">' : '') +
             '<div class="tit"><h1>Lista de Recepção — ' + escapar(eventoNome) + '</h1>' +
-            '<p class="sub"><strong>' + grupo.titulo + '</strong> · Grupo ' + grupo.rotulo + ' · ' + grupo.itens.length + ' pessoas</p></div>' +
+            '<p class="sub"><strong>' + grupo.titulo + '</strong>' + (grupo.rotulo ? ' · Grupo ' + grupo.rotulo : '') + ' · ' + grupo.itens.length + ' pessoas</p></div>' +
           '</header>' +
           '<div class="faixa"><span></span><span></span><span></span><span></span></div>' +
           '<table><thead><tr>' +
@@ -3102,6 +3107,11 @@
           return { titulo: titulo, docLabel: docLabel, tipoValor: tipoValor, rotulo: parte.rotulo, itens: parte.itens };
         });
       }
+      // Um único grupo, sem dividir (usado para os monitores).
+      function grupoUnico(lista, titulo, docLabel, tipoValor) {
+        lista = lista.slice().sort(function (a, b) { return normalizarBusca(a.nome).localeCompare(normalizarBusca(b.nome)); });
+        return [{ titulo: titulo, docLabel: docLabel, tipoValor: tipoValor, rotulo: '', itens: lista }];
+      }
       async function imprimirRecepcao() {
         var sb = window.abenfo.sb;
         var eventoId = document.getElementById('evento-id').value;
@@ -3114,6 +3124,7 @@
           var rExt = await sb.from('inscritos_externos')
             .select('nome, doity_id')
             .eq('evento_id', eventoId).eq('cancelado', false).eq('pendente_verificacao_socia', false);
+          var rMon = await sb.from('monitores_evento').select('nome').eq('evento_id', eventoId);  // não-fatal
           if (rSoc.error || rExt.error) throw (rSoc.error || rExt.error);
           var socios = (rSoc.data || []).map(function (x) {
             var p = x.profile || {};
@@ -3122,11 +3133,15 @@
           var externos = (rExt.data || []).map(function (x) {
             return { nome: x.nome || '(sem nome)', doc: x.doity_id || '' };
           });
-          if (!socios.length && !externos.length) { mostrarAviso('Nenhum inscrito confirmado neste evento.', 'erro'); return; }
+          var monitores = (rMon && rMon.data ? rMon.data : []).map(function (x) {
+            return { nome: x.nome || '(sem nome)', doc: '' };
+          });
+          if (!socios.length && !externos.length && !monitores.length) { mostrarAviso('Nenhum inscrito confirmado neste evento.', 'erro'); return; }
           var eventoNome = inscritosEventoNome || 'IX ENEON 2026';
           var logoUrl = location.origin + '/assets/eneon/logo-eneon-horizontal.png';
           var grupos = gruposRecepcao(socios, 'Sócios', 'CPF', 'Sócio')
             .concat(gruposRecepcao(externos, 'Não-sócios', 'Nº Doity', 'Não-sócio'));
+          if (monitores.length) grupos = grupos.concat(grupoUnico(monitores, 'Monitoria', 'Documento', 'Monitoria'));
           var corpo = grupos.map(function (g) { return secaoRecepcao(g, eventoNome, logoUrl); }).join('');
           var win = window.open('', '_blank');
           if (!win) { mostrarAviso('Não foi possível abrir a janela (pop-up bloqueado?).', 'erro'); return; }
@@ -3139,7 +3154,7 @@
           win.focus();
           // espera o logo carregar antes de abrir a impressão
           win.onload = function () { setTimeout(function () { win.print(); }, 350); };
-          mostrarAviso('Lista de recepção pronta (' + socios.length + ' sócios · ' + externos.length + ' não-sócios) — abrindo a impressão.', 'sucesso');
+          mostrarAviso('Lista de recepção pronta (' + socios.length + ' sócios · ' + externos.length + ' não-sócios · ' + monitores.length + ' monitoria) — abrindo a impressão.', 'sucesso');
         } catch (err) {
           mostrarAviso('Erro ao gerar a lista de recepção: ' + (err.message || err), 'erro');
         }
