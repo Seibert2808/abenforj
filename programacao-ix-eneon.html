@@ -130,6 +130,12 @@
   .com-card p{font-size:9.5pt; color:var(--texto); margin:1mm 0}
   .com-card p strong{color:var(--texto-suave); font-weight:600}
 
+  /* créditos institucionais (logos) no final do documento */
+  .doc-creditos{display:flex; gap:4mm; justify-content:space-between; margin-bottom:6mm}
+  .dc-item{flex:1; text-align:center; border:1px solid var(--borda); border-radius:8px; padding:3mm 2mm; background:#fff; display:flex; flex-direction:column; align-items:center; justify-content:flex-start}
+  .dc-item span{display:block; font-size:7pt; text-transform:uppercase; letter-spacing:1px; color:var(--eneon-grafite); margin-bottom:2.5mm; font-weight:700}
+  .dc-item img{max-width:100%; max-height:15mm; object-fit:contain}
+
   /* rodapé final da última página */
   .rodape-final{margin-top:auto; padding-top:8mm}
   .scribia-doc{text-align:center; background:var(--branco); border:1px solid var(--borda); border-radius:12px; padding:7mm 6mm 6mm; box-shadow:0 1px 4px rgba(0,0,0,.06)}
@@ -291,7 +297,7 @@
         <span class="m-inst">SES-RJ</span>
       </li>
       <li>
-        <div class="m-info"><span class="m-nome">Patrícia Santos Barbastefano</span><span class="m-cargo">Ma. · Assessora da Superintendência de Maternidades e Coordenadora da Câmara Técnica de Enfermagem Obstétrica do Município do Rio de Janeiro</span></div>
+        <div class="m-info"><span class="m-nome">Patrícia Santos Barbastefano</span><span class="m-cargo">Enfª Ma. · Assessora da Superintendência de Maternidades e Coordenadora da Câmara Técnica de Enfermagem Obstétrica do Município do Rio de Janeiro</span></div>
         <span class="m-inst">SMS-RJ</span>
       </li>
     </ul>
@@ -456,6 +462,12 @@
   </div>
 
   <div class="rodape-final">
+    <div class="doc-creditos">
+      <div class="dc-item"><span>Promoção</span><img src="assets/logo-abenforj.png" alt="ABENFO-RJ"></div>
+      <div class="dc-item"><span>Organização</span><img src="assets/logo-residencia-enfermagem-obstetrica.jpg" alt="Programa de Residência em Enfermagem Obstétrica da UERJ"></div>
+      <div class="dc-item"><span>Realização</span><img src="assets/logo-especializacao-enfermagem-obstetrica-uerj.jpg" alt="Curso de Especialização em Enfermagem Obstétrica — UERJ"></div>
+      <div class="dc-item"><span>Apoio Institucional</span><img src="assets/logo-fe-uerj.jpg" alt="Faculdade de Enfermagem da UERJ"></div>
+    </div>
     <div class="scribia-doc">
       <img src="assets/scribia-logo.png" alt="ScribIA">
       <p class="scribia-tag">Cobertura digital do IX ENEON realizada pelo ScribIA — áudios, Livebooks e materiais digitais.</p>
