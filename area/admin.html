@@ -2951,7 +2951,7 @@
         alvo.innerHTML = '<div class="lista-vazia">Carregando…</div>';
 
         var rSoc = await sb.from('inscricoes_evento')
-          .select('profile:profile_id(nome_completo, nome_social, email, telefone)')
+          .select('observacao, profile:profile_id(nome_completo, nome_social, email, telefone)')
           .eq('evento_id', eventoId).eq('cancelado', false);
         var rExt = await sb.from('inscritos_externos')
           .select('nome, email, telefone')
@@ -2970,7 +2970,8 @@
         (rSoc.data || []).forEach(function (x) {
           var p = x.profile || {};
           var nome = p.nome_completo || p.nome_social || '(sem nome)';
-          if (monSet[normalizarBusca(nome)]) return;   // é monitora → entra só como Monitoria
+          if (x.observacao && /monitor/i.test(x.observacao)) return;  // monitora marcada → só como Monitoria
+          if (monSet[normalizarBusca(nome)]) return;
           lista.push({ nome: nome, tipo: 'Sócia', email: p.email || '', telefone: p.telefone || '' });
         });
         (rExt.data || []).forEach(function (x) {
@@ -3125,14 +3126,17 @@
         mostrarAviso('Preparando lista de recepção…', 'aviso');
         try {
           var rSoc = await sb.from('inscricoes_evento')
-            .select('profile:profile_id(nome_completo, nome_social, cpf)')
+            .select('observacao, profile:profile_id(nome_completo, nome_social, cpf)')
             .eq('evento_id', eventoId).eq('cancelado', false);
           var rExt = await sb.from('inscritos_externos')
             .select('nome, doity_id')
             .eq('evento_id', eventoId).eq('cancelado', false).eq('pendente_verificacao_socia', false);
           var rMon = await sb.from('monitores_evento').select('nome').eq('evento_id', eventoId);  // não-fatal
           if (rSoc.error || rExt.error) throw (rSoc.error || rExt.error);
-          var socios = (rSoc.data || []).map(function (x) {
+          // Inscrição marcada como monitora sai dos Sócios (vai só p/ Monitoria).
+          var socios = (rSoc.data || []).filter(function (x) {
+            return !(x.observacao && /monitor/i.test(x.observacao));
+          }).map(function (x) {
             var p = x.profile || {};
             return { nome: p.nome_completo || p.nome_social || '(sem nome)', doc: p.cpf ? fmtCpf(p.cpf) : '' };
           });
