@@ -799,7 +799,7 @@
         <div style="margin:0.5rem 0 0.75rem;display:flex;gap:0.5rem;flex-wrap:wrap;">
           <button type="button" id="btn-imprimir-inscritos" class="btn btn-ghost" style="min-height:0;padding:0.55rem 0.9rem;">Imprimir</button>
           <button type="button" id="btn-excel-inscritos" class="btn btn-ghost" style="min-height:0;padding:0.55rem 0.9rem;">Salvar em Excel</button>
-          <button type="button" id="btn-recepcao-inscritos" class="btn btn-ghost" style="min-height:0;padding:0.55rem 0.9rem;">Lista de recepção (check-in)</button>
+          <button type="button" id="btn-recepcao-inscritos" class="btn btn-ghost" style="min-height:0;padding:0.55rem 0.9rem;">Lista de recepção (imprimir)</button>
         </div>
         <div id="lista-inscritos" style="margin-bottom:2rem;">
           <div class="lista-vazia">Selecione um evento no seletor acima.</div>
@@ -3056,22 +3056,57 @@
         var g1 = lista.slice(0, melhorCorte), g2 = lista.slice(melhorCorte);
         return [{ rotulo: rotulo(g1), itens: g1 }, { rotulo: rotulo(g2), itens: g2 }];
       }
-      function adicionarAbasRecepcao(XLSX, wb, lista, rotuloTipo, colDoc, valorTipo) {
+      var CSS_RECEPCAO =
+        '@page{size:A4 portrait;margin:11mm 11mm 12mm}' +
+        '*{box-sizing:border-box}' +
+        'body{font-family:Arial,Helvetica,sans-serif;color:#2b2b2b;margin:0}' +
+        '.grupo{page-break-after:always}.grupo:last-child{page-break-after:auto}' +
+        'header{display:flex;align-items:center;gap:14px;padding-bottom:8px}' +
+        'header img{height:52px;width:auto}header .tit{flex:1}' +
+        'header h1{font-size:16px;color:#48535e;margin:0;font-weight:700}' +
+        'header .sub{font-size:12px;color:#6b7772;margin:3px 0 0}' +
+        '.faixa{display:flex;height:5px;border-radius:3px;overflow:hidden;margin:6px 0 12px}' +
+        '.faixa span{flex:1}.faixa span:nth-child(1){background:#a8c9b0}.faixa span:nth-child(2){background:#a5c9e0}' +
+        '.faixa span:nth-child(3){background:#c0b0d8}.faixa span:nth-child(4){background:#f0c9a5}' +
+        'table{width:100%;border-collapse:collapse;font-size:11px}thead{display:table-header-group}' +
+        'th{background:#eef2ef;color:#48535e;text-transform:uppercase;letter-spacing:.04em;font-size:9px;text-align:left;padding:6px 8px;border:1px solid #ccd4ce}' +
+        'td{padding:0 8px;border:1px solid #ccd4ce;height:30px}tr:nth-child(even) td{background:#fafbfa}' +
+        'tr{page-break-inside:avoid}' +
+        '.num{width:26px;text-align:center;color:#8a939c}.doc{width:120px;white-space:nowrap}' +
+        '.tipo{width:66px}.data{width:78px}.ass{width:33%}' +
+        'html{-webkit-print-color-adjust:exact;print-color-adjust:exact}';
+
+      function secaoRecepcao(grupo, eventoNome, logoUrl) {
+        var linhas = grupo.itens.map(function (p, i) {
+          return '<tr><td class="num">' + (i + 1) + '</td>' +
+            '<td>' + escapar(p.nome) + '</td>' +
+            '<td class="doc">' + escapar(p.doc || '') + '</td>' +
+            '<td class="tipo">' + grupo.tipoValor + '</td>' +
+            '<td class="data"></td><td class="ass"></td></tr>';
+        }).join('');
+        return '<section class="grupo">' +
+          '<header>' + (logoUrl ? '<img src="' + logoUrl + '" alt="IX ENEON">' : '') +
+            '<div class="tit"><h1>Lista de Recepção — ' + escapar(eventoNome) + '</h1>' +
+            '<p class="sub"><strong>' + grupo.titulo + '</strong> · Grupo ' + grupo.rotulo + ' · ' + grupo.itens.length + ' pessoas</p></div>' +
+          '</header>' +
+          '<div class="faixa"><span></span><span></span><span></span><span></span></div>' +
+          '<table><thead><tr>' +
+            '<th class="num">#</th><th>Nome</th><th class="doc">' + grupo.docLabel + '</th>' +
+            '<th class="tipo">Tipo</th><th class="data">Data</th><th class="ass">Assinatura</th>' +
+          '</tr></thead><tbody>' + linhas + '</tbody></table>' +
+        '</section>';
+      }
+      function gruposRecepcao(lista, titulo, docLabel, tipoValor) {
         lista = lista.slice().sort(function (a, b) { return normalizarBusca(a.nome).localeCompare(normalizarBusca(b.nome)); });
-        dividirEquilibrado(lista).forEach(function (parte) {
-          var aoa = [['Nome', colDoc, 'Tipo de Inscrição', 'Data', 'Assinatura']].concat(
-            parte.itens.map(function (p) { return [p.nome, p.doc, valorTipo, '', '']; })
-          );
-          var ws = XLSX.utils.aoa_to_sheet(aoa);
-          ws['!cols'] = [{ wch: 40 }, { wch: 18 }, { wch: 16 }, { wch: 14 }, { wch: 28 }];
-          XLSX.utils.book_append_sheet(wb, ws, (rotuloTipo + ' ' + parte.rotulo).slice(0, 31));
+        return dividirEquilibrado(lista).map(function (parte) {
+          return { titulo: titulo, docLabel: docLabel, tipoValor: tipoValor, rotulo: parte.rotulo, itens: parte.itens };
         });
       }
-      async function exportarRecepcaoExcel() {
+      async function imprimirRecepcao() {
         var sb = window.abenfo.sb;
         var eventoId = document.getElementById('evento-id').value;
         if (!eventoId) { mostrarAviso('Selecione um evento no seletor acima.', 'erro'); return; }
-        mostrarAviso('Gerando lista de recepção…', 'aviso');
+        mostrarAviso('Preparando lista de recepção…', 'aviso');
         try {
           var rSoc = await sb.from('inscricoes_evento')
             .select('profile:profile_id(nome_completo, nome_social, cpf)')
@@ -3088,13 +3123,23 @@
             return { nome: x.nome || '(sem nome)', doc: x.doity_id || '' };
           });
           if (!socios.length && !externos.length) { mostrarAviso('Nenhum inscrito confirmado neste evento.', 'erro'); return; }
-          var XLSX = await carregarXLSX();
-          var wb = XLSX.utils.book_new();
-          adicionarAbasRecepcao(XLSX, wb, socios, 'Sócios', 'CPF', 'Sócio');
-          adicionarAbasRecepcao(XLSX, wb, externos, 'Não-sócios', 'Nº Doity', 'Não-sócio');
-          var base = (inscritosEventoNome || 'evento').replace(/[^\w\-]+/g, '-').toLowerCase().replace(/^-+|-+$/g, '').slice(0, 40);
-          XLSX.writeFile(wb, 'recepcao-' + base + '.xlsx');
-          mostrarAviso('Lista de recepção gerada (' + socios.length + ' sócios · ' + externos.length + ' não-sócios).', 'sucesso');
+          var eventoNome = inscritosEventoNome || 'IX ENEON 2026';
+          var logoUrl = location.origin + '/assets/eneon/logo-eneon-horizontal.png';
+          var grupos = gruposRecepcao(socios, 'Sócios', 'CPF', 'Sócio')
+            .concat(gruposRecepcao(externos, 'Não-sócios', 'Nº Doity', 'Não-sócio'));
+          var corpo = grupos.map(function (g) { return secaoRecepcao(g, eventoNome, logoUrl); }).join('');
+          var win = window.open('', '_blank');
+          if (!win) { mostrarAviso('Não foi possível abrir a janela (pop-up bloqueado?).', 'erro'); return; }
+          win.document.write(
+            '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">' +
+            '<title>Lista de Recepção — ' + escapar(eventoNome) + '</title>' +
+            '<style>' + CSS_RECEPCAO + '</style></head><body>' + corpo + '</body></html>'
+          );
+          win.document.close();
+          win.focus();
+          // espera o logo carregar antes de abrir a impressão
+          win.onload = function () { setTimeout(function () { win.print(); }, 350); };
+          mostrarAviso('Lista de recepção pronta (' + socios.length + ' sócios · ' + externos.length + ' não-sócios) — abrindo a impressão.', 'sucesso');
         } catch (err) {
           mostrarAviso('Erro ao gerar a lista de recepção: ' + (err.message || err), 'erro');
         }
@@ -3108,7 +3153,7 @@
         var be = document.getElementById('btn-excel-inscritos');
         if (be) be.addEventListener('click', exportarInscritosExcel);
         var br = document.getElementById('btn-recepcao-inscritos');
-        if (br) br.addEventListener('click', exportarRecepcaoExcel);
+        if (br) br.addEventListener('click', imprimirRecepcao);
       })();
 
       // ============================================================
