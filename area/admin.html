@@ -2964,14 +2964,20 @@
         }
 
         var lista = [];
+        var monArr = (rMon && rMon.data ? rMon.data : []);
+        var monSet = {};
+        monArr.forEach(function (x) { monSet[normalizarBusca(x.nome)] = 1; });
         (rSoc.data || []).forEach(function (x) {
           var p = x.profile || {};
-          lista.push({ nome: p.nome_completo || p.nome_social || '(sem nome)', tipo: 'Sócia', email: p.email || '', telefone: p.telefone || '' });
+          var nome = p.nome_completo || p.nome_social || '(sem nome)';
+          if (monSet[normalizarBusca(nome)]) return;   // é monitora → entra só como Monitoria
+          lista.push({ nome: nome, tipo: 'Sócia', email: p.email || '', telefone: p.telefone || '' });
         });
         (rExt.data || []).forEach(function (x) {
+          if (monSet[normalizarBusca(x.nome)]) return;
           lista.push({ nome: x.nome, tipo: 'Não-sócia', email: x.email || '', telefone: x.telefone || '' });
         });
-        (rMon && rMon.data ? rMon.data : []).forEach(function (x) {
+        monArr.forEach(function (x) {
           lista.push({ nome: x.nome, tipo: 'Monitoria', email: '', telefone: '' });
         });
         lista.sort(function (a, b) { return normalizarBusca(a.nome).localeCompare(normalizarBusca(b.nome)); });
@@ -3136,6 +3142,13 @@
           var monitores = (rMon && rMon.data ? rMon.data : []).map(function (x) {
             return { nome: x.nome || '(sem nome)', doc: '' };
           });
+          // Evita duplicar: quem está na lista de monitores sai de sócios/não-sócios.
+          if (monitores.length) {
+            var monSet = {};
+            monitores.forEach(function (m) { monSet[normalizarBusca(m.nome)] = 1; });
+            socios = socios.filter(function (p) { return !monSet[normalizarBusca(p.nome)]; });
+            externos = externos.filter(function (p) { return !monSet[normalizarBusca(p.nome)]; });
+          }
           if (!socios.length && !externos.length && !monitores.length) { mostrarAviso('Nenhum inscrito confirmado neste evento.', 'erro'); return; }
           var eventoNome = inscritosEventoNome || 'IX ENEON 2026';
           var logoUrl = location.origin + '/assets/eneon/logo-eneon-horizontal.png';
