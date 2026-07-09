@@ -1789,3 +1789,17 @@ form textarea { min-height: 140px; resize: vertical; }
   max-height: 100%;
   object-fit: contain;
 }
+
+/* Locais do evento (eventos.html) */
+.locais-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-top: 1.5rem; }
+@media (min-width: 700px) { .locais-grid { grid-template-columns: repeat(3, 1fr); } }
+.local-card {
+  background: var(--branco); border: 1px solid var(--borda); border-radius: 12px;
+  padding: 1.25rem 1.35rem; border-top: 3px solid var(--eneon-sage);
+}
+.local-card:nth-child(2) { border-top-color: var(--eneon-azul); }
+.local-card:nth-child(3) { border-top-color: var(--eneon-pessego); }
+.local-card h3 { color: var(--eneon-grafite); font-size: 1.02rem; margin: 0 0 0.5rem; line-height: 1.3; }
+.local-card p { color: var(--texto-suave); font-size: 0.9rem; line-height: 1.5; margin: 0 0 0.85rem; }
+.local-card a { font-weight: 600; font-size: 0.88rem; color: var(--eneon-grafite); text-decoration: none; }
+.local-card a:hover { text-decoration: underline; }
