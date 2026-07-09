@@ -663,12 +663,22 @@ form textarea { min-height: 140px; resize: vertical; }
 
 .site-footer {
   background: var(--verde-escuro);
-  color: rgba(255, 255, 255, 0.85);
-  padding: 2.5rem 0 1.5rem;
+  color: rgba(255, 255, 255, 0.8);
+  padding: 3rem 0 1.5rem;
   margin-top: 3.5rem;
+  font-size: 0.9rem;
+  letter-spacing: 0.01em;
 }
-.site-footer h4 { color: var(--branco); margin-bottom: 0.85rem; font-size: 1rem; }
-.site-footer a { color: rgba(255, 255, 255, 0.85); }
+.site-footer h4 {
+  color: rgba(255, 255, 255, 0.95);
+  margin-bottom: 1rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+.site-footer p { line-height: 1.65; }
+.site-footer a { color: rgba(255, 255, 255, 0.8); font-weight: 400; transition: color var(--transicao); }
 .site-footer a:hover { color: var(--branco); }
 .site-footer .footer-grid {
   display: grid;
@@ -680,13 +690,14 @@ form textarea { min-height: 140px; resize: vertical; }
 @media (min-width: 900px) { .site-footer .footer-grid { grid-template-columns: repeat(4, 1fr); } }
 
 .site-footer ul { list-style: none; }
-.site-footer ul li { margin-bottom: 0.5rem; font-size: 0.95rem; }
+.site-footer ul li { margin-bottom: 0.55rem; font-size: 0.9rem; }
 .site-footer .copyright {
   border-top: 1px solid rgba(255, 255, 255, 0.12);
   padding-top: 1.25rem;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   text-align: center;
-  color: rgba(255, 255, 255, 0.7);
+  letter-spacing: 0.03em;
+  color: rgba(255, 255, 255, 0.65);
 }
 
 /* ==========================================================================
