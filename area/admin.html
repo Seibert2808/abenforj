@@ -799,6 +799,7 @@
         <div style="margin:0.5rem 0 0.75rem;display:flex;gap:0.5rem;flex-wrap:wrap;">
           <button type="button" id="btn-imprimir-inscritos" class="btn btn-ghost" style="min-height:0;padding:0.55rem 0.9rem;">Imprimir</button>
           <button type="button" id="btn-excel-inscritos" class="btn btn-ghost" style="min-height:0;padding:0.55rem 0.9rem;">Salvar em Excel</button>
+          <button type="button" id="btn-recepcao-inscritos" class="btn btn-ghost" style="min-height:0;padding:0.55rem 0.9rem;">Lista de recepção (check-in)</button>
         </div>
         <div id="lista-inscritos" style="margin-bottom:2rem;">
           <div class="lista-vazia">Selecione um evento no seletor acima.</div>
@@ -3031,6 +3032,74 @@
         }
       }
 
+      // ---- Lista de recepção (check-in): 4 abas, Data/Assinatura em branco ----
+      function primeiraLetraNome(nome) {
+        var s = normalizarBusca(nome).toUpperCase().replace(/[^A-Z]/g, '');
+        return s.charAt(0) || '#';
+      }
+      // Divide a lista (já ordenada) em 2 grupos por fronteira de letra, o mais
+      // equilibrados possível — nunca parte uma mesma inicial em grupos diferentes.
+      function dividirEquilibrado(lista) {
+        var n = lista.length;
+        if (n <= 1) return [{ rotulo: n ? primeiraLetraNome(lista[0].nome) : '(vazio)', itens: lista.slice() }];
+        var melhorCorte = Math.round(n / 2), melhorDif = Infinity;
+        for (var i = 1; i < n; i++) {
+          if (primeiraLetraNome(lista[i].nome) === primeiraLetraNome(lista[i - 1].nome)) continue;
+          var dif = Math.abs(i - n / 2);
+          if (dif < melhorDif) { melhorDif = dif; melhorCorte = i; }
+        }
+        function rotulo(g) {
+          if (!g.length) return '(vazio)';
+          var a = primeiraLetraNome(g[0].nome), b = primeiraLetraNome(g[g.length - 1].nome);
+          return a === b ? a : a + '–' + b;
+        }
+        var g1 = lista.slice(0, melhorCorte), g2 = lista.slice(melhorCorte);
+        return [{ rotulo: rotulo(g1), itens: g1 }, { rotulo: rotulo(g2), itens: g2 }];
+      }
+      function adicionarAbasRecepcao(XLSX, wb, lista, rotuloTipo, colDoc, valorTipo) {
+        lista = lista.slice().sort(function (a, b) { return normalizarBusca(a.nome).localeCompare(normalizarBusca(b.nome)); });
+        dividirEquilibrado(lista).forEach(function (parte) {
+          var aoa = [['Nome', colDoc, 'Tipo de Inscrição', 'Data', 'Assinatura']].concat(
+            parte.itens.map(function (p) { return [p.nome, p.doc, valorTipo, '', '']; })
+          );
+          var ws = XLSX.utils.aoa_to_sheet(aoa);
+          ws['!cols'] = [{ wch: 40 }, { wch: 18 }, { wch: 16 }, { wch: 14 }, { wch: 28 }];
+          XLSX.utils.book_append_sheet(wb, ws, (rotuloTipo + ' ' + parte.rotulo).slice(0, 31));
+        });
+      }
+      async function exportarRecepcaoExcel() {
+        var sb = window.abenfo.sb;
+        var eventoId = document.getElementById('evento-id').value;
+        if (!eventoId) { mostrarAviso('Selecione um evento no seletor acima.', 'erro'); return; }
+        mostrarAviso('Gerando lista de recepção…', 'aviso');
+        try {
+          var rSoc = await sb.from('inscricoes_evento')
+            .select('profile:profile_id(nome_completo, nome_social, cpf)')
+            .eq('evento_id', eventoId).eq('cancelado', false);
+          var rExt = await sb.from('inscritos_externos')
+            .select('nome, doity_id')
+            .eq('evento_id', eventoId).eq('cancelado', false).eq('pendente_verificacao_socia', false);
+          if (rSoc.error || rExt.error) throw (rSoc.error || rExt.error);
+          var socios = (rSoc.data || []).map(function (x) {
+            var p = x.profile || {};
+            return { nome: p.nome_completo || p.nome_social || '(sem nome)', doc: p.cpf ? fmtCpf(p.cpf) : '' };
+          });
+          var externos = (rExt.data || []).map(function (x) {
+            return { nome: x.nome || '(sem nome)', doc: x.doity_id || '' };
+          });
+          if (!socios.length && !externos.length) { mostrarAviso('Nenhum inscrito confirmado neste evento.', 'erro'); return; }
+          var XLSX = await carregarXLSX();
+          var wb = XLSX.utils.book_new();
+          adicionarAbasRecepcao(XLSX, wb, socios, 'Sócios', 'CPF', 'Sócio');
+          adicionarAbasRecepcao(XLSX, wb, externos, 'Não-sócios', 'Nº Doity', 'Não-sócio');
+          var base = (inscritosEventoNome || 'evento').replace(/[^\w\-]+/g, '-').toLowerCase().replace(/^-+|-+$/g, '').slice(0, 40);
+          XLSX.writeFile(wb, 'recepcao-' + base + '.xlsx');
+          mostrarAviso('Lista de recepção gerada (' + socios.length + ' sócios · ' + externos.length + ' não-sócios).', 'sucesso');
+        } catch (err) {
+          mostrarAviso('Erro ao gerar a lista de recepção: ' + (err.message || err), 'erro');
+        }
+      }
+
       (function () {
         var selEv = document.getElementById('evento-id');
         if (selEv) selEv.addEventListener('change', function () { carregarInscritos(this.value); });
@@ -3038,6 +3107,8 @@
         if (bi) bi.addEventListener('click', imprimirInscritos);
         var be = document.getElementById('btn-excel-inscritos');
         if (be) be.addEventListener('click', exportarInscritosExcel);
+        var br = document.getElementById('btn-recepcao-inscritos');
+        if (br) br.addEventListener('click', exportarRecepcaoExcel);
       })();
 
       // ============================================================
