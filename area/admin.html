@@ -910,6 +910,9 @@
         </div>
 
         <h3 style="font-size:1rem;color:var(--texto-suave);margin-top:1.5rem;">Resumo</h3>
+        <div style="margin:0 0 0.75rem;">
+          <button type="button" id="btn-credenciamento-cursos" class="btn btn-ghost" style="min-height:0;padding:0.55rem 0.9rem;">Credenciamento por curso (imprimir)</button>
+        </div>
         <div id="resumo-cursos">
           <div class="lista-vazia">Carregando…</div>
         </div>
@@ -3124,6 +3127,86 @@
         lista = lista.slice().sort(function (a, b) { return normalizarBusca(a.nome).localeCompare(normalizarBusca(b.nome)); });
         return [{ titulo: titulo, docLabel: docLabel, tipoValor: tipoValor, rotulo: '', itens: lista }];
       }
+
+      // ---- Credenciamento por curso (impressão): 1 folha por curso ----
+      function salaDoCurso(nome) {
+        var n = normalizarBusca(nome);
+        if (n.indexOf('veinviewer') >= 0 || n.indexOf('puncao venosa') >= 0) return 'Sala 815 · Ed. Paulo de Carvalho';
+        if (n.indexOf('hpp') >= 0) return 'Sala 23 · Pav. Nalva Pereira Caldas';
+        if (n.indexOf('ultrassonogr') >= 0) return 'Sala 715 · Ed. Paulo de Carvalho';
+        if (n.indexOf('traumas perineais') >= 0) return 'Sala 20 · Pav. Nalva Pereira Caldas';
+        if (n.indexOf('termoprote') >= 0) return 'Sala 815 · Ed. Paulo de Carvalho';
+        if (n.indexOf('reconstru') >= 0 && n.indexOf('perineal') >= 0) return 'Sala 24 · Pav. Nalva Pereira Caldas';
+        if (n.indexOf('avaliacao do rn') >= 0 || n.indexOf('avaliacao do recem') >= 0) return 'Sala 22 · Pav. Nalva Pereira Caldas';
+        return '';
+      }
+      function limparNomeCurso(s) { return String(s || '').replace(/\s+/g, ' ').trim(); }
+      function secaoCurso(curso, itens, logoUrl) {
+        var linhas = itens.map(function (p, i) {
+          return '<tr><td class="num">' + (i + 1) + '</td>' +
+            '<td>' + escapar(p.nome) + '</td>' +
+            '<td class="doc">' + escapar(p.doc || '') + '</td>' +
+            '<td class="tipo">' + escapar(p.tipo) + '</td>' +
+            '<td class="data"></td><td class="ass"></td></tr>';
+        }).join('');
+        var sub = [];
+        if (curso.turno) sub.push(escapar(limparNomeCurso(curso.turno)));
+        if (curso.sala) sub.push(escapar(curso.sala));
+        sub.push(itens.length + ' inscrita(s)');
+        return '<section class="grupo">' +
+          '<header>' + (logoUrl ? '<img src="' + logoUrl + '" alt="IX ENEON">' : '') +
+            '<div class="tit"><h1>Credenciamento · Curso Pré-Encontro</h1>' +
+            '<p class="sub"><strong>' + escapar(limparNomeCurso(curso.nome)) + '</strong> · ' + sub.join(' · ') + '</p></div>' +
+          '</header>' +
+          '<div class="faixa"><span></span><span></span><span></span><span></span></div>' +
+          '<table><thead><tr>' +
+            '<th class="num">#</th><th>Nome</th><th class="doc">CPF / Nº Doity</th>' +
+            '<th class="tipo">Tipo</th><th class="data">Data</th><th class="ass">Assinatura</th>' +
+          '</tr></thead><tbody>' + linhas + '</tbody></table>' +
+        '</section>';
+      }
+      async function imprimirCredenciamentoCursos() {
+        var sb = window.abenfo.sb;
+        mostrarAviso('Preparando credenciamento dos cursos…', 'aviso');
+        try {
+          var rc = await sb.from('cursos').select('id, nome, turno, data').eq('ativo', true);
+          if (rc.error) throw rc.error;
+          var ri = await sb.from('inscricoes_curso')
+            .select('curso_id, profile_id, inscrito_externo_id, socia:profile_id(nome_completo, nome_social, cpf), externa:inscrito_externo_id(nome, doity_id)');
+          if (ri.error) throw ri.error;
+          var porCurso = {};
+          (ri.data || []).forEach(function (x) {
+            var it = null;
+            if (x.profile_id && x.socia) {
+              it = { nome: x.socia.nome_completo || x.socia.nome_social || '(sem nome)', doc: x.socia.cpf ? fmtCpf(x.socia.cpf) : '', tipo: 'Sócia' };
+            } else if (x.inscrito_externo_id && x.externa) {
+              it = { nome: x.externa.nome || '(sem nome)', doc: x.externa.doity_id || '', tipo: 'Não-sócia' };
+            }
+            if (it) (porCurso[x.curso_id] = porCurso[x.curso_id] || []).push(it);
+          });
+          var cursos = (rc.data || []).slice().sort(function (a, b) {
+            return String(a.turno || '').localeCompare(String(b.turno || '')) ||
+                   normalizarBusca(a.nome).localeCompare(normalizarBusca(b.nome));
+          });
+          var comInscritos = cursos.filter(function (c) { return (porCurso[c.id] || []).length; });
+          if (!comInscritos.length) { mostrarAviso('Nenhuma inscrição em cursos encontrada.', 'erro'); return; }
+          var logoUrl = location.origin + '/assets/eneon/logo-eneon-horizontal.png';
+          var corpo = comInscritos.map(function (c) {
+            var itens = (porCurso[c.id] || []).slice().sort(function (a, b) { return normalizarBusca(a.nome).localeCompare(normalizarBusca(b.nome)); });
+            c.sala = salaDoCurso(c.nome);
+            return secaoCurso(c, itens, logoUrl);
+          }).join('');
+          var win = window.open('', '_blank');
+          if (!win) { mostrarAviso('Não foi possível abrir a janela (pop-up bloqueado?).', 'erro'); return; }
+          win.document.write('<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Credenciamento — Cursos Pré-Encontro · IX ENEON</title><style>' + CSS_RECEPCAO + '</style></head><body>' + corpo + '</body></html>');
+          win.document.close(); win.focus();
+          win.onload = function () { setTimeout(function () { win.print(); }, 350); };
+          mostrarAviso('Credenciamento pronto (' + comInscritos.length + ' cursos) — abrindo a impressão.', 'sucesso');
+        } catch (err) {
+          mostrarAviso('Erro ao gerar o credenciamento: ' + (err.message || err), 'erro');
+        }
+      }
+
       async function imprimirRecepcao() {
         var sb = window.abenfo.sb;
         var eventoId = document.getElementById('evento-id').value;
@@ -3194,6 +3277,8 @@
         if (be) be.addEventListener('click', exportarInscritosExcel);
         var br = document.getElementById('btn-recepcao-inscritos');
         if (br) br.addEventListener('click', imprimirRecepcao);
+        var bcc = document.getElementById('btn-credenciamento-cursos');
+        if (bcc) bcc.addEventListener('click', imprimirCredenciamentoCursos);
       })();
 
       // ============================================================
