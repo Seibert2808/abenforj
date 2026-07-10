@@ -800,6 +800,7 @@
           <button type="button" id="btn-imprimir-inscritos" class="btn btn-ghost" style="min-height:0;padding:0.55rem 0.9rem;">Imprimir</button>
           <button type="button" id="btn-excel-inscritos" class="btn btn-ghost" style="min-height:0;padding:0.55rem 0.9rem;">Salvar em Excel</button>
           <button type="button" id="btn-recepcao-inscritos" class="btn btn-ghost" style="min-height:0;padding:0.55rem 0.9rem;">Lista de recepção (imprimir)</button>
+          <button type="button" id="btn-scribia-inscritos" class="btn btn-ghost" style="min-height:0;padding:0.55rem 0.9rem;">Lista ScribIA (Nome + E-mail)</button>
         </div>
         <div id="lista-inscritos" style="margin-bottom:2rem;">
           <div class="lista-vazia">Selecione um evento no seletor acima.</div>
@@ -3052,6 +3053,27 @@
         }
       }
 
+      // Lista para ScribIA: só Nome + E-mail (aba "Participantes"), como a
+      // Lista monitores. Exporta só quem tem e-mail (sócios + não-sócios;
+      // monitores/convidados ficam de fora, pois têm lista própria).
+      async function exportarScribiaInscritos() {
+        var comEmail = inscritosCache.filter(function (c) { return c.email && c.email.trim(); });
+        if (!comEmail.length) { mostrarAviso('Selecione um evento e aguarde a lista carregar (nenhum e-mail encontrado).', 'erro'); return; }
+        try {
+          var XLSX = await carregarXLSX();
+          var dados = comEmail.map(function (c) { return { Nome: c.nome, Email: c.email.trim() }; });
+          var ws = XLSX.utils.json_to_sheet(dados, { header: ['Nome', 'Email'] });
+          ws['!cols'] = [{ wch: 40 }, { wch: 34 }];
+          var wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, ws, 'Participantes');
+          var base = (inscritosEventoNome || 'evento').replace(/[^\w\-]+/g, '-').toLowerCase().replace(/^-+|-+$/g, '').slice(0, 40);
+          XLSX.writeFile(wb, 'lista-scribia-' + base + '.xlsx');
+          mostrarAviso('Lista para ScribIA gerada (' + dados.length + ' participantes com e-mail).', 'sucesso');
+        } catch (err) {
+          mostrarAviso('Erro ao gerar a lista: ' + (err.message || err), 'erro');
+        }
+      }
+
       // ---- Lista de recepção (check-in): 4 abas, Data/Assinatura em branco ----
       function primeiraLetraNome(nome) {
         var s = normalizarBusca(nome).toUpperCase().replace(/[^A-Z]/g, '');
@@ -3279,6 +3301,8 @@
         if (br) br.addEventListener('click', imprimirRecepcao);
         var bcc = document.getElementById('btn-credenciamento-cursos');
         if (bcc) bcc.addEventListener('click', imprimirCredenciamentoCursos);
+        var bsc = document.getElementById('btn-scribia-inscritos');
+        if (bsc) bsc.addEventListener('click', exportarScribiaInscritos);
       })();
 
       // ============================================================
