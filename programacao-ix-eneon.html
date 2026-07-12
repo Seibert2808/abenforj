@@ -37,9 +37,9 @@
   .capa .tema{font-size:14pt; font-style:italic; color:var(--eneon-grafite); margin-bottom:12mm}
   .capa .datas{font-size:15pt; font-weight:600; color:var(--texto); margin-bottom:2mm}
   .capa .local{font-size:12pt; color:var(--texto-suave)}
-  .capa .rodape-capa{display:flex; align-items:flex-end; justify-content:center; gap:16mm; padding-top:10mm}
-  .capa .rodape-capa img{height:15mm; opacity:.9}
-  .capa .rodape-capa .promo{font-size:8pt; letter-spacing:1px; text-transform:uppercase; color:var(--texto-suave); margin-bottom:2mm}
+  .capa .doc-creditos{width:100%; padding-top:9mm; margin-bottom:0}
+  .capa .dc-item{border:none; background:transparent; box-shadow:none}
+  .capa .dc-item img{max-height:16mm}
 
   /* ---------- DIAS ---------- */
   .dia-header{display:flex; align-items:stretch; border-radius:10px; overflow:hidden; margin-bottom:5mm;
@@ -102,6 +102,7 @@
     body{background:#fff}
     .page{margin:0; box-shadow:none; min-height:auto; page-break-before:always; break-before:page}
     .page.capa{min-height:0; height:297mm; overflow:hidden; page-break-before:avoid; break-before:avoid}
+    .page.fim{min-height:0; height:297mm; overflow:hidden}
     .no-print{display:none !important}
     tr, .dia-header, .mesa-panel, .mesa-lista li, .nota-secao{page-break-inside:avoid}
     thead{display:table-header-group}
@@ -124,18 +125,18 @@
   .sec-title{border-radius:10px; background:var(--verde-pastel); padding:5mm 6mm; margin-bottom:6mm; box-shadow:0 1px 4px rgba(0,0,0,.08)}
   .sec-title .kicker{font-size:8.5pt; letter-spacing:2px; text-transform:uppercase; color:var(--eneon-grafite)}
   .sec-title h2{font-size:15pt; font-weight:700; color:var(--verde-escuro)}
-  .sec-title{margin-bottom:4mm}
-  .comissoes{display:grid; grid-template-columns:1fr 1fr; gap:5mm}
-  .com-card{border:1px solid var(--borda); border-radius:9px; padding:4mm 5mm; background:#fbfbf9}
+  .sec-title{margin-bottom:7mm}
+  .comissoes{display:grid; grid-template-columns:1fr 1fr; gap:7mm}
+  .com-card{border:1px solid var(--borda); border-radius:9px; padding:5.5mm 5mm; background:#fbfbf9}
   .com-card h3{font-size:10.5pt; color:var(--verde-escuro); margin-bottom:2mm}
   .com-card p{font-size:9.5pt; color:var(--texto); margin:1mm 0}
   .com-card p strong{color:var(--texto-suave); font-weight:600}
 
   /* locais/endereços no final */
-  .locais{margin-top:4mm}
-  .locais h3{font-size:11pt; color:var(--verde-escuro); margin-bottom:2mm}
+  .locais{margin-top:9mm}
+  .locais h3{font-size:11pt; color:var(--verde-escuro); margin-bottom:3mm}
   .locais ul{list-style:none}
-  .locais li{font-size:9.5pt; color:var(--texto); padding:1.3mm 0; border-top:1px solid var(--borda); line-height:1.3}
+  .locais li{font-size:9.5pt; color:var(--texto); padding:2.4mm 0; border-top:1px solid var(--borda); line-height:1.35}
   .locais li:first-child{border-top:none}
   .locais li strong{color:var(--verde-escuro)}
 
@@ -150,7 +151,9 @@
   .scribia-doc{text-align:center; background:var(--branco); border:1px solid var(--borda); border-radius:12px; padding:5mm 6mm 5mm; box-shadow:0 1px 4px rgba(0,0,0,.06)}
   .scribia-doc img{width:74mm; max-width:80%; height:auto; margin-bottom:3mm}
   .scribia-doc .scribia-tag{font-size:9.5pt; color:var(--texto-suave); margin-bottom:2.5mm}
+  .scribia-doc .scribia-contato{display:flex; gap:9mm; justify-content:center; align-items:center; flex-wrap:wrap}
   .scribia-doc .scribia-url{display:inline-block; font-size:12pt; font-weight:700; color:#6b4fb0; text-decoration:none; letter-spacing:.3px}
+  .scribia-doc .scribia-wpp{display:inline-block; font-size:12pt; font-weight:700; color:#1f9d55; text-decoration:none; letter-spacing:.3px}
   .rodape-linha{display:flex; justify-content:space-between; align-items:center; margin-top:5mm; padding-top:3mm; border-top:1px solid var(--borda); font-size:8.5pt; color:var(--texto-suave)}
   .rodape-linha b{color:var(--verde-escuro)}
 </style>
@@ -178,15 +181,11 @@
     <p class="local">UERJ · Rio de Janeiro — RJ</p>
   </div>
 
-  <div class="rodape-capa">
-    <div>
-      <div class="promo">Realização</div>
-      <img src="assets/logo-abenforj.png" alt="ABENFO-RJ">
-    </div>
-    <div>
-      <div class="promo">Apoio</div>
-      <img src="assets/logo-abenfo-nacional.jpg" alt="ABENFO Nacional">
-    </div>
+  <div class="doc-creditos">
+    <div class="dc-item"><span>Promoção</span><img src="assets/logo-abenforj.png" alt="ABENFO-RJ"></div>
+    <div class="dc-item"><span>Organização</span><img src="assets/logo-residencia-enfermagem-obstetrica.png" alt="Programa de Residência em Enfermagem Obstétrica da UERJ"></div>
+    <div class="dc-item"><span>Realização</span><img src="assets/logo-especializacao-enfermagem-obstetrica-uerj.png" alt="Curso de Especialização em Enfermagem Obstétrica — UERJ"></div>
+    <div class="dc-item"><span>Apoio Institucional</span><img src="assets/logo-fe-uerj.png" alt="Faculdade de Enfermagem da UERJ"></div>
   </div>
 </section>
 
@@ -434,7 +433,7 @@
 </section>
 
 <!-- ============ COMISSÕES ============ -->
-<section class="page">
+<section class="page fim">
   <div class="sec-title">
     <span class="kicker">Realização</span>
     <h2>Comissões Organizadoras</h2>
@@ -480,16 +479,13 @@
   </div>
 
   <div class="rodape-final">
-    <div class="doc-creditos">
-      <div class="dc-item"><span>Promoção</span><img src="assets/logo-abenforj.png" alt="ABENFO-RJ"></div>
-      <div class="dc-item"><span>Organização</span><img src="assets/logo-residencia-enfermagem-obstetrica.jpg" alt="Programa de Residência em Enfermagem Obstétrica da UERJ"></div>
-      <div class="dc-item"><span>Realização</span><img src="assets/logo-especializacao-enfermagem-obstetrica-uerj.jpg" alt="Curso de Especialização em Enfermagem Obstétrica — UERJ"></div>
-      <div class="dc-item"><span>Apoio Institucional</span><img src="assets/logo-fe-uerj.jpg" alt="Faculdade de Enfermagem da UERJ"></div>
-    </div>
     <div class="scribia-doc">
       <img src="assets/scribia-logo.png" alt="ScribIA">
       <p class="scribia-tag">Cobertura digital do IX ENEON realizada pelo ScribIA — áudios, Livebooks e materiais digitais.</p>
-      <a class="scribia-url" href="https://www.scribia.com.br">www.scribia.com.br</a>
+      <div class="scribia-contato">
+        <a class="scribia-url" href="https://www.scribia.com.br">www.scribia.com.br</a>
+        <a class="scribia-wpp" href="https://wa.me/5521997478748">WhatsApp · +55 21 99747-8748</a>
+      </div>
     </div>
     <div class="rodape-linha">
       <span>Site e materiais desenvolvidos por <b>S2 Soluções</b></span>
