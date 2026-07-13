@@ -2877,10 +2877,7 @@
         });
 
         lista.sort(function (a, b) {
-          if (!a.data && !b.data) return 0;
-          if (!a.data) return 1;
-          if (!b.data) return -1;
-          return String(b.data).localeCompare(String(a.data));
+          return String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR', { sensitivity: 'base' });
         });
 
         cancelamentosCache = lista;
