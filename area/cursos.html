@@ -731,11 +731,12 @@
         }
         try {
           // Fontes de elegibilidade:
-          //  - participação: qualquer inscrição, presença OU papel (palestrante/comissão/professor)
+          //  - participação: qualquer inscrição, presença OU papel
           //  - monitoria: quem é monitora (inscricoes_evento.observacao ~ "monitor")
+          //  - palestrante/professor: 1 certificado por papel vinculado à conta (carrega o título/curso)
           var rIns = await sb.from('inscricoes_evento').select('evento_id, observacao').eq('profile_id', perfil.id);
           var rPart = await sb.from('participacoes_evento').select('evento_id').eq('profile_id', perfil.id);
-          var rPap = await sb.from('certificado_papeis').select('evento_id').eq('profile_id', perfil.id);
+          var rPap = await sb.from('certificado_papeis').select('evento_id, tipo, detalhe').eq('profile_id', perfil.id);
           var ids = {};
           var ehMonitora = {};
           (rIns.data || []).forEach(function (x) {
@@ -743,7 +744,8 @@
             if (x.observacao && /monitor/i.test(x.observacao)) ehMonitora[x.evento_id] = true;
           });
           (rPart.data || []).forEach(function (x) { ids[x.evento_id] = true; });
-          (rPap.data || []).forEach(function (x) { ids[x.evento_id] = true; });
+          var papeis = rPap.data || [];
+          papeis.forEach(function (x) { ids[x.evento_id] = true; });
           var lids = Object.keys(ids);
           if (!lids.length) { vazio('Você ainda não tem participações registradas.'); return; }
 
@@ -752,38 +754,59 @@
           if (!liberados.length) { vazio('Ficam disponíveis quando a diretoria liberar.'); return; }
           var libIds = liberados.map(function (e) { return e.id; });
           var nomeEv = {}; liberados.forEach(function (e) { nomeEv[e.id] = e.nome; });
+          var libSet = {}; libIds.forEach(function (id) { libSet[id] = true; });
 
           var rMod = await sb.from('certificado_modelos').select('*')
-            .in('tipo', ['participacao', 'monitoria']).eq('ativo', true)
+            .in('tipo', ['participacao', 'monitoria', 'palestrante', 'professor']).eq('ativo', true)
             .in('evento_id', libIds);
 
-          var ROTULO = { participacao: 'Declaração de participação', monitoria: 'Certificado de monitoria' };
-          var modelos = {}; // chave "eventoId|tipo" -> modelo
-          (rMod.data || []).forEach(function (m) {
-            // monitoria só é ofertada a quem é monitora naquele evento
-            if (m.tipo === 'monitoria' && !ehMonitora[m.evento_id]) return;
-            modelos[m.evento_id + '|' + m.tipo] = m;
-          });
-          var chaves = Object.keys(modelos).sort();
-          if (!chaves.length) { vazio('Ficam disponíveis quando a diretoria liberar.'); return; }
+          var ROTULO = {
+            participacao: 'Declaração de participação',
+            monitoria: 'Certificado de monitoria',
+            palestrante: 'Certificado de palestrante',
+            professor: 'Certificado de professor'
+          };
+          var modeloPorChave = {}; // chave "eventoId|tipo" -> modelo
+          (rMod.data || []).forEach(function (m) { modeloPorChave[m.evento_id + '|' + m.tipo] = m; });
 
-          lista.innerHTML = chaves.map(function (k) {
-            var m = modelos[k];
+          // Monta os itens (cada item = um certificado baixável)
+          var itens = [];
+          liberados.forEach(function (ev) {
+            var mp = modeloPorChave[ev.id + '|participacao'];
+            if (mp) itens.push({ modelo: mp, detalhe: null });
+            var mm = modeloPorChave[ev.id + '|monitoria'];
+            if (mm && ehMonitora[ev.id]) itens.push({ modelo: mm, detalhe: null });
+          });
+          papeis.forEach(function (pap) {
+            if (!libSet[pap.evento_id]) return;
+            if (pap.tipo !== 'palestrante' && pap.tipo !== 'professor') return;
+            var m = modeloPorChave[pap.evento_id + '|' + pap.tipo];
+            if (m) itens.push({ modelo: m, detalhe: pap.detalhe || '' });
+          });
+          if (!itens.length) { vazio('Ficam disponíveis quando a diretoria liberar.'); return; }
+
+          lista.innerHTML = itens.map(function (it, i) {
+            var m = it.modelo;
+            var sub = ROTULO[m.tipo] || 'Certificado';
+            if (it.detalhe) sub += ' · ' + it.detalhe;
             return '<li>' +
               '<div class="doc-info"><strong>' + escapar(nomeEv[m.evento_id] || '') + '</strong>' +
-              '<span>' + escapar(ROTULO[m.tipo] || 'Certificado') + ' disponível.</span></div>' +
-              '<a href="javascript:void(0)" data-cert="' + escapar(k) + '">Baixar →</a>' +
+              '<span>' + escapar(sub) + '</span></div>' +
+              '<a href="javascript:void(0)" data-cert-idx="' + i + '">Baixar →</a>' +
             '</li>';
           }).join('');
-          lista.querySelectorAll('a[data-cert]').forEach(function (a) {
-            a.addEventListener('click', function () { baixarCertificado(perfil, modelos[a.getAttribute('data-cert')], a); });
+          lista.querySelectorAll('a[data-cert-idx]').forEach(function (a) {
+            a.addEventListener('click', function () {
+              baixarCertificado(perfil, itens[parseInt(a.getAttribute('data-cert-idx'), 10)], a);
+            });
           });
         } catch (err) {
           vazio('Não foi possível carregar: ' + (err.message || ''));
         }
       }
 
-      async function baixarCertificado(perfil, modelo, link) {
+      async function baixarCertificado(perfil, item, link) {
+        var modelo = item && item.modelo;
         if (!modelo || !window.abenfoCert) return;
         var sb = window.abenfo.sb;
         var txt = link.textContent;
@@ -793,18 +816,22 @@
             ? await window.abenfoCert.baseUrlDeStorage(sb, 'certificados-bases', modelo.base_path)
             : null;
           var nome = perfil.nome_completo || '';
+          var det = item.detalhe || '';  // título da palestra / nome do curso (dos papéis)
           await window.abenfoCert.baixarPDF({
             baseUrl: base,
             textoPre: modelo.texto_pre || '',
             nome: nome,
             textoCorpo: window.abenfoCert.aplicarCampos(modelo.texto_template || '', {
               nome: nome,
-              carga_horaria: (modelo.config && modelo.config.carga_horaria) || ''
+              carga_horaria: (modelo.config && modelo.config.carga_horaria) || '',
+              titulo_palestra: det,
+              curso: det,
+              comissao: det
             }),
             config: modelo.config || {}
-          }, ({ participacao: 'Declaração de participação', monitoria: 'Certificado de monitoria' }[modelo.tipo] || 'Certificado') + ' - ' + nome + '.pdf');
+          }, ({ participacao: 'Declaração de participação', monitoria: 'Certificado de monitoria', palestrante: 'Certificado de palestrante', professor: 'Certificado de professor' }[modelo.tipo] || 'Certificado') + ' - ' + nome + '.pdf');
         } catch (err) {
-          alert('Erro ao gerar a declaração: ' + (err.message || 'tente novamente'));
+          alert('Erro ao gerar o certificado: ' + (err.message || 'tente novamente'));
         } finally {
           link.textContent = txt;
         }

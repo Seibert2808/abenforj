@@ -1108,6 +1108,7 @@
               <option value="monitoria">Monitoria</option>
               <option value="oficina">Oficina pré-evento</option>
               <option value="palestrante">Palestrante</option>
+              <option value="professor">Professor de curso</option>
               <option value="comissao">Comissão / organização</option>
             </select>
 
@@ -1125,7 +1126,7 @@
             <textarea id="cert-texto-corpo" rows="4"></textarea>
             <p style="font-size:0.825rem;color:var(--texto-suave);margin:0.35rem 0 0;">
               Campos automáticos: <code>{{nome}}</code> (vai grande, no centro), <code>{{oficina}}</code>,
-              <code>{{carga_horaria}}</code>, <code>{{titulo_palestra}}</code>, <code>{{comissao}}</code>.
+              <code>{{carga_horaria}}</code>, <code>{{titulo_palestra}}</code>, <code>{{curso}}</code>, <code>{{comissao}}</code>.
             </p>
 
             <label for="cert-carga" style="margin-top:1rem;">Carga horária</label>
@@ -1158,6 +1159,31 @@
               <button type="button" id="btn-cert-teste" class="btn btn-ghost">Gerar PDF de teste</button>
             </div>
             <p id="cert-status" style="font-size:0.875rem;color:var(--texto-suave);margin:0.6rem 0 0;"></p>
+
+            <hr style="border:0;border-top:1px solid var(--borda);margin:1.5rem 0;">
+
+            <h3 style="font-size:1rem;color:var(--texto-suave);margin:0 0 0.35rem;">Palestrantes e professores (papéis)</h3>
+            <p style="font-size:0.825rem;color:var(--texto-suave);margin:0 0 0.75rem;">
+              Cadastre quem é <strong>palestrante</strong> ou <strong>professor</strong> e vincule à conta da sócia:
+              assim o certificado dele aparece na área logada dela (quando os certificados estiverem liberados).
+              O <em>detalhe</em> é o título da palestra ou o nome do curso — vai no texto do certificado.
+              Sem conta vinculada, o certificado sai só por fora (PDF/e-mail).
+            </p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;">
+              <select id="papel-tipo">
+                <option value="palestrante">Palestrante</option>
+                <option value="professor">Professor de curso</option>
+                <option value="comissao">Comissão / organização</option>
+              </select>
+              <input id="papel-nome" type="text" placeholder="Nome completo" autocomplete="off">
+              <input id="papel-detalhe" type="text" placeholder="Título da palestra / nome do curso" autocomplete="off" style="grid-column:1 / -1;">
+              <input id="papel-email" type="email" placeholder="E-mail da sócia (opcional — ajuda a vincular a conta)" autocomplete="off" style="grid-column:1 / -1;">
+            </div>
+            <div style="margin-top:0.6rem;">
+              <button type="button" id="btn-papel-add" class="btn btn-solid" style="min-height:0;padding:0.55rem 0.9rem;">Cadastrar papel</button>
+            </div>
+            <p id="papel-status" style="font-size:0.875rem;color:var(--texto-suave);margin:0.6rem 0 0;"></p>
+            <div id="lista-papeis" style="margin-top:0.75rem;"><p style="color:var(--texto-suave);font-size:0.9rem;">Selecione um evento acima.</p></div>
           </div>
         </details>
 
@@ -4900,6 +4926,10 @@
           pre: 'Certificamos que',
           corpo: 'atuou como palestrante no IX ENEON – IX Encontro de Enfermagem Obstétrica e Neonatal do Estado do Rio de Janeiro, apresentando "{{titulo_palestra}}", realizado de 15 a 17 de julho de 2026, na UERJ.'
         },
+        professor: {
+          pre: 'Certificamos que',
+          corpo: 'ministrou o curso pré-encontro "{{curso}}" no IX ENEON – IX Encontro de Enfermagem Obstétrica e Neonatal do Estado do Rio de Janeiro, realizado em 15 de julho de 2026, na UERJ, com carga horária de 4 horas.'
+        },
         comissao: {
           pre: 'Certificamos que',
           corpo: 'integrou a {{comissao}} do IX ENEON – IX Encontro de Enfermagem Obstétrica e Neonatal do Estado do Rio de Janeiro, realizado de 15 a 17 de julho de 2026, na UERJ.'
@@ -4937,6 +4967,7 @@
         var ev = eventoCertSelecionado();
         certEl('cert-liberados').checked = !!(ev && ev.certificados_liberados);
         await carregarModeloCert();
+        await carregarPapeis();
       }
 
       async function carregarModeloCert() {
@@ -5056,6 +5087,98 @@
         }
       }
 
+      // ── Papéis (palestrantes / professores / comissão) ──
+      async function acharProfileId(email, nome) {
+        var sb = window.abenfo.sb;
+        if (email) {
+          var re = await sb.from('profiles').select('id').ilike('email', email).limit(2);
+          if (!re.error && re.data && re.data.length === 1) return re.data[0].id;
+        }
+        if (nome) {
+          var rn = await sb.from('profiles').select('id').ilike('nome_completo', nome).limit(2);
+          if (!rn.error && rn.data && rn.data.length === 1) return rn.data[0].id;
+        }
+        return null;
+      }
+
+      async function carregarPapeis() {
+        var sb = window.abenfo.sb;
+        var box = document.getElementById('lista-papeis');
+        if (!box) return;
+        var ev = eventoCertSelecionado();
+        if (!ev) { box.innerHTML = '<p style="color:var(--texto-suave);font-size:0.9rem;">Selecione um evento.</p>'; return; }
+        box.innerHTML = '<p style="color:var(--texto-suave);font-size:0.9rem;">Carregando…</p>';
+        var r = await sb.from('certificado_papeis')
+          .select('id, tipo, nome, detalhe, email, profile_id, profiles:profile_id(email)')
+          .eq('evento_id', ev.id).order('tipo').order('nome');
+        if (r.error) { box.innerHTML = '<p style="color:#b00020;">Erro: ' + escapar(r.error.message) + '</p>'; return; }
+        var linhas = r.data || [];
+        if (!linhas.length) { box.innerHTML = '<p style="color:var(--texto-suave);font-size:0.9rem;">Nenhum papel cadastrado para este evento.</p>'; return; }
+        var TIPO = { palestrante: 'Palestrante', professor: 'Professor', comissao: 'Comissão' };
+        box.innerHTML = linhas.map(function (p) {
+          var vinc = p.profile_id
+            ? '<span style="color:#1f7a4d;">✅ conta: ' + escapar((p.profiles && p.profiles.email) || 'vinculada') + '</span>'
+            : '<span style="color:#b06a00;">❌ sem conta</span> ' +
+              '<input type="email" data-papel-email="' + p.id + '" placeholder="e-mail da sócia" style="min-height:0;padding:0.3rem 0.5rem;font-size:0.8rem;max-width:190px;"> ' +
+              '<button type="button" class="btn btn-ghost" data-papel-vincular="' + p.id + '" style="min-height:0;padding:0.3rem 0.6rem;font-size:0.8rem;">Vincular</button>';
+          return '<div style="border:1px solid var(--borda);border-radius:8px;padding:0.55rem 0.7rem;margin-bottom:0.5rem;">' +
+            '<div style="display:flex;justify-content:space-between;gap:0.5rem;align-items:baseline;">' +
+              '<strong>' + escapar(p.nome) + '</strong>' +
+              '<span style="font-size:0.8rem;color:var(--texto-suave);">' + escapar(TIPO[p.tipo] || p.tipo) + '</span>' +
+            '</div>' +
+            (p.detalhe ? '<div style="font-size:0.85rem;color:var(--texto-suave);">' + escapar(p.detalhe) + '</div>' : '') +
+            '<div style="margin-top:0.35rem;font-size:0.85rem;display:flex;flex-wrap:wrap;gap:0.4rem;align-items:center;">' + vinc +
+              '<button type="button" class="btn btn-ghost" data-papel-remover="' + p.id + '" style="min-height:0;padding:0.3rem 0.6rem;font-size:0.8rem;color:#b00020;">Remover</button>' +
+            '</div>' +
+          '</div>';
+        }).join('');
+      }
+
+      async function adicionarPapel() {
+        var sb = window.abenfo.sb;
+        var ev = eventoCertSelecionado();
+        var st = document.getElementById('papel-status');
+        function msg(m, err) { st.textContent = m || ''; st.style.color = err ? '#b00020' : 'var(--texto-suave)'; }
+        if (!ev) { msg('Selecione um evento.', true); return; }
+        var nome = document.getElementById('papel-nome').value.trim();
+        if (!nome) { msg('Informe o nome.', true); return; }
+        var tipo = document.getElementById('papel-tipo').value;
+        var detalhe = document.getElementById('papel-detalhe').value.trim();
+        var email = document.getElementById('papel-email').value.trim();
+        var btn = document.getElementById('btn-papel-add');
+        btn.disabled = true; msg('Cadastrando…');
+        var profileId = await acharProfileId(email, nome);
+        var r = await sb.from('certificado_papeis').insert({
+          evento_id: ev.id, tipo: tipo, nome: nome,
+          detalhe: detalhe || null, email: email || null, profile_id: profileId
+        });
+        btn.disabled = false;
+        if (r.error) { msg('Erro: ' + r.error.message, true); return; }
+        document.getElementById('papel-nome').value = '';
+        document.getElementById('papel-detalhe').value = '';
+        document.getElementById('papel-email').value = '';
+        msg(profileId ? 'Cadastrado e vinculado à conta.' : 'Cadastrado (sem conta vinculada ainda).');
+        await carregarPapeis();
+      }
+
+      async function vincularPapel(id, email) {
+        var sb = window.abenfo.sb;
+        if (!email) { mostrarAviso('Digite o e-mail da sócia.', 'erro'); return; }
+        var pid = await acharProfileId(email, '');
+        if (!pid) { mostrarAviso('Nenhuma conta única com esse e-mail.', 'erro'); return; }
+        var r = await sb.from('certificado_papeis').update({ profile_id: pid }).eq('id', id);
+        if (r.error) { mostrarAviso('Erro ao vincular: ' + r.error.message, 'erro'); return; }
+        mostrarAviso('Papel vinculado à conta.', 'sucesso');
+        await carregarPapeis();
+      }
+
+      async function removerPapel(id) {
+        var sb = window.abenfo.sb;
+        var r = await sb.from('certificado_papeis').delete().eq('id', id);
+        if (r.error) { mostrarAviso('Erro ao remover: ' + r.error.message, 'erro'); return; }
+        await carregarPapeis();
+      }
+
       if (certEl('cert-evento')) {
         certEl('cert-evento').addEventListener('change', aoTrocarEventoCert);
         certEl('cert-tipo').addEventListener('change', carregarModeloCert);
@@ -5077,6 +5200,20 @@
           if (r.error) { mostrarAviso('Erro ao atualizar liberação: ' + r.error.message, 'erro'); certEl('cert-liberados').checked = !novo; return; }
           ev.certificados_liberados = novo;
           mostrarAviso(novo ? 'Certificados liberados para "' + ev.nome + '".' : 'Certificados bloqueados para "' + ev.nome + '".', 'sucesso');
+        });
+        var btnPapelAdd = document.getElementById('btn-papel-add');
+        if (btnPapelAdd) btnPapelAdd.addEventListener('click', adicionarPapel);
+        var listaPapeis = document.getElementById('lista-papeis');
+        if (listaPapeis) listaPapeis.addEventListener('click', function (e) {
+          var bV = e.target.closest('button[data-papel-vincular]');
+          if (bV) {
+            var idV = bV.getAttribute('data-papel-vincular');
+            var inp = listaPapeis.querySelector('input[data-papel-email="' + idV + '"]');
+            vincularPapel(idV, inp ? inp.value.trim() : '');
+            return;
+          }
+          var bR = e.target.closest('button[data-papel-remover]');
+          if (bR && confirm('Remover este papel?')) removerPapel(bR.getAttribute('data-papel-remover'));
         });
       }
 
