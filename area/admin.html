@@ -4263,7 +4263,9 @@
               '<button class="btn btn-ghost" data-trab-acao="ver" data-id="' + t.id + '">Ver detalhes</button>' +
               '<button class="btn btn-ghost" data-trab-acao="baixar-pdf" data-id="' + t.id + '" data-path="' + escapar(t.pdf_path) + '" data-nome="' + escapar(nomeArquivo) + '">Baixar PDF</button>' +
               '<button class="btn btn-ghost" data-trab-acao="anexar-pdf" data-id="' + t.id + '" data-path="' + escapar(t.pdf_path) + '">Anexar PDF</button>' +
-              '<button class="btn btn-ghost" data-trab-acao="anexar-apresentacao" data-id="' + t.id + '">' + (t.apresentacao_enviada_em ? 'Apresentação ✓ (trocar)' : 'Anexar apresentação') + '</button>' +
+              (t.apresentacao_enviada_em
+                ? '<button class="btn" data-trab-acao="anexar-apresentacao" data-id="' + t.id + '" style="background:#e6f4ea;color:#1f5d3a;border:1px solid #7fc49b;font-weight:600;">Apresentação ✓ (trocar)</button>'
+                : '<button class="btn btn-ghost" data-trab-acao="anexar-apresentacao" data-id="' + t.id + '">Anexar apresentação</button>') +
               '<button class="btn btn-ghost" data-trab-acao="' + (t.bloqueado ? 'desbloquear' : 'bloquear') + '" data-id="' + t.id + '">' + (t.bloqueado ? 'Desbloquear' : 'Bloquear edição') + '</button>' +
               '<span class="sep"></span>' +
               '<button class="btn btn-ghost btn-excluir" data-trab-acao="excluir" data-id="' + t.id + '" data-titulo="' + escapar(t.titulo) + '">Excluir</button>' +
@@ -4466,6 +4468,23 @@
         inp.click();
       }
 
+      // Baixa a apresentação já anexada (bucket 'apresentacoes') pra conferência.
+      async function baixarApresentacao(id, nome) {
+        var sb = window.abenfo.sb;
+        mostrarAviso('Baixando apresentação…', 'aviso');
+        var r = await sb.storage.from('apresentacoes').download(id + '.pdf');
+        if (r.error) { mostrarAviso('Erro ao baixar: ' + (r.error.message || r.error), 'erro'); return; }
+        var url = URL.createObjectURL(r.data);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = (nome || ('apresentacao-' + id)).replace(/[\\/:"*?<>|]/g, '-') + '.pdf';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        mostrarAviso('Download iniciado.', 'sucesso');
+      }
+
       function abrirDetalhesTrabalho(id) {
         var t = trabalhosCache.find(function (x) { return x.id === id; });
         if (!t) return;
@@ -4515,7 +4534,10 @@
           '<div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--borda);display:flex;gap:0.5rem;flex-wrap:wrap;">' +
             '<button type="button" class="btn btn-solid" data-trab-acao="baixar-pdf" data-id="' + t.id + '" data-path="' + escapar(t.pdf_path) + '" data-nome="' + escapar(nomeArquivo) + '" style="min-height:0;padding:0.55rem 0.9rem;font-size:0.875rem;">Baixar PDF</button>' +
             '<button type="button" class="btn btn-ghost" data-trab-acao="anexar-pdf" data-id="' + t.id + '" data-path="' + escapar(t.pdf_path) + '" style="min-height:0;padding:0.55rem 0.9rem;font-size:0.875rem;">Anexar PDF</button>' +
-            '<button type="button" class="btn btn-ghost" data-trab-acao="anexar-apresentacao" data-id="' + t.id + '" style="min-height:0;padding:0.55rem 0.9rem;font-size:0.875rem;">' + (t.apresentacao_enviada_em ? 'Apresentação ✓ (trocar)' : 'Anexar apresentação') + '</button>' +
+            (t.apresentacao_enviada_em
+              ? '<button type="button" class="btn" data-trab-acao="anexar-apresentacao" data-id="' + t.id + '" style="min-height:0;padding:0.55rem 0.9rem;font-size:0.875rem;background:#e6f4ea;color:#1f5d3a;border:1px solid #7fc49b;font-weight:600;">Apresentação ✓ (trocar)</button>'
+                + '<button type="button" class="btn btn-ghost" data-trab-acao="baixar-apresentacao" data-id="' + t.id + '" data-nome="' + escapar(nomeArquivo + ' - APRESENTACAO') + '" style="min-height:0;padding:0.55rem 0.9rem;font-size:0.875rem;">Baixar apresentação</button>'
+              : '<button type="button" class="btn btn-ghost" data-trab-acao="anexar-apresentacao" data-id="' + t.id + '" style="min-height:0;padding:0.55rem 0.9rem;font-size:0.875rem;">Anexar apresentação</button>') +
             '<label style="display:flex;align-items:center;gap:0.5rem;font-size:0.875rem;flex:1;">Observação para a relatora:</label>' +
           '</div>' +
           '<textarea id="obs-avaliacao-input" rows="3" style="width:100%;margin-top:0.4rem;padding:0.6rem;border:1px solid var(--borda);border-radius:6px;font:inherit;" placeholder="Comentário visível pra relatora">' + escapar(t.observacao_avaliacao || '') + '</textarea>' +
@@ -4555,6 +4577,10 @@
         }
         if (acao === 'anexar-apresentacao') {
           anexarApresentacaoTrabalho(id);
+          return;
+        }
+        if (acao === 'baixar-apresentacao') {
+          baixarApresentacao(id, btn.getAttribute('data-nome'));
           return;
         }
         if (acao === 'bloquear' || acao === 'desbloquear') {
