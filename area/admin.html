@@ -4263,6 +4263,7 @@
               '<button class="btn btn-ghost" data-trab-acao="ver" data-id="' + t.id + '">Ver detalhes</button>' +
               '<button class="btn btn-ghost" data-trab-acao="baixar-pdf" data-id="' + t.id + '" data-path="' + escapar(t.pdf_path) + '" data-nome="' + escapar(nomeArquivo) + '">Baixar PDF</button>' +
               '<button class="btn btn-ghost" data-trab-acao="anexar-pdf" data-id="' + t.id + '" data-path="' + escapar(t.pdf_path) + '">Anexar PDF</button>' +
+              '<button class="btn btn-ghost" data-trab-acao="anexar-apresentacao" data-id="' + t.id + '">' + (t.apresentacao_enviada_em ? 'Apresentação ✓ (trocar)' : 'Anexar apresentação') + '</button>' +
               '<button class="btn btn-ghost" data-trab-acao="' + (t.bloqueado ? 'desbloquear' : 'bloquear') + '" data-id="' + t.id + '">' + (t.bloqueado ? 'Desbloquear' : 'Bloquear edição') + '</button>' +
               '<span class="sep"></span>' +
               '<button class="btn btn-ghost btn-excluir" data-trab-acao="excluir" data-id="' + t.id + '" data-titulo="' + escapar(t.titulo) + '">Excluir</button>' +
@@ -4421,6 +4422,50 @@
         inp.click();
       }
 
+      // Upload manual da APRESENTAÇÃO (slides) de um trabalho aprovado — ex.: a
+      // relatora mandou por e-mail/WhatsApp. Sobe pro bucket 'apresentacoes' como
+      // <id>.pdf e carimba apresentacao_path + apresentacao_enviada_em (admin pode
+      // gravar direto pelas políticas "admin tudo").
+      async function anexarApresentacaoTrabalho(id) {
+        if (!id) { mostrarAviso('Trabalho sem id.', 'erro'); return; }
+        var sb = window.abenfo.sb;
+        var inp = document.createElement('input');
+        inp.type = 'file';
+        inp.accept = 'application/pdf';
+        inp.onchange = async function () {
+          var file = inp.files && inp.files[0];
+          if (!file) return;
+          if (file.type !== 'application/pdf' && !/\.pdf$/i.test(file.name)) {
+            mostrarAviso('Selecione um arquivo PDF.', 'erro');
+            return;
+          }
+          if (file.size > 30 * 1024 * 1024) {
+            mostrarAviso('PDF muito grande (máx. 30 MB).', 'erro');
+            return;
+          }
+          mostrarAviso('Enviando apresentação…', 'aviso');
+          try {
+            var path = id + '.pdf';
+            var up = await sb.storage.from('apresentacoes')
+              .upload(path, file, { upsert: true, contentType: 'application/pdf' });
+            if (up.error) throw up.error;
+            var r = await sb.from('trabalhos_cientificos')
+              .update({ apresentacao_path: path, apresentacao_enviada_em: new Date().toISOString() })
+              .eq('id', id);
+            if (r.error) throw r.error;
+            mostrarAviso('Apresentação anexada com sucesso!', 'sucesso');
+            await carregarTrabalhosAdmin();
+            if (modalState.tipoLista === 'trab-detalhes' && modalState.trabalho && modalState.trabalho.id === id) {
+              modalState.trabalho = trabalhosCache.find(function (x) { return x.id === id; }) || modalState.trabalho;
+              renderModal();
+            }
+          } catch (err) {
+            mostrarAviso('Erro ao anexar a apresentação: ' + (err.message || err), 'erro');
+          }
+        };
+        inp.click();
+      }
+
       function abrirDetalhesTrabalho(id) {
         var t = trabalhosCache.find(function (x) { return x.id === id; });
         if (!t) return;
@@ -4455,6 +4500,7 @@
         dl += dlLinha('Descritores', escapar((t.descritores || []).join(', ')));
         dl += dlLinha('Submetido em', fmtDataHora(t.submetido_em));
         if (t.atualizado_em) dl += dlLinha('Atualizado em', fmtDataHora(t.atualizado_em));
+        dl += dlLinha('Apresentação', t.apresentacao_enviada_em ? ('recebida em ' + fmtDataHora(t.apresentacao_enviada_em)) : 'não recebida');
         dl += '</dl>';
 
         var nomeArquivo = (t.relator_nome + ' - ' + t.titulo).replace(/[\\/:"*?<>|]/g, '-');
@@ -4469,6 +4515,7 @@
           '<div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--borda);display:flex;gap:0.5rem;flex-wrap:wrap;">' +
             '<button type="button" class="btn btn-solid" data-trab-acao="baixar-pdf" data-id="' + t.id + '" data-path="' + escapar(t.pdf_path) + '" data-nome="' + escapar(nomeArquivo) + '" style="min-height:0;padding:0.55rem 0.9rem;font-size:0.875rem;">Baixar PDF</button>' +
             '<button type="button" class="btn btn-ghost" data-trab-acao="anexar-pdf" data-id="' + t.id + '" data-path="' + escapar(t.pdf_path) + '" style="min-height:0;padding:0.55rem 0.9rem;font-size:0.875rem;">Anexar PDF</button>' +
+            '<button type="button" class="btn btn-ghost" data-trab-acao="anexar-apresentacao" data-id="' + t.id + '" style="min-height:0;padding:0.55rem 0.9rem;font-size:0.875rem;">' + (t.apresentacao_enviada_em ? 'Apresentação ✓ (trocar)' : 'Anexar apresentação') + '</button>' +
             '<label style="display:flex;align-items:center;gap:0.5rem;font-size:0.875rem;flex:1;">Observação para a relatora:</label>' +
           '</div>' +
           '<textarea id="obs-avaliacao-input" rows="3" style="width:100%;margin-top:0.4rem;padding:0.6rem;border:1px solid var(--borda);border-radius:6px;font:inherit;" placeholder="Comentário visível pra relatora">' + escapar(t.observacao_avaliacao || '') + '</textarea>' +
@@ -4504,6 +4551,10 @@
         }
         if (acao === 'anexar-pdf') {
           anexarPdfTrabalho(btn.getAttribute('data-path'));
+          return;
+        }
+        if (acao === 'anexar-apresentacao') {
+          anexarApresentacaoTrabalho(id);
           return;
         }
         if (acao === 'bloquear' || acao === 'desbloquear') {
