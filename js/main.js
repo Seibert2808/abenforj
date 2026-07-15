@@ -30,9 +30,9 @@
   // sufixo da chave (v9 -> v10).
   // ============================================================
   var modal = document.getElementById('modal-boas-vindas');
-  var STORAGE_KEY = 'abenfo_modal_ix_v10';
-  // Aviso do resultado some sozinho após o IX ENEON (evento em 16/07/2026).
-  var EXPIRA_MODAL = new Date('2026-07-17T00:00:00-03:00');
+  var STORAGE_KEY = 'abenfo_modal_ix_v11';
+  // Aviso "Hoje é dia de IX ENEON!" some sozinho após o evento (15-17/07/2026).
+  var EXPIRA_MODAL = new Date('2026-07-18T00:00:00-03:00');
 
   if (modal) {
     var jaViu = false;
