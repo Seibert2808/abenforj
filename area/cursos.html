@@ -736,7 +736,7 @@
           //  - palestrante/professor: 1 certificado por papel vinculado à conta (carrega o título/curso)
           var rIns = await sb.from('inscricoes_evento').select('evento_id, observacao').eq('profile_id', perfil.id);
           var rPart = await sb.from('participacoes_evento').select('evento_id').eq('profile_id', perfil.id);
-          var rPap = await sb.from('certificado_papeis').select('evento_id, tipo, detalhe').eq('profile_id', perfil.id);
+          var rPap = await sb.from('certificado_papeis').select('evento_id, tipo, detalhe, nome').eq('profile_id', perfil.id);
           var ids = {};
           var ehMonitora = {};
           (rIns.data || []).forEach(function (x) {
@@ -781,7 +781,9 @@
             if (!libSet[pap.evento_id]) return;
             if (pap.tipo !== 'palestrante' && pap.tipo !== 'professor') return;
             var m = modeloPorChave[pap.evento_id + '|' + pap.tipo];
-            if (m) itens.push({ modelo: m, detalhe: pap.detalhe || '' });
+            // palestrante/professor: usa o nome curado do papel (com título Profª Drª etc.),
+            // não o nome da conta. participação/monitoria seguem com o nome do perfil.
+            if (m) itens.push({ modelo: m, detalhe: pap.detalhe || '', nomeCurado: pap.nome || '' });
           });
           if (!itens.length) { vazio('Ficam disponíveis quando a diretoria liberar.'); return; }
 
@@ -815,7 +817,7 @@
           var base = modelo.base_path
             ? await window.abenfoCert.baseUrlDeStorage(sb, 'certificados-bases', modelo.base_path)
             : null;
-          var nome = perfil.nome_completo || '';
+          var nome = (item && item.nomeCurado) || perfil.nome_completo || '';
           var det = item.detalhe || '';  // título da palestra / nome do curso (dos papéis)
           await window.abenfoCert.baixarPDF({
             baseUrl: base,

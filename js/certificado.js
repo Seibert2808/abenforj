@@ -99,7 +99,10 @@
     if (opts.textoPre) {
       ctx.font = 'normal ' + preSize + 'px ' + fonte;
       ctx.fillText(opts.textoPre, cx, y);
-      y += preSize * 1.7;
+      // O nome é desenhado na linha de base, então "sobe" pela altura das
+      // maiúsculas. O avanço precisa contar o tamanho do nome (grande), senão
+      // ele encosta no "pré". Assim o nome pula uma linha de verdade.
+      y += preSize * 0.6 + nomeSize * 0.85;
     }
 
     if (opts.nome) {
