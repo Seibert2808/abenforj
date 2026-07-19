@@ -757,14 +757,15 @@
           var libSet = {}; libIds.forEach(function (id) { libSet[id] = true; });
 
           var rMod = await sb.from('certificado_modelos').select('*')
-            .in('tipo', ['participacao', 'monitoria', 'palestrante', 'professor']).eq('ativo', true)
+            .in('tipo', ['participacao', 'monitoria', 'palestrante', 'professor', 'comissao']).eq('ativo', true)
             .in('evento_id', libIds);
 
           var ROTULO = {
             participacao: 'Declaração de participação',
             monitoria: 'Certificado de monitoria',
             palestrante: 'Certificado de palestrante',
-            professor: 'Certificado de professor'
+            professor: 'Certificado de professor',
+            comissao: 'Certificado de organização'
           };
           var modeloPorChave = {}; // chave "eventoId|tipo" -> modelo
           (rMod.data || []).forEach(function (m) { modeloPorChave[m.evento_id + '|' + m.tipo] = m; });
@@ -779,7 +780,7 @@
           });
           papeis.forEach(function (pap) {
             if (!libSet[pap.evento_id]) return;
-            if (pap.tipo !== 'palestrante' && pap.tipo !== 'professor') return;
+            if (pap.tipo !== 'palestrante' && pap.tipo !== 'professor' && pap.tipo !== 'comissao') return;
             var m = modeloPorChave[pap.evento_id + '|' + pap.tipo];
             // palestrante/professor: usa o nome curado do papel (com título Profª Drª etc.),
             // não o nome da conta. participação/monitoria seguem com o nome do perfil.
@@ -831,7 +832,7 @@
               comissao: det
             }),
             config: modelo.config || {}
-          }, ({ participacao: 'Declaração de participação', monitoria: 'Certificado de monitoria', palestrante: 'Certificado de palestrante', professor: 'Certificado de professor' }[modelo.tipo] || 'Certificado') + ' - ' + nome + '.pdf');
+          }, ({ participacao: 'Declaração de participação', monitoria: 'Certificado de monitoria', palestrante: 'Certificado de palestrante', professor: 'Certificado de professor', comissao: 'Certificado de organização' }[modelo.tipo] || 'Certificado') + ' - ' + nome + '.pdf');
         } catch (err) {
           alert('Erro ao gerar o certificado: ' + (err.message || 'tente novamente'));
         } finally {
