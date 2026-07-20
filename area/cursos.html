@@ -785,7 +785,8 @@
             // participação só para quem tem PRESENÇA registrada (não basta estar inscrito)
             if (mp && temPresenca[ev.id]) itens.push({ modelo: mp, detalhe: null });
             var mm = modeloPorChave[ev.id + '|monitoria'];
-            if (mm && ehMonitora[ev.id]) itens.push({ modelo: mm, detalhe: null });
+            // monitoria: precisa ser monitora (inscrição) E ter presença registrada
+            if (mm && ehMonitora[ev.id] && temPresenca[ev.id]) itens.push({ modelo: mm, detalhe: null });
           });
           papeis.forEach(function (pap) {
             if (!libSet[pap.evento_id]) return;

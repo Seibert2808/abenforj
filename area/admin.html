@@ -4260,6 +4260,7 @@
                 '<span class="badge badge-soft">' + escapar(ROTULOS_AREA_TRAB[t.area] || t.area) + '</span>' +
                 '<span class="badge badge-' + t.status + '">' + t.status.replace('_',' ') + '</span>' +
                 (t.bloqueado ? '<span class="badge badge-soft">bloqueado</span>' : '') +
+                (t.apresentado ? '<span class="badge" style="background:#1f5d3a;color:#fff;">apresentado</span>' : '') +
               '</div>' +
               '<div class="assoc-meta">' +
                 metaLinha('Relator(a)', escapar(t.relator_nome) + ' &lt;' + escapar(t.relator_email) + '&gt;') +
@@ -4279,6 +4280,7 @@
                 ? '<button class="btn" data-trab-acao="baixar-apresentacao" data-id="' + t.id + '" data-nome="' + escapar(nomeArquivo + ' - APRESENTACAO') + '" style="background:#1f5d3a;color:#fff;font-weight:600;">⬇ Baixar apresentação</button>'
                   + '<button class="btn btn-ghost" data-trab-acao="anexar-apresentacao" data-id="' + t.id + '" style="background:#e6f4ea;color:#1f5d3a;border:1px solid #7fc49b;">Trocar</button>'
                 : '<button class="btn btn-ghost" data-trab-acao="anexar-apresentacao" data-id="' + t.id + '">Anexar apresentação</button>') +
+              '<button class="btn ' + (t.apresentado ? 'btn-solid' : 'btn-ghost') + '" data-trab-acao="apresentado" data-id="' + t.id + '"' + (t.apresentado ? ' style="background:#1f5d3a;color:#fff;"' : '') + '>' + (t.apresentado ? '✓ Apresentado' : 'Marcar apresentado') + '</button>' +
               '<button class="btn btn-ghost" data-trab-acao="' + (t.bloqueado ? 'desbloquear' : 'bloquear') + '" data-id="' + t.id + '">' + (t.bloqueado ? 'Desbloquear' : 'Bloquear edição') + '</button>' +
               '<span class="sep"></span>' +
               '<button class="btn btn-ghost btn-excluir" data-trab-acao="excluir" data-id="' + t.id + '" data-titulo="' + escapar(t.titulo) + '">Excluir</button>' +
@@ -4676,6 +4678,15 @@
         }
         if (acao === 'baixar-apresentacao') {
           baixarApresentacao(id, btn.getAttribute('data-nome'));
+          return;
+        }
+        if (acao === 'apresentado') {
+          var tap = trabalhosCache.find(function (x) { return x.id === id; });
+          var novoAp = !(tap && tap.apresentado);
+          var rap = await sb.from('trabalhos_cientificos').update({ apresentado: novoAp }).eq('id', id);
+          if (rap.error) { mostrarAviso('Erro: ' + rap.error.message, 'erro'); return; }
+          mostrarAviso(novoAp ? 'Marcado como apresentado.' : 'Desmarcado.', 'sucesso');
+          await carregarTrabalhosAdmin();
           return;
         }
         if (acao === 'bloquear' || acao === 'desbloquear') {
