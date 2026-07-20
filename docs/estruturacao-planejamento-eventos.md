@@ -201,4 +201,36 @@ where e.nome = 'NOME DO EVENTO' order by m.tipo;
 
 ---
 
+## 10. Roadmap — inscrição nativa com pagamento (futuro)
+
+> Objetivo: inscrição **direto na plataforma**, substituindo/complementando o Doity.
+> Ganhos: sem taxa do Doity, dados 100% nossos e **número de inscrição próprio**
+> (os certificados por "número" passam a usar o nosso ID, não o `doity_id`).
+
+**Requisitos definidos (jul/2026):**
+- Pagamento: **Pix + cartão** (com parcelamento).
+- **Inscrição cortesia** (gratuita) para sócias/convidados — sem pagamento.
+- **Só recibo** (sem nota fiscal): comprovante do provedor + e-mail de confirmação.
+
+**Provedor recomendado:** **Mercado Pago (Checkout Pro)** — Pix + cartão parcelado, em português, público BR. Alternativa: **Stripe** (se quiser padronizar com outros projetos ou cartão internacional). *Conferir taxas atuais antes de decidir.*
+
+**Arquitetura (cabe no stack atual — site estático + Supabase):**
+```
+Formulário de inscrição no site
+  → Edge Function cria "pedido" pendente (tabela nova: pedidos_inscricao)
+  → Checkout do provedor (Pix/cartão)
+  → Webhook (Edge Function) confirma o pagamento
+  → cria a inscrição (inscricoes_evento / inscritos_externos) + e-mail com recibo e número
+Cortesia: valida quem é sócia/convidado e cria a inscrição direto (sem pagamento).
+```
+- **1 Supabase Edge Function** para o webhook (não precisa de servidor novo).
+- Tabela nova de **pedidos/inscrições pendentes** (status: pendente/pago/cancelado).
+- **Lotes/categorias** com preços (sócia, não-sócia, estudante) — como no Doity.
+
+**A decidir quando for construir:** lotes e preços, política de reembolso/cancelamento, prazo, número de parcelas no cartão.
+
+**Esforço:** médio. Dá para testar tudo no **sandbox** do provedor antes de abrir de verdade.
+
+---
+
 *Este playbook resume a estrutura para reuso. Para o passo a passo específico do IX ENEON 2026, ver `docs/fluxo-certificados-ix-eneon.md`.*
