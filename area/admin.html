@@ -1211,8 +1211,17 @@
 
             <hr style="border:0;border-top:1px solid var(--borda);margin:1.25rem 0;">
 
-            <h3 style="font-size:1rem;color:var(--texto-suave);margin:0 0 0.5rem;">Adicionar participante externo</h3>
+            <h3 style="font-size:1rem;color:var(--texto-suave);margin:0 0 0.5rem;">Adicionar pessoa (convidado, palestrante, monitor…)</h3>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;">
+              <select id="part-ext-tipo" style="grid-column:1 / -1;min-height:0;padding:0.5rem;border-radius:6px;border:1px solid var(--borda);">
+                <option value="convidado">Tipo: Convidado</option>
+                <option value="monitor">Tipo: Monitor</option>
+                <option value="palestrante">Tipo: Palestrante</option>
+                <option value="professor">Tipo: Professor</option>
+                <option value="socia">Tipo: Sócio(a)</option>
+                <option value="externo">Tipo: Não-sócio(a)</option>
+                <option value="outro">Tipo: Outro</option>
+              </select>
               <input id="part-ext-nome" type="text" placeholder="Nome completo" autocomplete="off" style="grid-column:1 / -1;">
               <input id="part-ext-email" type="email" placeholder="E-mail (opcional)" autocomplete="off">
               <input id="part-ext-tel" type="tel" placeholder="Telefone (opcional)" autocomplete="off">
@@ -1227,10 +1236,29 @@
 
             <h3 style="font-size:1rem;color:var(--texto-suave);margin:0 0 0.35rem;">Credenciamento — marcar presença</h3>
             <p style="font-size:0.875rem;color:var(--texto-suave);margin:0 0 0.6rem;">
-              Marque quem esteve presente (da lista de assinatura). Aparecem as <strong>sócias</strong> e os
-              <strong>externos</strong> inscritos no evento. Quem for marcado passa a receber a declaração de participação.
+              Marque quem esteve presente (da lista de assinatura). Aparecem <strong>sócias</strong>, <strong>monitores</strong>
+              (marcados na inscrição), <strong>externos</strong> inscritos e <strong>convidados</strong> (adicionados acima).
+              Filtre por tipo/situação e imprima a lista do filtro. Quem for marcado passa a receber a declaração de participação.
             </p>
             <input id="cred-busca" type="search" placeholder="Buscar por nome ou e-mail…" autocomplete="off" style="width:100%;">
+            <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;margin-top:0.5rem;">
+              <select id="cred-filtro-tipo" style="min-height:0;padding:0.35rem 0.5rem;border-radius:6px;border:1px solid var(--borda);font-size:0.85rem;">
+                <option value="">Todos os tipos</option>
+                <option value="socia">Sócias</option>
+                <option value="monitor">Monitores</option>
+                <option value="externo">Externos</option>
+                <option value="convidado">Convidados</option>
+                <option value="palestrante">Palestrantes</option>
+                <option value="professor">Professores</option>
+                <option value="outro">Outros</option>
+              </select>
+              <select id="cred-filtro-sit" style="min-height:0;padding:0.35rem 0.5rem;border-radius:6px;border:1px solid var(--borda);font-size:0.85rem;">
+                <option value="">Presentes e ausentes</option>
+                <option value="presente">Só presentes</option>
+                <option value="ausente">Só ausentes</option>
+              </select>
+              <button type="button" id="cred-imprimir" class="btn btn-ghost" style="min-height:0;padding:0.4rem 0.8rem;font-size:0.85rem;">🖨 Imprimir lista</button>
+            </div>
             <p id="cred-contador" style="font-size:0.875rem;color:var(--texto-suave);margin:0.5rem 0;"></p>
             <div id="lista-credenciamento"><p style="color:var(--texto-suave);">Selecione um evento.</p></div>
 
@@ -5628,6 +5656,7 @@
       async function adicionarExterno() {
         var sb = window.abenfo.sb;
         var id = partEl('part-evento').value;
+        var tipo = (partEl('part-ext-tipo') || {}).value || 'convidado';
         var nome = partEl('part-ext-nome').value.trim();
         var email = partEl('part-ext-email').value.trim();
         var tel = partEl('part-ext-tel').value.trim();
@@ -5636,18 +5665,25 @@
         if (!id) { fb.textContent = 'Selecione um evento primeiro.'; return; }
         if (!nome) { fb.textContent = 'Informe o nome.'; return; }
         var r = await sb.from('participantes_externos')
-          .insert({ evento_id: id, nome: nome, email: email || null, telefone: tel || null, documento: doc || null });
+          .insert({ evento_id: id, nome: nome, email: email || null, telefone: tel || null, documento: doc || null, observacao: tipo });
         if (r.error) { fb.textContent = 'Erro: ' + r.error.message; return; }
         partEl('part-ext-nome').value = '';
         partEl('part-ext-email').value = '';
         partEl('part-ext-tel').value = '';
         partEl('part-ext-doc').value = '';
-        fb.textContent = 'Participante externo cadastrado.';
+        fb.textContent = 'Pessoa adicionada como presente (' + tipo + ').';
         await carregarListaParticipantes(id);
+        await carregarCredenciamento(id);
       }
 
       // ── Credenciamento (marcar presença a partir da lista de inscritos) ──────
       var credCache = { inscritos: [], eventoId: null };
+      var TIPOS_PESSOA = ['socia', 'monitor', 'externo', 'convidado', 'palestrante', 'professor', 'outro'];
+      function ehMonitorObs(obs) { return /monitor/i.test(obs || ''); }
+      function tipoManual(obs) {
+        var v = String(obs || '').trim().toLowerCase();
+        return TIPOS_PESSOA.indexOf(v) >= 0 ? v : 'convidado';
+      }
 
       async function carregarCredenciamento(eventoId) {
         var sb = window.abenfo.sb;
@@ -5657,11 +5693,11 @@
         cont.innerHTML = '<p style="color:var(--texto-suave);">Carregando inscritos…</p>';
 
         var rSoc = await sb.from('inscricoes_evento')
-          .select('profile_id, profiles(nome_completo, email)').eq('evento_id', eventoId);
+          .select('profile_id, observacao, profiles(nome_completo, email)').eq('evento_id', eventoId);
         var rExt = await sb.from('inscritos_externos')
-          .select('id, nome, email').eq('evento_id', eventoId);
+          .select('id, nome, email, observacao').eq('evento_id', eventoId);
         var rPresS = await sb.from('participacoes_evento').select('profile_id').eq('evento_id', eventoId);
-        var rPresE = await sb.from('participantes_externos').select('id, inscrito_externo_id').eq('evento_id', eventoId);
+        var rPresE = await sb.from('participantes_externos').select('id, inscrito_externo_id, nome, email, observacao').eq('evento_id', eventoId);
 
         var err = rSoc.error || rExt.error || rPresS.error || rPresE.error;
         if (err) { cont.innerHTML = '<p style="color:#c53030;">Erro: ' + escapar(err.message) + '</p>'; return; }
@@ -5673,35 +5709,59 @@
         (rSoc.data || []).forEach(function (x) {
           var pr = x.profiles || {};
           if (!x.profile_id) return;
-          lista.push({ tipo: 'socia', key: x.profile_id, nome: pr.nome_completo || '(sem nome)', email: pr.email || '', presente: !!presS[x.profile_id], partExtId: null });
+          lista.push({ origem: 'socia', tipo: ehMonitorObs(x.observacao) ? 'monitor' : 'socia', key: x.profile_id, nome: pr.nome_completo || '(sem nome)', email: pr.email || '', presente: !!presS[x.profile_id], partExtId: null });
         });
         (rExt.data || []).forEach(function (x) {
-          lista.push({ tipo: 'externo', key: x.id, nome: x.nome, email: x.email || '', presente: !!presE[x.id], partExtId: presE[x.id] || null });
+          lista.push({ origem: 'externo', tipo: ehMonitorObs(x.observacao) ? 'monitor' : 'externo', key: x.id, nome: x.nome, email: x.email || '', presente: !!presE[x.id], partExtId: presE[x.id] || null });
+        });
+        // Pessoas adicionadas à mão (participantes_externos sem vínculo com inscrito): tipo vem da observação.
+        (rPresE.data || []).forEach(function (x) {
+          if (x.inscrito_externo_id) return;
+          lista.push({ origem: 'manual', tipo: tipoManual(x.observacao), key: x.id, nome: x.nome || '(sem nome)', email: x.email || '', presente: true, partExtId: x.id });
         });
         lista.sort(function (a, b) { return normalizarBusca(a.nome).localeCompare(normalizarBusca(b.nome)); });
         credCache = { inscritos: lista, eventoId: eventoId };
         renderCredenciamento();
       }
 
+      var CRED_BADGE = {
+        socia:      { txt: 'sócia',       bg: 'var(--verde-pastel)', fg: 'var(--verde-escuro)' },
+        monitor:    { txt: 'monitor',     bg: '#e0e7ff', fg: '#3730a3' },
+        externo:    { txt: 'externo',     bg: '#f0e6d2', fg: '#7a5a10' },
+        convidado:  { txt: 'convidado',   bg: '#fde2e4', fg: '#9d174d' },
+        palestrante:{ txt: 'palestrante', bg: '#dcecff', fg: '#1e4e8c' },
+        professor:  { txt: 'professor',   bg: '#e6f4ea', fg: '#1f5d3a' },
+        outro:      { txt: 'outro',       bg: '#eeeeee', fg: '#555555' }
+      };
+      function credFiltrada() {
+        var termo = normalizarBusca((partEl('cred-busca') || {}).value || '');
+        var ftipo = (partEl('cred-filtro-tipo') || {}).value || '';
+        var fsit = (partEl('cred-filtro-sit') || {}).value || '';
+        return credCache.inscritos.filter(function (x) {
+          if (ftipo && x.tipo !== ftipo) return false;
+          if (fsit === 'presente' && !x.presente) return false;
+          if (fsit === 'ausente' && x.presente) return false;
+          if (termo && normalizarBusca(x.nome + ' ' + x.email).indexOf(termo) < 0) return false;
+          return true;
+        });
+      }
       function renderCredenciamento() {
         var cont = partEl('lista-credenciamento');
         if (!cont) return;
         var lista = credCache.inscritos;
-        var buscaEl = partEl('cred-busca');
-        var termo = normalizarBusca(buscaEl ? buscaEl.value : '');
-        var filtrada = termo ? lista.filter(function (x) { return normalizarBusca(x.nome + ' ' + x.email).indexOf(termo) >= 0; }) : lista;
+        var filtrada = credFiltrada();
         var presentes = lista.filter(function (x) { return x.presente; }).length;
         partEl('cred-contador').innerHTML = lista.length
-          ? '<strong>' + presentes + '</strong> presentes de ' + lista.length + ' inscritos' + (termo ? ' · ' + filtrada.length + ' no filtro' : '')
+          ? '<strong>' + presentes + '</strong> presentes de ' + lista.length + ' · <strong>' + filtrada.length + '</strong> no filtro'
           : '';
         if (!lista.length) { cont.innerHTML = '<p style="color:var(--texto-suave);">Nenhum inscrito neste evento.</p>'; return; }
+        if (!filtrada.length) { cont.innerHTML = '<p style="color:var(--texto-suave);">Nada no filtro atual.</p>'; return; }
 
         var LIMITE = 400;
         cont.innerHTML = filtrada.slice(0, LIMITE).map(function (x) {
-          var idx = lista.indexOf(x);
-          var badge = x.tipo === 'socia'
-            ? '<span style="font-size:0.72rem;background:var(--verde-pastel);color:var(--verde-escuro);padding:0.1rem 0.4rem;border-radius:4px;">sócia</span>'
-            : '<span style="font-size:0.72rem;background:#f0e6d2;color:#7a5a10;padding:0.1rem 0.4rem;border-radius:4px;">externo</span>';
+          var idx = credCache.inscritos.indexOf(x);
+          var b = CRED_BADGE[x.tipo] || CRED_BADGE.outro;
+          var badge = '<span style="font-size:0.72rem;background:' + b.bg + ';color:' + b.fg + ';padding:0.1rem 0.4rem;border-radius:4px;">' + b.txt + '</span>';
           return '<div class="part-linha" style="display:flex;justify-content:space-between;align-items:center;gap:0.75rem;padding:0.5rem 0;border-bottom:1px solid var(--borda);">' +
             '<div><strong>' + escapar(x.nome) + '</strong> ' + badge +
             (x.email ? '<br><span style="color:var(--texto-suave);font-size:0.85rem;">' + escapar(x.email) + '</span>' : '') + '</div>' +
@@ -5710,8 +5770,8 @@
           '</div>';
         }).join('') + (filtrada.length > LIMITE ? '<p style="color:var(--texto-suave);font-size:0.85rem;margin-top:0.6rem;">Mostrando ' + LIMITE + ' de ' + filtrada.length + '. Refine a busca.</p>' : '');
 
-        cont.querySelectorAll('button[data-cred]').forEach(function (b) {
-          b.addEventListener('click', function () { toggleCredenciar(parseInt(b.getAttribute('data-cred'), 10), b); });
+        cont.querySelectorAll('button[data-cred]').forEach(function (b2) {
+          b2.addEventListener('click', function () { toggleCredenciar(parseInt(b2.getAttribute('data-cred'), 10), b2); });
         });
       }
 
@@ -5722,8 +5782,19 @@
         var eventoId = credCache.eventoId;
         botao.disabled = true;
         try {
+          if (x.origem === 'manual') {
+            // Pessoa adicionada à mão: existe só como presença. Desmarcar = remover da lista.
+            if (x.partExtId) {
+              var rc = await sb.from('participantes_externos').delete().eq('id', x.partExtId);
+              if (rc.error) throw rc.error;
+            }
+            credCache.inscritos = credCache.inscritos.filter(function (y) { return y !== x; });
+            renderCredenciamento();
+            carregarListaParticipantes(eventoId);
+            return;
+          }
           if (!x.presente) {
-            if (x.tipo === 'socia') {
+            if (x.origem === 'socia') {
               var rI = await sb.from('participacoes_evento').insert({ evento_id: eventoId, profile_id: x.key });
               if (rI.error) throw rI.error;
             } else {
@@ -5737,7 +5808,7 @@
             }
             x.presente = true;
           } else {
-            if (x.tipo === 'socia') {
+            if (x.origem === 'socia') {
               var rD = await sb.from('participacoes_evento').delete().eq('evento_id', eventoId).eq('profile_id', x.key);
               if (rD.error) throw rD.error;
             } else {
@@ -5757,6 +5828,34 @@
         }
       }
 
+      function imprimirCredenciamento() {
+        var filtrada = credFiltrada();
+        var ev = eventosPartCache[credCache.eventoId];
+        var titulo = (ev && ev.nome ? ev.nome : 'Evento') + ' — Lista de presença';
+        var ftipo = (partEl('cred-filtro-tipo') || {}).value || '';
+        var fsit = (partEl('cred-filtro-sit') || {}).value || '';
+        var sub = [];
+        if (ftipo) sub.push('tipo: ' + ftipo);
+        if (fsit) sub.push(fsit === 'presente' ? 'só presentes' : 'só ausentes');
+        var linhas = filtrada.map(function (x, i) {
+          return '<tr><td>' + (i + 1) + '</td><td>' + escapar(x.nome) + '</td><td>' + escapar(x.tipo) +
+            '</td><td>' + escapar(x.email) + '</td><td>' + (x.presente ? 'Presente' : 'Ausente') + '</td><td class="ass"></td></tr>';
+        }).join('');
+        var win = window.open('', '_blank');
+        if (!win) { alert('Permita pop-ups para imprimir.'); return; }
+        win.document.write(
+          '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + escapar(titulo) + '</title>' +
+          '<style>body{font-family:Arial,sans-serif;margin:24px;color:#222;}h1{font-size:16px;margin:0 0 2px;}p.sub{color:#555;font-size:12px;margin:0 0 12px;}' +
+          'table{width:100%;border-collapse:collapse;font-size:12px;}th,td{border:1px solid #bbb;padding:5px 7px;text-align:left;}th{background:#eee;}td.ass{width:160px;}@media print{button{display:none;}}</style></head><body>' +
+          '<h1>' + escapar(titulo) + '</h1>' +
+          '<p class="sub">' + filtrada.length + ' pessoa(s)' + (sub.length ? ' · filtro: ' + escapar(sub.join(' · ')) : '') + '</p>' +
+          '<button onclick="window.print()" style="margin-bottom:12px;padding:6px 12px;">Imprimir</button>' +
+          '<table><thead><tr><th>#</th><th>Nome</th><th>Tipo</th><th>E-mail</th><th>Situação</th><th>Assinatura</th></tr></thead><tbody>' +
+          linhas + '</tbody></table></body></html>'
+        );
+        win.document.close();
+      }
+
       if (partEl('part-evento')) {
         partEl('part-evento').addEventListener('change', aoTrocarEventoParticipantes);
         partEl('btn-part-abrir').addEventListener('click', function () { abrirFecharPresenca(true); });
@@ -5764,6 +5863,9 @@
         partEl('btn-part-ext-add').addEventListener('click', adicionarExterno);
         partEl('part-ext-tel').addEventListener('input', function () { this.value = formatarTelefone(this.value); });
         if (partEl('cred-busca')) partEl('cred-busca').addEventListener('input', renderCredenciamento);
+        if (partEl('cred-filtro-tipo')) partEl('cred-filtro-tipo').addEventListener('change', renderCredenciamento);
+        if (partEl('cred-filtro-sit')) partEl('cred-filtro-sit').addEventListener('change', renderCredenciamento);
+        if (partEl('cred-imprimir')) partEl('cred-imprimir').addEventListener('click', imprimirCredenciamento);
       }
 
       // ── Abas por evento (Geral · IX ENEON · 3º Fórum) ────────────────────────
