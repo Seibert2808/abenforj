@@ -242,15 +242,22 @@
           return;
         }
 
-        var inscricoes = r.data || [];
+        // Só eventos ainda não encerrados ficam em "inscrita"; os já realizados
+        // saem daqui e aparecem no "Histórico de participações" (quando há presença).
+        var hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+        var inscricoes = (r.data || []).filter(function (i) {
+          var ev = i.eventos || {};
+          var fim = ev.data_fim || ev.data_inicio;
+          if (!fim) return true;
+          return new Date(fim + 'T00:00:00') >= hoje;
+        });
         if (inscricoes.length === 0) {
           lista.innerHTML =
             '<li>' +
               '<div class="doc-info">' +
-                '<strong>Você ainda não tem inscrições registradas</strong>' +
-                '<span>Se já se inscreveu em algum evento e ele não aparece aqui, ' +
-                'aguarde a diretoria atualizar a lista. ' +
-                'Em caso de dúvida, entre em contato com a secretaria.</span>' +
+                '<strong>Nenhuma inscrição ativa no momento</strong>' +
+                '<span>Eventos já realizados aparecem no seu <strong>Histórico de participações</strong>, mais abaixo. ' +
+                'Se você se inscreveu em algo novo e ele não aparece, aguarde a atualização ou fale com a secretaria.</span>' +
               '</div>' +
               '<a href="../eventos.html">Ver eventos →</a>' +
             '</li>';
