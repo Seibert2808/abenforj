@@ -231,6 +231,20 @@ Cortesia: valida quem é sócia/convidado e cria a inscrição direto (sem pagam
 
 **Esforço:** médio. Dá para testar tudo no **sandbox** do provedor antes de abrir de verdade.
 
+## 11. Roadmap — presença e certificado por CURSO (futuro)
+
+> Hoje os cursos pré-encontro têm inscrição (`inscricoes_curso`) e **credenciamento em papel**
+> ("Credenciamento por curso (imprimir)"), mas **não há presença digital nem certificado de
+> participante de curso**. Necessário porque **só quem esteve presente no curso** deve receber
+> o certificado — e houve **inscrições na hora** (walk-in).
+
+**A construir (paralelo ao credenciamento do evento):**
+1. **Presença por curso** — no admin, por curso, lista de inscritos com botão "Presente" (guardar `presente` em `inscricoes_curso`, ou tabela `presenca_curso`).
+2. **Inscrição na hora** — adicionar pessoa (sócia/externa) a um curso no momento + marcar presente.
+3. **Certificado de curso** (tipo `oficina`, já previsto no CHECK) — só para presentes. Sócia → área; externo → por e-mail + Doity (mesmo padrão da declaração/trabalho).
+
+**A decidir:** texto e carga horária do certificado de curso; confirmar que é separado do certificado de participação do evento.
+
 ---
 
 *Este playbook resume a estrutura para reuso. Para o passo a passo específico do IX ENEON 2026, ver `docs/fluxo-certificados-ix-eneon.md`.*
