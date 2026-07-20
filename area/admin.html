@@ -1223,6 +1223,17 @@
             </div>
             <p id="part-feedback" style="font-size:0.875rem;color:var(--texto-suave);margin:0.6rem 0 0;"></p>
 
+            <hr style="border:0;border-top:1px solid var(--borda);margin:1.25rem 0;">
+
+            <h3 style="font-size:1rem;color:var(--texto-suave);margin:0 0 0.35rem;">Credenciamento — marcar presença</h3>
+            <p style="font-size:0.875rem;color:var(--texto-suave);margin:0 0 0.6rem;">
+              Marque quem esteve presente (da lista de assinatura). Aparecem as <strong>sócias</strong> e os
+              <strong>externos</strong> inscritos no evento. Quem for marcado passa a receber a declaração de participação.
+            </p>
+            <input id="cred-busca" type="search" placeholder="Buscar por nome ou e-mail…" autocomplete="off" style="width:100%;">
+            <p id="cred-contador" style="font-size:0.875rem;color:var(--texto-suave);margin:0.5rem 0;"></p>
+            <div id="lista-credenciamento"><p style="color:var(--texto-suave);">Selecione um evento.</p></div>
+
             <h3 style="font-size:1rem;color:var(--texto-suave);margin:1.5rem 0 0.5rem;">Lista de presença</h3>
             <div id="lista-participantes-admin"><p style="color:var(--texto-suave);">Selecione um evento.</p></div>
           </div>
@@ -5494,6 +5505,7 @@
         var ev = eventosPartCache[id];
         partEl('part-janela').innerHTML = descreverJanela(ev);
         await carregarListaParticipantes(id);
+        await carregarCredenciamento(id);
       }
 
       async function carregarListaParticipantes(eventoId) {
@@ -5623,12 +5635,124 @@
         await carregarListaParticipantes(id);
       }
 
+      // ── Credenciamento (marcar presença a partir da lista de inscritos) ──────
+      var credCache = { inscritos: [], eventoId: null };
+
+      async function carregarCredenciamento(eventoId) {
+        var sb = window.abenfo.sb;
+        var cont = partEl('lista-credenciamento');
+        if (!cont) return;
+        if (!eventoId) { cont.innerHTML = '<p style="color:var(--texto-suave);">Selecione um evento.</p>'; return; }
+        cont.innerHTML = '<p style="color:var(--texto-suave);">Carregando inscritos…</p>';
+
+        var rSoc = await sb.from('inscricoes_evento')
+          .select('profile_id, profiles(nome_completo, email)').eq('evento_id', eventoId);
+        var rExt = await sb.from('inscritos_externos')
+          .select('id, nome, email').eq('evento_id', eventoId);
+        var rPresS = await sb.from('participacoes_evento').select('profile_id').eq('evento_id', eventoId);
+        var rPresE = await sb.from('participantes_externos').select('id, inscrito_externo_id').eq('evento_id', eventoId);
+
+        var err = rSoc.error || rExt.error || rPresS.error || rPresE.error;
+        if (err) { cont.innerHTML = '<p style="color:#c53030;">Erro: ' + escapar(err.message) + '</p>'; return; }
+
+        var presS = {}; (rPresS.data || []).forEach(function (x) { presS[x.profile_id] = true; });
+        var presE = {}; (rPresE.data || []).forEach(function (x) { if (x.inscrito_externo_id) presE[x.inscrito_externo_id] = x.id; });
+
+        var lista = [];
+        (rSoc.data || []).forEach(function (x) {
+          var pr = x.profiles || {};
+          if (!x.profile_id) return;
+          lista.push({ tipo: 'socia', key: x.profile_id, nome: pr.nome_completo || '(sem nome)', email: pr.email || '', presente: !!presS[x.profile_id], partExtId: null });
+        });
+        (rExt.data || []).forEach(function (x) {
+          lista.push({ tipo: 'externo', key: x.id, nome: x.nome, email: x.email || '', presente: !!presE[x.id], partExtId: presE[x.id] || null });
+        });
+        lista.sort(function (a, b) { return normalizarBusca(a.nome).localeCompare(normalizarBusca(b.nome)); });
+        credCache = { inscritos: lista, eventoId: eventoId };
+        renderCredenciamento();
+      }
+
+      function renderCredenciamento() {
+        var cont = partEl('lista-credenciamento');
+        if (!cont) return;
+        var lista = credCache.inscritos;
+        var buscaEl = partEl('cred-busca');
+        var termo = normalizarBusca(buscaEl ? buscaEl.value : '');
+        var filtrada = termo ? lista.filter(function (x) { return normalizarBusca(x.nome + ' ' + x.email).indexOf(termo) >= 0; }) : lista;
+        var presentes = lista.filter(function (x) { return x.presente; }).length;
+        partEl('cred-contador').innerHTML = lista.length
+          ? '<strong>' + presentes + '</strong> presentes de ' + lista.length + ' inscritos' + (termo ? ' · ' + filtrada.length + ' no filtro' : '')
+          : '';
+        if (!lista.length) { cont.innerHTML = '<p style="color:var(--texto-suave);">Nenhum inscrito neste evento.</p>'; return; }
+
+        var LIMITE = 400;
+        cont.innerHTML = filtrada.slice(0, LIMITE).map(function (x) {
+          var idx = lista.indexOf(x);
+          var badge = x.tipo === 'socia'
+            ? '<span style="font-size:0.72rem;background:var(--verde-pastel);color:var(--verde-escuro);padding:0.1rem 0.4rem;border-radius:4px;">sócia</span>'
+            : '<span style="font-size:0.72rem;background:#f0e6d2;color:#7a5a10;padding:0.1rem 0.4rem;border-radius:4px;">externo</span>';
+          return '<div class="part-linha" style="display:flex;justify-content:space-between;align-items:center;gap:0.75rem;padding:0.5rem 0;border-bottom:1px solid var(--borda);">' +
+            '<div><strong>' + escapar(x.nome) + '</strong> ' + badge +
+            (x.email ? '<br><span style="color:var(--texto-suave);font-size:0.85rem;">' + escapar(x.email) + '</span>' : '') + '</div>' +
+            '<button type="button" class="btn ' + (x.presente ? 'btn-solid' : 'btn-ghost') + '" data-cred="' + idx + '" style="min-height:0;padding:0.35rem 0.8rem;font-size:0.85rem;white-space:nowrap;">' +
+              (x.presente ? '✓ Presente' : 'Marcar presente') + '</button>' +
+          '</div>';
+        }).join('') + (filtrada.length > LIMITE ? '<p style="color:var(--texto-suave);font-size:0.85rem;margin-top:0.6rem;">Mostrando ' + LIMITE + ' de ' + filtrada.length + '. Refine a busca.</p>' : '');
+
+        cont.querySelectorAll('button[data-cred]').forEach(function (b) {
+          b.addEventListener('click', function () { toggleCredenciar(parseInt(b.getAttribute('data-cred'), 10), b); });
+        });
+      }
+
+      async function toggleCredenciar(idx, botao) {
+        var sb = window.abenfo.sb;
+        var x = credCache.inscritos[idx];
+        if (!x) return;
+        var eventoId = credCache.eventoId;
+        botao.disabled = true;
+        try {
+          if (!x.presente) {
+            if (x.tipo === 'socia') {
+              var rI = await sb.from('participacoes_evento').insert({ evento_id: eventoId, profile_id: x.key });
+              if (rI.error) throw rI.error;
+            } else {
+              var rInf = await sb.from('inscritos_externos').select('nome, email, telefone, documento').eq('id', x.key).maybeSingle();
+              var d = (rInf && rInf.data) || { nome: x.nome, email: x.email };
+              var rIE = await sb.from('participantes_externos')
+                .insert({ evento_id: eventoId, nome: d.nome, email: d.email || null, telefone: d.telefone || null, documento: d.documento || null, inscrito_externo_id: x.key })
+                .select('id').maybeSingle();
+              if (rIE.error) throw rIE.error;
+              x.partExtId = rIE.data ? rIE.data.id : null;
+            }
+            x.presente = true;
+          } else {
+            if (x.tipo === 'socia') {
+              var rD = await sb.from('participacoes_evento').delete().eq('evento_id', eventoId).eq('profile_id', x.key);
+              if (rD.error) throw rD.error;
+            } else {
+              var q = sb.from('participantes_externos').delete().eq('evento_id', eventoId);
+              q = x.partExtId ? q.eq('id', x.partExtId) : q.eq('inscrito_externo_id', x.key);
+              var rDE = await q;
+              if (rDE.error) throw rDE.error;
+              x.partExtId = null;
+            }
+            x.presente = false;
+          }
+          renderCredenciamento();
+          carregarListaParticipantes(eventoId); // atualiza a "Lista de presença" abaixo
+        } catch (err) {
+          alert('Erro ao atualizar presença: ' + (err.message || err));
+          botao.disabled = false;
+        }
+      }
+
       if (partEl('part-evento')) {
         partEl('part-evento').addEventListener('change', aoTrocarEventoParticipantes);
         partEl('btn-part-abrir').addEventListener('click', function () { abrirFecharPresenca(true); });
         partEl('btn-part-fechar').addEventListener('click', function () { abrirFecharPresenca(false); });
         partEl('btn-part-ext-add').addEventListener('click', adicionarExterno);
         partEl('part-ext-tel').addEventListener('input', function () { this.value = formatarTelefone(this.value); });
+        if (partEl('cred-busca')) partEl('cred-busca').addEventListener('input', renderCredenciamento);
       }
 
       // ── Abas por evento (Geral · IX ENEON · 3º Fórum) ────────────────────────

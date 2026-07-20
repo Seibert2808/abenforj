@@ -739,11 +739,12 @@
           var rPap = await sb.from('certificado_papeis').select('evento_id, tipo, detalhe, nome').eq('profile_id', perfil.id);
           var ids = {};
           var ehMonitora = {};
+          var temPresenca = {};
           (rIns.data || []).forEach(function (x) {
             ids[x.evento_id] = true;
             if (x.observacao && /monitor/i.test(x.observacao)) ehMonitora[x.evento_id] = true;
           });
-          (rPart.data || []).forEach(function (x) { ids[x.evento_id] = true; });
+          (rPart.data || []).forEach(function (x) { ids[x.evento_id] = true; temPresenca[x.evento_id] = true; });
           var papeis = rPap.data || [];
           papeis.forEach(function (x) { ids[x.evento_id] = true; });
           var lids = Object.keys(ids);
@@ -774,7 +775,8 @@
           var itens = [];
           liberados.forEach(function (ev) {
             var mp = modeloPorChave[ev.id + '|participacao'];
-            if (mp) itens.push({ modelo: mp, detalhe: null });
+            // participação só para quem tem PRESENÇA registrada (não basta estar inscrito)
+            if (mp && temPresenca[ev.id]) itens.push({ modelo: mp, detalhe: null });
             var mm = modeloPorChave[ev.id + '|monitoria'];
             if (mm && ehMonitora[ev.id]) itens.push({ modelo: mm, detalhe: null });
           });
