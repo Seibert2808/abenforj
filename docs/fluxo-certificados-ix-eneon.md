@@ -43,6 +43,13 @@ Ou seja: com o interruptor ligado e o modelo ativo, **ninguém recebe o que não
   - palestrantes → `ferramentas/gerar-certificados-palestrantes.html` (uso interno, não publicado);
   - participação de externo, avulso → botão **"Baixar declaração"** na Lista de presença do admin.
 
+## Certificado de trabalho (apresentação + coautoria)
+
+- Só trabalhos **aceitos** e marcados **apresentado** (botão na lista de trabalhos do admin) geram certificado.
+- É **um PDF por trabalho, uma página por autor**: relator = "apresentação", demais = "coautoria".
+- **Quem baixa:** o **relator** (sócio na área / externo em `trabalho-certificado.html` por e-mail+Doity) baixa o PDF completo e repassa a cada coautor a página dele.
+- Se um **coautor for sócio**, ele também vê e baixa o **mesmo PDF completo** na área dele (casado pelo e-mail da conta na lista de autores).
+
 ## Comandos úteis (SQL, no Supabase)
 
 Ligar o interruptor do evento:

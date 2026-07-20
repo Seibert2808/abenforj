@@ -765,7 +765,7 @@
           var libSet = {}; libIds.forEach(function (id) { libSet[id] = true; });
 
           var rMod = await sb.from('certificado_modelos').select('*')
-            .in('tipo', ['participacao', 'monitoria', 'palestrante', 'professor', 'comissao']).eq('ativo', true)
+            .in('tipo', ['participacao', 'monitoria', 'palestrante', 'professor', 'comissao', 'apresentacao', 'coautoria']).eq('ativo', true)
             .in('evento_id', libIds);
 
           var ROTULO = {
@@ -796,14 +796,32 @@
             // não o nome da conta. participação/monitoria seguem com o nome do perfil.
             if (m) itens.push({ modelo: m, detalhe: pap.detalhe || '', nomeCurado: pap.nome || '' });
           });
+          // Certificados de trabalho (apresentação/coautoria) — relator ou coautor por e-mail da conta.
+          try {
+            var rTrab = await sb.rpc('certificados_trabalho_socio');
+            (rTrab && rTrab.data ? rTrab.data : []).forEach(function (t) {
+              var mA = modeloPorChave[t.evento_id + '|apresentacao'];
+              var mC = modeloPorChave[t.evento_id + '|coautoria'];
+              if (!mA && !mC) return;
+              itens.push({ trabalho: { titulo: t.titulo, entries: entriesTrabalho(t), eventoId: t.evento_id }, modelos: { apresentacao: mA, coautoria: mC } });
+            });
+          } catch (e) { /* RPC ainda não aplicada: ignora */ }
+
           if (!itens.length) { vazio('Ficam disponíveis quando a diretoria liberar.'); return; }
 
           lista.innerHTML = itens.map(function (it, i) {
-            var m = it.modelo;
-            var sub = ROTULO[m.tipo] || 'Certificado';
-            if (it.detalhe) sub += ' · ' + it.detalhe;
+            var titEv, sub;
+            if (it.trabalho) {
+              titEv = nomeEv[it.trabalho.eventoId] || '';
+              sub = 'Certificados do trabalho · ' + it.trabalho.titulo + ' (' + it.trabalho.entries.length + ' pág.)';
+            } else {
+              var m = it.modelo;
+              titEv = nomeEv[m.evento_id] || '';
+              sub = ROTULO[m.tipo] || 'Certificado';
+              if (it.detalhe) sub += ' · ' + it.detalhe;
+            }
             return '<li>' +
-              '<div class="doc-info"><strong>' + escapar(nomeEv[m.evento_id] || '') + '</strong>' +
+              '<div class="doc-info"><strong>' + escapar(titEv) + '</strong>' +
               '<span>' + escapar(sub) + '</span></div>' +
               '<a href="javascript:void(0)" data-cert-idx="' + i + '">Baixar →</a>' +
             '</li>';
@@ -818,7 +836,49 @@
         }
       }
 
+      // Monta a lista de páginas (relator = apresentação, demais = coautoria) de um trabalho.
+      function entriesTrabalho(t) {
+        var autores = Array.isArray(t.autores) ? t.autores : [];
+        var relEmail = String(t.relator_email || '').toLowerCase();
+        var entries = autores.filter(function (a) { return a && a.nome; }).map(function (a) {
+          var ehRel = a.eh_relator === true || (a.email && relEmail && String(a.email).toLowerCase() === relEmail);
+          return { nome: a.nome, tipo: ehRel ? 'apresentacao' : 'coautoria' };
+        });
+        if (!entries.some(function (e) { return e.tipo === 'apresentacao'; }) && t.relator_nome) {
+          entries.unshift({ nome: t.relator_nome, tipo: 'apresentacao' });
+        }
+        return entries;
+      }
+
+      async function baixarCertsTrabalho(item, link) {
+        if (!window.abenfoCert) return;
+        var sb = window.abenfo.sb;
+        var tr = item.trabalho, mods = item.modelos || {};
+        var mBase = mods.apresentacao || mods.coautoria;
+        if (!mBase) return;
+        var txt = link.textContent; link.textContent = 'Gerando…';
+        try {
+          var base = mBase.base_path ? await window.abenfoCert.baseUrlDeStorage(sb, 'certificados-bases', mBase.base_path) : null;
+          var paginas = tr.entries.map(function (en) {
+            var mm = mods[en.tipo] || mBase;
+            return {
+              baseUrl: base,
+              textoPre: mm.texto_pre || '',
+              nome: en.nome,
+              textoCorpo: window.abenfoCert.aplicarCampos(mm.texto_template || '', { titulo: tr.titulo }),
+              config: mm.config || {}
+            };
+          });
+          await window.abenfoCert.baixarPDFVarios(paginas, 'Certificados do trabalho - ' + String(tr.titulo).slice(0, 50) + '.pdf');
+        } catch (err) {
+          alert('Erro ao gerar os certificados: ' + (err.message || 'tente novamente'));
+        } finally {
+          link.textContent = txt;
+        }
+      }
+
       async function baixarCertificado(perfil, item, link) {
+        if (item && item.trabalho) { return baixarCertsTrabalho(item, link); }
         var modelo = item && item.modelo;
         if (!modelo || !window.abenfoCert) return;
         var sb = window.abenfo.sb;

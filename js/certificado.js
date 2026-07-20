@@ -134,6 +134,24 @@
     pdf.save(nomeArquivo || 'certificado.pdf');
   }
 
+  // Gera UM PDF com VÁRIAS páginas (uma por item). Cada item = mesmas opções de
+  // baixarPDF ({baseUrl, textoPre, nome, textoCorpo, config}). Usado nos certificados
+  // de trabalho: 1 página por autor (relator + coautores) no mesmo arquivo.
+  async function baixarPDFVarios(itens, nomeArquivo) {
+    var lista = (itens || []).filter(Boolean);
+    if (!lista.length) return;
+    var JsPDF = await carregarJsPDF();
+    var pdf = null;
+    for (var i = 0; i < lista.length; i++) {
+      var canvas = await montarCanvas(lista[i]);
+      var imgData = canvas.toDataURL('image/jpeg', 0.92);
+      if (!pdf) pdf = new JsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+      else pdf.addPage('a4', 'landscape');
+      pdf.addImage(imgData, 'JPEG', 0, 0, 297, 210);
+    }
+    pdf.save(nomeArquivo || 'certificados.pdf');
+  }
+
   // Baixa a arte do Storage como objectURL (evita "tainted canvas" por CORS).
   async function baseUrlDeStorage(sb, bucket, path) {
     if (!path) return null;
@@ -148,6 +166,7 @@
     aplicarCampos: aplicarCampos,
     montarCanvas: montarCanvas,
     baixarPDF: baixarPDF,
+    baixarPDFVarios: baixarPDFVarios,
     baseUrlDeStorage: baseUrlDeStorage
   };
 })();

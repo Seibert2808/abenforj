@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Certificado de trabalho — IX ENEON 2026</title>
+  <meta name="description" content="Autores não-sócios do IX ENEON 2026 baixam o certificado de apresentação/coautoria pelo e-mail e número da inscrição no Doity.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/png" href="assets/logo-abenforj.png">
+  <style>
+    .decl-wrap { max-width: 640px; margin: 0 auto; }
+    .decl-card { background: var(--branco); border: 1px solid var(--borda); border-radius: 14px; padding: 1.75rem; box-shadow: 0 2px 10px rgba(0,0,0,.05); }
+    .decl-form { display: grid; gap: 0.6rem; margin-top: 1rem; }
+    .decl-form input { width: 100%; }
+    .decl-form input#doity { text-transform: uppercase; }
+    .decl-resultado { margin-top: 1.25rem; }
+    .decl-resultado .ok { background: var(--verde-pastel); border-left: 4px solid var(--verde); border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: .75rem; }
+    .decl-resultado .aviso { background: #fdeee0; border-left: 4px solid #d9932f; border-radius: 10px; padding: 1rem 1.25rem; color: #7a5a10; }
+    .decl-dica { color: var(--texto-suave); font-size: 0.9rem; margin-top: 0.75rem; }
+    .trab-item strong { display:block; }
+    .trab-item { margin-bottom:.5rem; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="index.html" class="logo-link" aria-label="Abenfo RJ — Página inicial">
+        <img src="assets/logo-abenforj.png" alt="Logo Abenfo RJ">
+        <div class="logo-text">Abenfo RJ<span>Enfermagem Obstétrica</span></div>
+      </a>
+    </div>
+  </header>
+
+  <main id="conteudo" class="section">
+    <div class="container decl-wrap">
+      <div class="section-header" style="text-align:left;margin-bottom:1rem;">
+        <span class="eyebrow">IX ENEON 2026</span>
+        <h1>Certificado de trabalho</h1>
+        <p>Apresentou um trabalho no IX ENEON e <strong>não é sócia</strong> da ABENFO-RJ? Baixe aqui o certificado. O arquivo traz <strong>uma página para cada autor</strong> (apresentador e coautores) — é só repassar a cada um.</p>
+      </div>
+
+      <div class="decl-card">
+        <form class="decl-form" id="decl-form">
+          <div>
+            <label for="email" style="font-weight:600;">E-mail da inscrição</label>
+            <input id="email" type="email" placeholder="seu@email.com" autocomplete="off" required>
+          </div>
+          <div>
+            <label for="doity" style="font-weight:600;">Número da inscrição no Doity</label>
+            <input id="doity" type="text" placeholder="DOI-XXXXXXXX" autocomplete="off" required>
+          </div>
+          <button type="submit" class="btn btn-solid">Buscar meus certificados</button>
+        </form>
+        <div class="decl-resultado" id="decl-resultado" aria-live="polite"></div>
+      </div>
+
+      <p class="decl-dica">
+        É <strong>sócia</strong>? Seus certificados ficam na <a href="login.html">área da sócia</a>.<br>
+        Participou (sem trabalho)? Use a <a href="declaracao.html">declaração de participação</a>.<br>
+        Problemas? Escreva para <a href="mailto:abenforio@gmail.com">abenforio@gmail.com</a>.
+      </p>
+    </div>
+  </main>
+
+  <footer class="site-footer" style="margin-top:2rem;">
+    <div class="container">
+      <div class="copyright" style="border:0;padding:1rem 0;">© <span id="ano"></span> Abenfo RJ.</div>
+    </div>
+  </footer>
+
+  <script>document.getElementById('ano').textContent = new Date().getFullYear();</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/certificado.js"></script>
+  <script>
+    (function () {
+      var form = document.getElementById('decl-form');
+      var emailEl = document.getElementById('email');
+      var doityEl = document.getElementById('doity');
+      var alvo = document.getElementById('decl-resultado');
+
+      function escapar(s) {
+        return String(s || '').replace(/[&<>"']/g, function (c) {
+          return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+        });
+      }
+      function avisar(html) { alvo.innerHTML = '<div class="aviso">' + html + '</div>'; }
+
+      function entriesTrab(t) {
+        var autores = Array.isArray(t.autores) ? t.autores : [];
+        var relEmail = String(t.relator_email || '').toLowerCase();
+        var entries = autores.filter(function (a) { return a && a.nome; }).map(function (a) {
+          var ehRel = a.eh_relator === true || (a.email && relEmail && String(a.email).toLowerCase() === relEmail);
+          return { nome: a.nome, tipo: ehRel ? 'apresentacao' : 'coautoria' };
+        });
+        if (!entries.some(function (e) { return e.tipo === 'apresentacao'; }) && t.relator_nome) {
+          entries.unshift({ nome: t.relator_nome, tipo: 'apresentacao' });
+        }
+        return entries;
+      }
+
+      async function baixar(t, dados, botao) {
+        if (!window.abenfoCert) return;
+        var mods = dados.modelos || {};
+        var mBase = mods.apresentacao || mods.coautoria;
+        if (!mBase) { alert('Modelo indisponível.'); return; }
+        var txt = botao.textContent; botao.disabled = true; botao.textContent = 'Gerando…';
+        try {
+          var base = mBase.base_path
+            ? await window.abenfoCert.baseUrlDeStorage(window.abenfo.sb, 'certificados-bases', mBase.base_path)
+            : null;
+          var paginas = entriesTrab(t).map(function (en) {
+            var mm = mods[en.tipo] || mBase;
+            return {
+              baseUrl: base,
+              textoPre: dados.texto_pre || '',
+              nome: en.nome,
+              textoCorpo: window.abenfoCert.aplicarCampos(mm.texto_template || '', { titulo: t.titulo }),
+              config: dados.config || {}
+            };
+          });
+          await window.abenfoCert.baixarPDFVarios(paginas, 'Certificados do trabalho - ' + String(t.titulo).slice(0, 50) + '.pdf');
+        } catch (err) {
+          alert('Erro ao gerar o PDF: ' + (err.message || 'tente novamente'));
+        } finally {
+          botao.disabled = false; botao.textContent = txt;
+        }
+      }
+
+      form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        var email = emailEl.value.trim();
+        var doity = doityEl.value.trim();
+        if (!email || !doity) { avisar('Preencha o e-mail e o número da inscrição.'); return; }
+        if (!window.SUPABASE_PRONTO || !window.abenfo) { avisar('Não foi possível conectar agora. Tente mais tarde.'); return; }
+        alvo.innerHTML = '<p style="color:var(--texto-suave);">Buscando…</p>';
+        try {
+          var r = await window.abenfo.sb.rpc('certificados_trabalho_por_doity', { p_email: email, p_doity: doity });
+          if (r.error) throw r.error;
+          var dados = r.data || null;
+          if (!dados) {
+            avisar('Não encontramos sua inscrição com esse <strong>e-mail + número</strong>. Confira os dados (formato DOI-XXXX). ' +
+              'Se você apresentou trabalho e não consegue, escreva para <a href="mailto:abenforio@gmail.com">abenforio@gmail.com</a>.');
+            return;
+          }
+          var trabalhos = dados.trabalhos || [];
+          if (!trabalhos.length) {
+            avisar('Encontramos sua inscrição, mas <strong>nenhum trabalho aceito e apresentado</strong> vinculado a você ainda. ' +
+              'Se houver engano, fale com a organização.');
+            return;
+          }
+          alvo.innerHTML = '<div class="ok"><p style="margin:0 0 .75rem;">Encontramos ' + trabalhos.length +
+            ' trabalho(s). Baixe o PDF de cada um (uma página por autor):</p><div id="trab-lista"></div></div>';
+          var cont = document.getElementById('trab-lista');
+          trabalhos.forEach(function (t) {
+            var div = document.createElement('div');
+            div.className = 'trab-item';
+            div.innerHTML = '<strong>' + escapar(t.titulo) + '</strong>';
+            var b = document.createElement('button');
+            b.className = 'btn btn-solid'; b.type = 'button';
+            b.style.cssText = 'min-height:0;padding:.45rem .9rem;font-size:.9rem;margin-top:.25rem;';
+            b.textContent = 'Baixar certificados (' + entriesTrab(t).length + ' pág.)';
+            b.addEventListener('click', function () { baixar(t, dados, b); });
+            div.appendChild(b);
+            cont.appendChild(div);
+          });
+        } catch (err) {
+          avisar('Não foi possível consultar agora. Tente novamente mais tarde.');
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
