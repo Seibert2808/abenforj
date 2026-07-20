@@ -25,14 +25,14 @@
 
   // ============================================================
   // Pop-up — aparece só na primeira visita (por versão de conteúdo).
-  // Conteúdo atual: resultado FINAL dos trabalhos do IX ENEON (link p/ a lista).
+  // Conteúdo atual: imagem GRUPO COBEON PI.
   // Para forçar a reaparição após trocar o conteúdo, incremente o
-  // sufixo da chave (v9 -> v10).
+  // sufixo da chave (v11 -> v12).
   // ============================================================
   var modal = document.getElementById('modal-boas-vindas');
-  var STORAGE_KEY = 'abenfo_modal_ix_v11';
-  // Aviso "Hoje é dia de IX ENEON!" some sozinho após o evento (15-17/07/2026).
-  var EXPIRA_MODAL = new Date('2026-07-18T00:00:00-03:00');
+  var STORAGE_KEY = 'abenfo_modal_cobeon_v12';
+  // Aviso GRUPO COBEON PI some sozinho após quinta 23/07/2026.
+  var EXPIRA_MODAL = new Date('2026-07-24T00:00:00-03:00');
 
   if (modal) {
     var jaViu = false;
