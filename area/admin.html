@@ -638,11 +638,72 @@
         </style>
         <div class="admin-abas" style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;margin:0 0 1rem;">
           <button type="button" class="aba-evento ativa" data-aba="geral">Geral</button>
+          <button type="button" class="aba-evento" data-aba="comunicados">Comunicados</button>
           <select id="evento-dropdown" class="evento-dropdown" aria-label="Selecionar evento">
             <option value="">Selecione um evento…</option>
           </select>
         </div>
         <div id="sub-abas-dinamicas" class="sub-abas" hidden></div>
+
+        <div data-grupo="comunicados" style="display:none;">
+          <details class="secao" open>
+            <summary><h2>📣 Enviar comunicado por e-mail</h2></summary>
+            <div style="display:grid;gap:0.9rem;padding:0.5rem 0;">
+              <p style="margin:0;color:var(--texto-suave);font-size:0.95rem;">
+                Envia um e-mail para <strong id="com-total">as associadas ativas com e-mail</strong>,
+                com o visual da ABENFO-RJ. <strong>Sempre envie um teste para você antes de disparar para todas.</strong>
+              </p>
+
+              <label style="display:grid;gap:0.3rem;font-weight:600;font-size:0.9rem;">Assunto do e-mail
+                <input id="com-assunto" type="text" placeholder="Ex.: Participe do grupo COBEON PI"
+                  style="padding:0.6rem 0.8rem;border:1px solid var(--borda);border-radius:8px;font-size:0.95rem;font-weight:400;">
+              </label>
+
+              <label style="display:grid;gap:0.3rem;font-weight:600;font-size:0.9rem;">Título (aparece dentro do e-mail)
+                <input id="com-titulo" type="text" placeholder="Ex.: Grupo COBEON PI"
+                  style="padding:0.6rem 0.8rem;border:1px solid var(--borda);border-radius:8px;font-size:0.95rem;font-weight:400;">
+              </label>
+
+              <label style="display:grid;gap:0.3rem;font-weight:600;font-size:0.9rem;">Mensagem
+                <textarea id="com-corpo" rows="6" placeholder="Escreva aqui o texto do e-mail…"
+                  style="padding:0.6rem 0.8rem;border:1px solid var(--borda);border-radius:8px;font-size:0.95rem;font-weight:400;font-family:inherit;resize:vertical;"></textarea>
+                <small style="color:var(--texto-suave);font-weight:400;">Dica: deixe uma linha em branco entre parágrafos. Para links use <code>[texto do link](https://…)</code>.</small>
+              </label>
+
+              <label style="display:grid;gap:0.3rem;font-weight:600;font-size:0.9rem;">URL da imagem (opcional)
+                <input id="com-imagem" type="text" placeholder="https://abenforj.org.br/assets/grupo-cobeon-pi.jpg"
+                  style="padding:0.6rem 0.8rem;border:1px solid var(--borda);border-radius:8px;font-size:0.95rem;font-weight:400;">
+              </label>
+
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.9rem;">
+                <label style="display:grid;gap:0.3rem;font-weight:600;font-size:0.9rem;">Texto do botão (opcional)
+                  <input id="com-cta-texto" type="text" placeholder="Ex.: Saiba mais"
+                    style="padding:0.6rem 0.8rem;border:1px solid var(--borda);border-radius:8px;font-size:0.95rem;font-weight:400;">
+                </label>
+                <label style="display:grid;gap:0.3rem;font-weight:600;font-size:0.9rem;">Link do botão (opcional)
+                  <input id="com-cta-url" type="text" placeholder="https://…"
+                    style="padding:0.6rem 0.8rem;border:1px solid var(--borda);border-radius:8px;font-size:0.95rem;font-weight:400;">
+                </label>
+              </div>
+
+              <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+                <button type="button" class="btn btn-ghost" id="com-preview">Pré-visualizar</button>
+                <button type="button" class="btn btn-ghost" id="com-teste">Enviar teste para mim</button>
+                <button type="button" class="btn btn-solid" id="com-enviar">Enviar para todas as ativas</button>
+              </div>
+
+              <iframe id="com-iframe" title="Pré-visualização do e-mail" hidden
+                style="width:100%;height:520px;border:1px solid var(--borda);border-radius:8px;background:#f6f4ef;"></iframe>
+            </div>
+          </details>
+
+          <details class="secao" data-grupo="comunicados-hist">
+            <summary><h2>Histórico de comunicados</h2></summary>
+            <div id="com-historico" style="display:grid;gap:0.5rem;padding:0.5rem 0;">
+              <div class="lista-vazia">—</div>
+            </div>
+          </details>
+        </div>
 
         <div data-grupo="geral">
         <h2>Estatísticas <span style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;">(sócias ativas)</span></h2>
@@ -5920,6 +5981,7 @@
         var dd = document.getElementById('evento-dropdown');
         if (dd) dd.value = '';
         document.querySelectorAll('[data-grupo="geral"]').forEach(function (el) { el.style.display = ''; });
+        document.querySelectorAll('[data-grupo="comunicados"]').forEach(function (el) { el.style.display = 'none'; });
         document.querySelectorAll('[data-sub]').forEach(function (el) { el.style.display = 'none'; });
         document.getElementById('sub-abas-dinamicas').hidden = true;
         buscaViewAtual = 'geral';
@@ -5944,6 +6006,7 @@
         if (!ev) { mostrarGeral(); return; }
         document.querySelectorAll('.aba-evento').forEach(function (b) { b.classList.remove('ativa'); });
         document.querySelectorAll('[data-grupo="geral"]').forEach(function (el) { el.style.display = 'none'; });
+        document.querySelectorAll('[data-grupo="comunicados"]').forEach(function (el) { el.style.display = 'none'; });
         var subs = TIPOS_EVENTO[ev.tipo] || TIPOS_EVENTO.outro;
         var bar = document.getElementById('sub-abas-dinamicas');
         bar.hidden = false;
@@ -5967,9 +6030,160 @@
         });
       }
 
+      // ============================================================
+      // Aba "Comunicados" — envio de e-mail em massa via Edge Function.
+      // ============================================================
+      function comColeta() {
+        return {
+          assunto: document.getElementById('com-assunto').value.trim(),
+          titulo: document.getElementById('com-titulo').value.trim(),
+          corpo: document.getElementById('com-corpo').value,
+          imagem: document.getElementById('com-imagem').value.trim(),
+          ctaTexto: document.getElementById('com-cta-texto').value.trim(),
+          ctaUrl: document.getElementById('com-cta-url').value.trim()
+        };
+      }
+
+      // Converte o texto simples em parágrafos HTML, com suporte a [texto](url).
+      function comLinhasParaHtml(txt) {
+        return String(txt || '').split(/\n\s*\n/).map(function (bloco) {
+          var safe = escapar(bloco).replace(/\n/g, '<br>');
+          safe = safe.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, function (m, t, u) {
+            return '<a href="' + u + '" style="color:#3f5f4d;">' + t + '</a>';
+          });
+          return '<p style="margin:0 0 16px;font-size:15px;">' + safe + '</p>';
+        }).join('');
+      }
+
+      // Monta o HTML do e-mail no padrão visual da ABENFO-RJ.
+      // O rodapé de descadastro é adicionado no servidor (Edge Function).
+      function montarHtmlComunicado(d) {
+        var img = d.imagem
+          ? '<tr><td style="padding:0;"><img src="' + escapar(d.imagem) + '" alt="' + escapar(d.titulo || 'ABENFO-RJ') +
+            '" width="560" style="display:block;width:100%;max-width:560px;height:auto;border:0;"></td></tr>'
+          : '';
+        var titulo = d.titulo
+          ? '<h1 style="margin:0 0 16px;font-size:22px;color:#3f5f4d;font-weight:600;">' + escapar(d.titulo) + '</h1>'
+          : '';
+        var cta = (d.ctaTexto && d.ctaUrl)
+          ? '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px auto 0;"><tr>' +
+            '<td style="border-radius:8px;background:#3f5f4d;"><a href="' + escapar(d.ctaUrl) +
+            '" target="_blank" rel="noopener" style="display:inline-block;padding:14px 32px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;">' +
+            escapar(d.ctaTexto) + '</a></td></tr></table>'
+          : '';
+        return '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">' +
+          '<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>' + escapar(d.assunto || 'ABENFO-RJ') + '</title></head>' +
+          '<body style="margin:0;padding:0;background:#f6f4ef;font-family:\'Helvetica Neue\',Arial,sans-serif;color:#1f2a23;line-height:1.55;">' +
+          '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#f6f4ef;padding:32px 16px;"><tr><td align="center">' +
+          '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="560" style="max-width:560px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #dde1dd;">' +
+          '<tr><td style="background:#3f5f4d;padding:24px 32px;color:#ffffff;"><div style="font-size:13px;letter-spacing:0.04em;text-transform:uppercase;opacity:0.85;">Associação Brasileira de Enfermagem Obstétrica do Estado do Rio de Janeiro</div><div style="font-size:20px;font-weight:600;margin-top:4px;">ABENFO-RJ</div></td></tr>' +
+          img +
+          '<tr><td style="padding:32px;">' + titulo + comLinhasParaHtml(d.corpo) + cta + '</td></tr>' +
+          '<tr><td style="padding:20px 32px;background:#f6f4ef;border-top:1px solid #dde1dd;font-size:12px;color:#4f5a54;text-align:center;">Em caso de dúvidas, escreva para <a href="mailto:abenforio@gmail.com" style="color:#3f5f4d;">abenforio@gmail.com</a>.<br><span style="opacity:0.75;">© ABENFO-RJ · <a href="https://abenforj.org.br" style="color:#3f5f4d;">abenforj.org.br</a></span></td></tr>' +
+          '</table></td></tr></table></body></html>';
+      }
+
+      function comPreview() {
+        var f = document.getElementById('com-iframe');
+        f.hidden = false;
+        f.srcdoc = montarHtmlComunicado(comColeta());
+        f.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+
+      async function comInvocar(body) {
+        var r = await window.abenfo.sb.functions.invoke('enviar-comunicado', { body: body });
+        if (r.error) {
+          var msg = r.error.message || 'Falha na função';
+          try { var j = await r.error.context.json(); if (j && j.erro) msg = j.erro; } catch (e) { /* ok */ }
+          return { ok: false, erro: msg };
+        }
+        return { ok: true, data: r.data };
+      }
+
+      async function comEnviarTeste() {
+        var d = comColeta();
+        if (!d.assunto) { mostrarAviso('Preencha o assunto antes de testar.', 'erro'); return; }
+        var meu = (remetenteAtual && remetenteAtual.email) || '';
+        if (!meu) { mostrarAviso('Não consegui identificar seu e-mail de admin.', 'erro'); return; }
+        if (!confirm('Enviar um e-mail de teste para ' + meu + '?')) return;
+        var btn = document.getElementById('com-teste'); var t = btn.textContent;
+        btn.disabled = true; btn.textContent = 'Enviando…';
+        var r = await comInvocar({ assunto: d.assunto, corpo_html: montarHtmlComunicado(d), teste: meu });
+        btn.disabled = false; btn.textContent = t;
+        if (r.ok) mostrarAviso('Teste enviado para ' + escapar(meu) + '. Verifique a caixa de entrada (e o spam).', 'sucesso');
+        else mostrarAviso('Falha no teste: ' + escapar(r.erro), 'erro');
+      }
+
+      async function comEnviarTodas() {
+        var d = comColeta();
+        if (!d.assunto) { mostrarAviso('Preencha o assunto.', 'erro'); return; }
+        if (!d.corpo || d.corpo.trim().length < 5) { mostrarAviso('Escreva a mensagem do e-mail.', 'erro'); return; }
+        if (!confirm('ATENÇÃO: isto vai enviar o e-mail para TODAS as associadas ativas.\n\nVocê já enviou um teste e conferiu? Confirmar o envio agora?')) return;
+        var btn = document.getElementById('com-enviar'); var t = btn.textContent;
+        btn.disabled = true; btn.textContent = 'Enviando…';
+        var r = await comInvocar({ assunto: d.assunto, corpo_html: montarHtmlComunicado(d) });
+        btn.disabled = false; btn.textContent = t;
+        if (r.ok) {
+          var dt = r.data || {};
+          mostrarAviso('Comunicado enviado! ' + (dt.enviados || 0) + ' de ' + (dt.total_destinatarios || 0) +
+            ' e-mails' + (dt.falhas ? ' · ' + dt.falhas + ' falha(s)' : '') + '.', 'sucesso');
+          carregarHistoricoComunicados();
+        } else {
+          mostrarAviso('Falha no envio: ' + escapar(r.erro), 'erro');
+        }
+      }
+
+      async function carregarComunicadoTotais() {
+        var el = document.getElementById('com-total');
+        if (!el) return;
+        try {
+          var r = await window.abenfo.sb.from('profiles')
+            .select('id', { count: 'exact', head: true })
+            .eq('status', 'ativo').not('email', 'is', null);
+          if (!r.error) el.textContent = 'as ' + (r.count || 0) + ' associadas ativas com e-mail';
+        } catch (e) { /* ok */ }
+      }
+
+      async function carregarHistoricoComunicados() {
+        var alvo = document.getElementById('com-historico');
+        if (!alvo) return;
+        var r = await window.abenfo.sb.from('comunicados')
+          .select('assunto, enviado_em, total_enviados, total_destinatarios, total_falhas, status')
+          .order('enviado_em', { ascending: false }).limit(30);
+        if (r.error) { alvo.innerHTML = '<div class="lista-vazia">Erro ao carregar histórico: ' + escapar(r.error.message) + '</div>'; return; }
+        if (!r.data || !r.data.length) { alvo.innerHTML = '<div class="lista-vazia">Nenhum comunicado enviado ainda.</div>'; return; }
+        alvo.innerHTML = r.data.map(function (c) {
+          var tag = c.status === 'teste' ? ' <span style="color:var(--texto-suave);">(teste)</span>' : '';
+          return '<div class="obra-admin-card" style="padding:0.75rem 1rem;">' +
+            '<strong>' + escapar(c.assunto) + '</strong>' + tag + '<br>' +
+            '<span style="font-size:0.85rem;color:var(--texto-suave);">' + escapar(fmtDataHoraBR(c.enviado_em)) + ' · ' +
+            (c.total_enviados || 0) + '/' + (c.total_destinatarios || 0) + ' enviados' +
+            (c.total_falhas ? ' · ' + c.total_falhas + ' falha(s)' : '') + '</span></div>';
+        }).join('');
+      }
+
+      function mostrarComunicados() {
+        document.querySelectorAll('.aba-evento').forEach(function (b) {
+          b.classList.toggle('ativa', b.getAttribute('data-aba') === 'comunicados');
+        });
+        var dd = document.getElementById('evento-dropdown');
+        if (dd) dd.value = '';
+        document.querySelectorAll('[data-grupo="geral"]').forEach(function (el) { el.style.display = 'none'; });
+        document.querySelectorAll('[data-sub]').forEach(function (el) { el.style.display = 'none'; });
+        document.getElementById('sub-abas-dinamicas').hidden = true;
+        document.querySelectorAll('[data-grupo="comunicados"]').forEach(function (el) { el.style.display = ''; });
+        carregarComunicadoTotais();
+        carregarHistoricoComunicados();
+      }
+
       (function () {
         var geralBtn = document.querySelector('.aba-evento[data-aba="geral"]');
         if (geralBtn) geralBtn.addEventListener('click', mostrarGeral);
+        var comBtn = document.querySelector('.aba-evento[data-aba="comunicados"]');
+        if (comBtn) comBtn.addEventListener('click', mostrarComunicados);
+        var pv = document.getElementById('com-preview'); if (pv) pv.addEventListener('click', comPreview);
+        var bt = document.getElementById('com-teste'); if (bt) bt.addEventListener('click', comEnviarTeste);
+        var be = document.getElementById('com-enviar'); if (be) be.addEventListener('click', comEnviarTodas);
         var dd = document.getElementById('evento-dropdown');
         if (dd) dd.addEventListener('change', function () {
           if (this.value) selecionarEventoNav(this.value); else mostrarGeral();

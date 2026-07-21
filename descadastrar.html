@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Descadastrar comunicados — Abenfo RJ</title>
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/png" href="assets/logo-abenforj.png">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="index.html" class="logo-link" aria-label="Abenfo RJ — Página inicial">
+        <img src="assets/logo-abenforj.png" alt="Logo Abenfo RJ">
+        <div class="logo-text">Abenfo RJ<span>Enfermagem Obstétrica</span></div>
+      </a>
+    </div>
+  </header>
+
+  <main id="conteudo">
+    <section class="page-hero">
+      <div class="container">
+        <h1>Descadastrar comunicados</h1>
+        <p>Gerencie o envio de e-mails da ABENFO-RJ para você.</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container" style="max-width:480px;">
+        <div class="card" style="padding:2rem;">
+          <div id="msg" hidden></div>
+
+          <div id="bloco-confirmar">
+            <p style="margin:0 0 1rem;">
+              Deseja parar de receber comunicados por e-mail no endereço
+              <strong id="email-alvo">—</strong>?
+            </p>
+            <p style="margin:0 0 1.5rem;font-size:0.9rem;color:var(--texto-suave);">
+              Você continuará recebendo mensagens importantes ligadas à sua conta
+              (ex.: redefinição de senha e confirmações).
+            </p>
+            <button type="button" class="btn btn-solid btn-block" id="btn-descadastrar">
+              Confirmar descadastro
+            </button>
+          </div>
+        </div>
+
+        <p style="margin-top:1.25rem;text-align:center;font-size:0.95rem;">
+          <a href="index.html">Voltar ao site</a>
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="copyright" style="border:0;padding:1rem 0;">
+        © <span id="ano"></span> Abenfo RJ.
+      </div>
+    </div>
+  </footer>
+
+  <script>document.getElementById('ano').textContent = new Date().getFullYear();</script>
+  <script src="js/config.js"></script>
+  <script>
+    (function () {
+      var params = new URLSearchParams(window.location.search);
+      var email = (params.get('email') || '').trim();
+      var sig = (params.get('sig') || '').trim();
+
+      var msg = document.getElementById('msg');
+      var bloco = document.getElementById('bloco-confirmar');
+      var btn = document.getElementById('btn-descadastrar');
+      document.getElementById('email-alvo').textContent = email || '—';
+
+      function mostrar(texto, tipo) {
+        msg.hidden = false;
+        msg.className = 'aviso';
+        msg.style.padding = '0.9rem 1rem';
+        msg.style.borderRadius = '8px';
+        msg.style.marginBottom = '1rem';
+        msg.style.background = tipo === 'erro' ? '#fde8e8' : '#e6f4ea';
+        msg.style.color = tipo === 'erro' ? '#742020' : '#1f5d3a';
+        msg.innerHTML = texto;
+      }
+
+      if (!email || !sig) {
+        bloco.hidden = true;
+        mostrar('Link inválido. Use o link exato que veio no rodapé do e-mail.', 'erro');
+        return;
+      }
+
+      var cfg = window.SUPABASE_CONFIG || {};
+      if (!cfg.url || !cfg.anonKey) {
+        bloco.hidden = true;
+        mostrar('Serviço temporariamente indisponível. Escreva para abenforio@gmail.com.', 'erro');
+        return;
+      }
+
+      btn.addEventListener('click', async function () {
+        btn.disabled = true;
+        btn.textContent = 'Processando…';
+        try {
+          var resp = await fetch(cfg.url + '/functions/v1/descadastrar', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': cfg.anonKey,
+              'Authorization': 'Bearer ' + cfg.anonKey
+            },
+            body: JSON.stringify({ email: email, sig: sig })
+          });
+          var data = await resp.json().catch(function () { return {}; });
+          if (resp.ok && data.ok) {
+            bloco.hidden = true;
+            mostrar('<strong>Pronto!</strong> Você não receberá mais comunicados neste e-mail. ' +
+                    'Sentiremos sua falta! 💚', 'sucesso');
+          } else {
+            btn.disabled = false;
+            btn.textContent = 'Confirmar descadastro';
+            mostrar((data && data.erro) ? data.erro : 'Não foi possível concluir. Tente novamente.', 'erro');
+          }
+        } catch (e) {
+          btn.disabled = false;
+          btn.textContent = 'Confirmar descadastro';
+          mostrar('Erro de conexão. Tente novamente em instantes.', 'erro');
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
