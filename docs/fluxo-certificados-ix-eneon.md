@@ -43,6 +43,31 @@ Ou seja: com o interruptor ligado e o modelo ativo, **ninguém recebe o que não
   - palestrantes → `ferramentas/gerar-certificados-palestrantes.html` (uso interno, não publicado);
   - participação de externo, avulso → botão **"Baixar declaração"** na Lista de presença do admin.
 
+## Presença e certificado por CURSO (oficina)
+
+Os cursos pré-encontro têm **presença própria** (separada da presença do evento): só quem
+esteve **presente no curso** recebe o **certificado de curso** (tipo `oficina`, carga horária
+**4 horas**). A arte/layout é a mesma da declaração de participação, mudando só o texto (cita o
+curso e a carga horária).
+
+**Marcar presença (o admin faz):** `area/admin.html` → selecione o evento (IX ENEON) → aba
+**Cursos** → seção **"Presença dos cursos"**. Escolha o curso, marque **"Marcar presente"** em
+quem esteve. Clicar de novo desmarca. Grava em `inscricoes_curso.presente`.
+
+- **Adicionar na hora (walk-in):** quem apareceu sem estar inscrito.
+  - *Sócia* → busca pelo nome/e-mail no cadastro → "+ Adicionar" (inscreve no curso + marca presente).
+  - *Não-sócia* → nome + e-mail + nº Doity (cria o inscrito externo do evento + inscreve + presente).
+- **Imprimir lista deste curso:** botão na própria seção (respeita o filtro presente/ausente).
+
+**Como cada um recebe:**
+- **Sócia:** área da sócia → aba de certificados → um **"Certificado de curso · «nome»"** por curso
+  presente. Só aparece com o evento liberado e o modelo `oficina` ativo.
+- **Não-sócia:** baixa sozinha em **`certificado-curso.html`**, pelo **número do Doity**. Sai **um
+  PDF** com **uma página por curso** em que teve presença (manhã e/ou tarde).
+
+As travas são as mesmas: interruptor do evento (`certificados_liberados`) + modelo ativo
+(`certificado_modelos.oficina.ativo`) + a trava própria = **presença no curso**.
+
 ## Certificado de trabalho (apresentação + coautoria)
 
 - Só trabalhos **aceitos** e marcados **apresentado** (botão na lista de trabalhos do admin) geram certificado.
@@ -80,3 +105,5 @@ order by cp.tipo, cp.nome;
 - `2026-07-19-modelo-comissao-ix-eneon.sql` — modelo + papéis da organização.
 - `2026-07-19-credenciamento-inscrito-externo.sql` — coluna p/ toggle de presença de externo.
 - `2026-07-19-declaracao-por-doity.sql` — RPC da declaração pública por número do Doity.
+- `2026-07-21-presenca-e-certificado-curso.sql` — presença por curso (`inscricoes_curso.presente`),
+  carga horária do curso, modelo `oficina` e RPC pública `certificados_curso_por_doity`.

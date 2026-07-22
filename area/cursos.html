@@ -744,6 +744,15 @@
           var rIns = await sb.from('inscricoes_evento').select('evento_id, observacao').eq('profile_id', perfil.id);
           var rPart = await sb.from('participacoes_evento').select('evento_id').eq('profile_id', perfil.id);
           var rPap = await sb.from('certificado_papeis').select('evento_id, tipo, detalhe, nome').eq('profile_id', perfil.id);
+          // Cursos em que a sócia esteve PRESENTE (base do certificado de curso 'oficina').
+          // Guardado: se a migração de presença ainda não rodou, não quebra os demais certificados.
+          var rCur = { data: [] };
+          try {
+            rCur = await sb.from('inscricoes_curso')
+              .select('presente, cursos(nome, carga_horaria, evento_id)')
+              .eq('profile_id', perfil.id).eq('presente', true);
+            if (rCur.error) rCur = { data: [] };
+          } catch (e) { rCur = { data: [] }; }
           var ids = {};
           var ehMonitora = {};
           var temPresenca = {};
@@ -754,6 +763,10 @@
           (rPart.data || []).forEach(function (x) { ids[x.evento_id] = true; temPresenca[x.evento_id] = true; });
           var papeis = rPap.data || [];
           papeis.forEach(function (x) { ids[x.evento_id] = true; });
+          var meusCursos = (rCur && rCur.data ? rCur.data : [])
+            .filter(function (x) { return x.cursos && x.cursos.evento_id; })
+            .map(function (x) { return { nome: x.cursos.nome, carga: x.cursos.carga_horaria || '', eventoId: x.cursos.evento_id }; });
+          meusCursos.forEach(function (c) { ids[c.eventoId] = true; });
           var lids = Object.keys(ids);
           if (!lids.length) { vazio('Você ainda não tem participações registradas.'); return; }
 
@@ -765,12 +778,13 @@
           var libSet = {}; libIds.forEach(function (id) { libSet[id] = true; });
 
           var rMod = await sb.from('certificado_modelos').select('*')
-            .in('tipo', ['participacao', 'monitoria', 'palestrante', 'professor', 'comissao', 'apresentacao', 'coautoria']).eq('ativo', true)
+            .in('tipo', ['participacao', 'monitoria', 'oficina', 'palestrante', 'professor', 'comissao', 'apresentacao', 'coautoria']).eq('ativo', true)
             .in('evento_id', libIds);
 
           var ROTULO = {
             participacao: 'Declaração de participação',
             monitoria: 'Certificado de monitoria',
+            oficina: 'Certificado de curso',
             palestrante: 'Certificado de palestrante',
             professor: 'Certificado de professor',
             comissao: 'Certificado de organização'
@@ -795,6 +809,12 @@
             // palestrante/professor: usa o nome curado do papel (com título Profª Drª etc.),
             // não o nome da conta. participação/monitoria seguem com o nome do perfil.
             if (m) itens.push({ modelo: m, detalhe: pap.detalhe || '', nomeCurado: pap.nome || '' });
+          });
+          // Certificado de curso (oficina) — 1 por curso em que a sócia esteve PRESENTE.
+          meusCursos.forEach(function (c) {
+            if (!libSet[c.eventoId]) return;
+            var m = modeloPorChave[c.eventoId + '|oficina'];
+            if (m) itens.push({ modelo: m, detalhe: c.nome, carga: c.carga || '' });
           });
           // Certificados de trabalho (apresentação/coautoria) — relator ou coautor por e-mail da conta.
           try {
@@ -896,13 +916,13 @@
             nome: nome,
             textoCorpo: window.abenfoCert.aplicarCampos(modelo.texto_template || '', {
               nome: nome,
-              carga_horaria: (modelo.config && modelo.config.carga_horaria) || '',
+              carga_horaria: item.carga || (modelo.config && modelo.config.carga_horaria) || '',
               titulo_palestra: det,
               curso: det,
               comissao: det
             }),
             config: modelo.config || {}
-          }, ({ participacao: 'Declaração de participação', monitoria: 'Certificado de monitoria', palestrante: 'Certificado de palestrante', professor: 'Certificado de professor', comissao: 'Certificado de organização' }[modelo.tipo] || 'Certificado') + ' - ' + nome + '.pdf');
+          }, ({ participacao: 'Declaração de participação', monitoria: 'Certificado de monitoria', oficina: 'Certificado de curso', palestrante: 'Certificado de palestrante', professor: 'Certificado de professor', comissao: 'Certificado de organização' }[modelo.tipo] || 'Certificado') + ' - ' + nome + '.pdf');
         } catch (err) {
           alert('Erro ao gerar o certificado: ' + (err.message || 'tente novamente'));
         } finally {

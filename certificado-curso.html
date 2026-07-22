@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Certificado de curso — IX ENEON 2026</title>
+  <meta name="description" content="Participantes não-sócios que estiveram presentes nos cursos pré-encontro do IX ENEON 2026 baixam o certificado pelo número da inscrição no Doity.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/png" href="assets/logo-abenforj.png">
+  <style>
+    .decl-wrap { max-width: 640px; margin: 0 auto; }
+    .decl-card { background: var(--branco); border: 1px solid var(--borda); border-radius: 14px; padding: 1.75rem; box-shadow: 0 2px 10px rgba(0,0,0,.05); }
+    .decl-form { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 1rem; }
+    .decl-form input { flex: 1 1 220px; text-transform: uppercase; }
+    .decl-resultado { margin-top: 1.25rem; }
+    .decl-resultado .ok { background: var(--verde-pastel); border-left: 4px solid var(--verde); border-radius: 10px; padding: 1rem 1.25rem; }
+    .decl-resultado .aviso { background: #fdeee0; border-left: 4px solid #d9932f; border-radius: 10px; padding: 1rem 1.25rem; color: #7a5a10; }
+    .decl-cursos { list-style: none; margin: 0.5rem 0 1rem; padding: 0; }
+    .decl-cursos li { padding: 0.35rem 0; border-bottom: 1px solid rgba(0,0,0,.08); font-size: 0.95rem; }
+    .decl-cursos li:last-child { border-bottom: 0; }
+    .decl-dica { color: var(--texto-suave); font-size: 0.9rem; margin-top: 0.75rem; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="index.html" class="logo-link" aria-label="Abenfo RJ — Página inicial">
+        <img src="assets/logo-abenforj.png" alt="Logo Abenfo RJ">
+        <div class="logo-text">Abenfo RJ<span>Enfermagem Obstétrica</span></div>
+      </a>
+    </div>
+  </header>
+
+  <main id="conteudo" class="section">
+    <div class="container decl-wrap">
+      <div class="section-header" style="text-align:left;margin-bottom:1rem;">
+        <span class="eyebrow">IX ENEON 2026</span>
+        <h1>Certificado dos cursos pré-encontro</h1>
+        <p>Fez um <strong>curso pré-encontro</strong> do IX ENEON e <strong>não é sócia</strong> da ABENFO-RJ? Baixe aqui o seu certificado, pelo número da sua inscrição no <strong>Doity</strong>. O certificado sai só para quem teve <strong>presença registrada</strong> no curso.</p>
+      </div>
+
+      <div class="decl-card">
+        <label for="doity" style="font-weight:600;">Número da inscrição no Doity</label>
+        <p class="decl-dica" style="margin-top:.25rem;">No formato <strong>DOI-XXXXXXXX</strong> (está no seu e-mail de confirmação do Doity e no ingresso).</p>
+        <form class="decl-form" id="decl-form">
+          <input id="doity" type="text" placeholder="DOI-XXXXXXXX" autocomplete="off" required>
+          <button type="submit" class="btn btn-solid">Buscar meu certificado</button>
+        </form>
+        <div class="decl-resultado" id="decl-resultado" aria-live="polite"></div>
+      </div>
+
+      <p class="decl-dica">
+        É <strong>sócia</strong>? Seu certificado fica na <a href="login.html">área da sócia</a>.<br>
+        Procurando a <strong>declaração de participação</strong> do evento? Ela está em <a href="declaracao.html">declaracao.html</a>.<br>
+        Esteve no curso mas o número não é reconhecido? Escreva para <a href="mailto:abenforio@gmail.com">abenforio@gmail.com</a>.
+      </p>
+    </div>
+  </main>
+
+  <footer class="site-footer" style="margin-top:2rem;">
+    <div class="container">
+      <div class="copyright" style="border:0;padding:1rem 0;">© <span id="ano"></span> Abenfo RJ.</div>
+    </div>
+  </footer>
+
+  <script>document.getElementById('ano').textContent = new Date().getFullYear();</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/certificado.js"></script>
+  <script>
+    (function () {
+      var form = document.getElementById('decl-form');
+      var input = document.getElementById('doity');
+      var alvo = document.getElementById('decl-resultado');
+
+      function escapar(s) {
+        return String(s || '').replace(/[&<>"']/g, function (c) {
+          return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+        });
+      }
+      function avisar(html, classe) {
+        alvo.innerHTML = '<div class="' + (classe || 'aviso') + '">' + html + '</div>';
+      }
+
+      var cursos = null; // linhas da última busca bem-sucedida (uma por curso presente)
+
+      async function baixar(botao) {
+        if (!cursos || !cursos.length || !window.abenfoCert) return;
+        var sb = window.abenfo.sb;
+        var txt = botao.textContent; botao.disabled = true; botao.textContent = 'Gerando…';
+        try {
+          // A arte base é a mesma em todos os cursos (mesmo modelo 'oficina'): baixa 1 vez.
+          var base = cursos[0].base_path
+            ? await window.abenfoCert.baseUrlDeStorage(sb, 'certificados-bases', cursos[0].base_path)
+            : null;
+          var paginas = cursos.map(function (c) {
+            return {
+              baseUrl: base,
+              textoPre: c.texto_pre || '',
+              nome: c.nome,
+              textoCorpo: window.abenfoCert.aplicarCampos(c.texto_template || '', {
+                nome: c.nome,
+                curso: c.curso,
+                carga_horaria: c.carga_horaria || (c.config && c.config.carga_horaria) || ''
+              }),
+              config: c.config || {}
+            };
+          });
+          var arq = cursos.length > 1
+            ? 'Certificados de curso - ' + cursos[0].nome + '.pdf'
+            : 'Certificado de curso - ' + cursos[0].nome + '.pdf';
+          await window.abenfoCert.baixarPDFVarios(paginas, arq);
+        } catch (err) {
+          alert('Erro ao gerar o PDF: ' + (err.message || 'tente novamente'));
+        } finally {
+          botao.disabled = false; botao.textContent = txt;
+        }
+      }
+
+      form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        cursos = null;
+        var doity = input.value.trim();
+        if (!doity) { avisar('Digite o número da inscrição.'); return; }
+        if (!window.SUPABASE_PRONTO || !window.abenfo) {
+          avisar('Não foi possível conectar agora. Tente novamente mais tarde.'); return;
+        }
+        alvo.innerHTML = '<p style="color:var(--texto-suave);">Buscando…</p>';
+        try {
+          var r = await window.abenfo.sb.rpc('certificados_curso_por_doity', { p_doity: doity });
+          if (r.error) throw r.error;
+          var linhas = r.data || [];
+          if (!linhas.length) {
+            avisar('Não encontramos <strong>presença registrada em nenhum curso</strong> para esse número no IX ENEON. ' +
+              'Confira se digitou certo (formato DOI-XXXX). Se você fez o curso e o número não é reconhecido, ' +
+              'escreva para <a href="mailto:abenforio@gmail.com">abenforio@gmail.com</a>.');
+            return;
+          }
+          cursos = linhas;
+          var itensLista = linhas.map(function (c) {
+            return '<li>✔ ' + escapar(c.curso) + (c.carga_horaria ? ' <span style="color:var(--texto-suave);">· ' + escapar(c.carga_horaria) + '</span>' : '') + '</li>';
+          }).join('');
+          var plural = linhas.length > 1;
+          alvo.innerHTML =
+            '<div class="ok"><p style="margin:0 0 .5rem;">Olá, <strong>' + escapar(linhas[0].nome) + '</strong>! ' +
+            'Encontramos ' + linhas.length + ' curso' + (plural ? 's' : '') + ' com presença registrada. 🎉</p>' +
+            '<ul class="decl-cursos">' + itensLista + '</ul>' +
+            '<button type="button" class="btn btn-solid" id="decl-baixar">Baixar certificado' + (plural ? 's' : '') + ' (PDF)</button>' +
+            (plural ? '<p class="decl-dica" style="margin:.6rem 0 0;">Sai um único PDF com uma página por curso.</p>' : '') +
+            '</div>';
+          document.getElementById('decl-baixar').addEventListener('click', function () { baixar(this); });
+        } catch (err) {
+          avisar('Não foi possível consultar agora. Tente novamente mais tarde.');
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

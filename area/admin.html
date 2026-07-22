@@ -1328,6 +1328,61 @@
           </div>
         </details>
 
+        <details class="secao" data-grupo="eneon" data-sub="cursos">
+          <summary><h2>Presença dos cursos <span id="cpres-contador-tit" style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;"></span></h2></summary>
+          <p class="descricao-secao">
+            Marque quem <strong>esteve presente</strong> em cada curso pré-encontro. Só quem for marcado
+            recebe o <strong>certificado de curso</strong> (sócia na área logada; não-sócia em
+            <code>certificado-curso.html</code>, pelo nº do Doity). Dá pra <strong>adicionar na hora</strong>
+            quem apareceu sem estar inscrito.
+          </p>
+
+          <div class="import-card">
+            <label for="cpres-curso">Curso</label>
+            <select id="cpres-curso"><option value="" disabled selected>Carregando…</option></select>
+
+            <hr style="border:0;border-top:1px solid var(--borda);margin:1.25rem 0;">
+
+            <h3 style="font-size:1rem;color:var(--texto-suave);margin:0 0 0.5rem;">Adicionar na hora (inscrição + presença)</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;">
+              <select id="cpres-add-tipo" style="grid-column:1 / -1;min-height:0;padding:0.5rem;border-radius:6px;border:1px solid var(--borda);">
+                <option value="socia">Sócia (buscar cadastro)</option>
+                <option value="externo">Não-sócia (novo cadastro)</option>
+              </select>
+              <div id="cpres-add-socia" style="grid-column:1 / -1;">
+                <input id="cpres-add-busca" type="search" placeholder="Buscar sócia por nome ou e-mail…" autocomplete="off" style="width:100%;">
+                <div id="cpres-add-resultados" style="margin-top:0.4rem;"></div>
+              </div>
+              <div id="cpres-add-externo" style="grid-column:1 / -1;display:none;">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;">
+                  <input id="cpres-ext-nome" type="text" placeholder="Nome completo" autocomplete="off" style="grid-column:1 / -1;">
+                  <input id="cpres-ext-email" type="email" placeholder="E-mail" autocomplete="off">
+                  <input id="cpres-ext-doity" type="text" placeholder="Nº Doity (DOI-XXXX, opcional)" autocomplete="off">
+                </div>
+                <div style="margin-top:0.6rem;">
+                  <button type="button" id="cpres-ext-add" class="btn btn-solid" style="min-height:0;padding:0.55rem 0.9rem;">Cadastrar e marcar presente</button>
+                </div>
+              </div>
+            </div>
+            <p id="cpres-add-feedback" style="font-size:0.875rem;color:var(--texto-suave);margin:0.6rem 0 0;"></p>
+
+            <hr style="border:0;border-top:1px solid var(--borda);margin:1.25rem 0;">
+
+            <h3 style="font-size:1rem;color:var(--texto-suave);margin:0 0 0.35rem;">Marcar presença</h3>
+            <input id="cpres-busca" type="search" placeholder="Buscar por nome ou e-mail…" autocomplete="off" style="width:100%;">
+            <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;margin-top:0.5rem;">
+              <select id="cpres-filtro-sit" style="min-height:0;padding:0.35rem 0.5rem;border-radius:6px;border:1px solid var(--borda);font-size:0.85rem;">
+                <option value="">Presentes e ausentes</option>
+                <option value="presente">Só presentes</option>
+                <option value="ausente">Só ausentes</option>
+              </select>
+              <button type="button" id="cpres-imprimir" class="btn btn-ghost" style="min-height:0;padding:0.4rem 0.8rem;font-size:0.85rem;">🖨 Imprimir lista deste curso</button>
+            </div>
+            <p id="cpres-contador" style="font-size:0.875rem;color:var(--texto-suave);margin:0.5rem 0;"></p>
+            <div id="lista-presenca-curso"><p style="color:var(--texto-suave);">Selecione um curso.</p></div>
+          </div>
+        </details>
+
       </div>
     </section>
   </main>
@@ -5929,6 +5984,239 @@
         if (partEl('cred-imprimir')) partEl('cred-imprimir').addEventListener('click', imprimirCredenciamento);
       }
 
+      // ── Presença por CURSO (marca inscricoes_curso.presente) ─────────────────
+      // Só quem é marcado presente recebe o certificado de curso (tipo 'oficina').
+      var cpCache = { rows: [], cursoId: null, cursos: {} };
+
+      async function carregarCursosPresenca() {
+        var sb = window.abenfo.sb;
+        var sel = partEl('cpres-curso');
+        if (!sel) return;
+        var evId = (partEl('evento-id') || {}).value || '';
+        var q = sb.from('cursos').select('id, nome, turno, data, evento_id, carga_horaria').eq('ativo', true);
+        if (evId) q = q.eq('evento_id', evId);
+        var r = await q;
+        if (r.error || !r.data || !r.data.length) {
+          sel.innerHTML = '<option value="" disabled selected>Nenhum curso</option>';
+          if (partEl('lista-presenca-curso')) partEl('lista-presenca-curso').innerHTML =
+            '<p style="color:var(--texto-suave);">Nenhum curso ativo' + (evId ? ' neste evento' : '') + '.</p>';
+          return;
+        }
+        var cursos = r.data.slice().sort(function (a, b) {
+          return String(a.turno || '').localeCompare(String(b.turno || '')) ||
+                 normalizarBusca(a.nome).localeCompare(normalizarBusca(b.nome));
+        });
+        cpCache.cursos = {};
+        sel.innerHTML = cursos.map(function (c) {
+          cpCache.cursos[c.id] = c;
+          var rot = escapar(c.nome) + (c.turno ? ' · ' + escapar(String(c.turno).replace(/\s+/g, ' ').trim()) : '');
+          return '<option value="' + c.id + '">' + rot + '</option>';
+        }).join('');
+        sel.value = cursos[0].id;
+        await carregarPresencaCurso(cursos[0].id);
+      }
+
+      async function carregarPresencaCurso(cursoId) {
+        var sb = window.abenfo.sb;
+        var cont = partEl('lista-presenca-curso');
+        if (!cont) return;
+        if (!cursoId) { cont.innerHTML = '<p style="color:var(--texto-suave);">Selecione um curso.</p>'; return; }
+        cont.innerHTML = '<p style="color:var(--texto-suave);">Carregando inscritos…</p>';
+        var r = await sb.from('inscricoes_curso')
+          .select('id, presente, profile_id, inscrito_externo_id, socia:profile_id(nome_completo, nome_social, email, cpf), externa:inscrito_externo_id(nome, email, doity_id)')
+          .eq('curso_id', cursoId);
+        if (r.error) { cont.innerHTML = '<p style="color:#c53030;">Erro: ' + escapar(r.error.message) + '</p>'; return; }
+        var rows = (r.data || []).map(function (x) {
+          if (x.profile_id && x.socia) {
+            return { id: x.id, tipo: 'socia', pid: x.profile_id, eid: null,
+              nome: x.socia.nome_completo || x.socia.nome_social || '(sem nome)',
+              email: x.socia.email || '', doc: x.socia.cpf ? fmtCpf(x.socia.cpf) : '', presente: !!x.presente };
+          }
+          var ex = x.externa || {};
+          return { id: x.id, tipo: 'externo', pid: null, eid: x.inscrito_externo_id,
+            nome: ex.nome || '(sem nome)', email: ex.email || '', doc: ex.doity_id || '', presente: !!x.presente };
+        });
+        rows.sort(function (a, b) { return normalizarBusca(a.nome).localeCompare(normalizarBusca(b.nome)); });
+        cpCache = { rows: rows, cursoId: cursoId, cursos: cpCache.cursos };
+        renderPresencaCurso();
+      }
+
+      function cpFiltrada() {
+        var termo = normalizarBusca((partEl('cpres-busca') || {}).value || '');
+        var fsit = (partEl('cpres-filtro-sit') || {}).value || '';
+        return cpCache.rows.filter(function (x) {
+          if (fsit === 'presente' && !x.presente) return false;
+          if (fsit === 'ausente' && x.presente) return false;
+          if (termo && normalizarBusca(x.nome + ' ' + x.email + ' ' + x.doc).indexOf(termo) < 0) return false;
+          return true;
+        });
+      }
+
+      function renderPresencaCurso() {
+        var cont = partEl('lista-presenca-curso');
+        if (!cont) return;
+        var rows = cpCache.rows;
+        var filtrada = cpFiltrada();
+        var presentes = rows.filter(function (x) { return x.presente; }).length;
+        if (partEl('cpres-contador-tit')) partEl('cpres-contador-tit').textContent = rows.length ? '(' + presentes + '/' + rows.length + ' presentes)' : '';
+        partEl('cpres-contador').innerHTML = rows.length
+          ? '<strong>' + presentes + '</strong> presentes de ' + rows.length + ' inscritos · <strong>' + filtrada.length + '</strong> no filtro'
+          : '';
+        if (!rows.length) { cont.innerHTML = '<p style="color:var(--texto-suave);">Ninguém inscrito neste curso ainda. Use "Adicionar na hora".</p>'; return; }
+        if (!filtrada.length) { cont.innerHTML = '<p style="color:var(--texto-suave);">Nada no filtro atual.</p>'; return; }
+        cont.innerHTML = filtrada.map(function (x) {
+          var idx = cpCache.rows.indexOf(x);
+          var b = x.tipo === 'socia'
+            ? '<span style="font-size:0.72rem;background:var(--verde-pastel);color:var(--verde-escuro);padding:0.1rem 0.4rem;border-radius:4px;">sócia</span>'
+            : '<span style="font-size:0.72rem;background:#f0e6d2;color:#7a5a10;padding:0.1rem 0.4rem;border-radius:4px;">não-sócia</span>';
+          var det = [x.email, x.doc].filter(Boolean).join(' · ');
+          return '<div class="part-linha" style="display:flex;justify-content:space-between;align-items:center;gap:0.75rem;padding:0.5rem 0;border-bottom:1px solid var(--borda);">' +
+            '<div><strong>' + escapar(x.nome) + '</strong> ' + b +
+            (det ? '<br><span style="color:var(--texto-suave);font-size:0.85rem;">' + escapar(det) + '</span>' : '') + '</div>' +
+            '<button type="button" class="btn ' + (x.presente ? 'btn-solid' : 'btn-ghost') + '" data-cpres="' + idx + '" style="min-height:0;padding:0.35rem 0.8rem;font-size:0.85rem;white-space:nowrap;">' +
+              (x.presente ? '✓ Presente' : 'Marcar presente') + '</button>' +
+          '</div>';
+        }).join('');
+        cont.querySelectorAll('button[data-cpres]').forEach(function (bt) {
+          bt.addEventListener('click', function () { togglePresencaCurso(parseInt(bt.getAttribute('data-cpres'), 10), bt); });
+        });
+      }
+
+      async function togglePresencaCurso(idx, botao) {
+        var sb = window.abenfo.sb;
+        var x = cpCache.rows[idx];
+        if (!x) return;
+        botao.disabled = true;
+        var novo = !x.presente;
+        var r = await sb.from('inscricoes_curso')
+          .update({ presente: novo, presenca_em: novo ? new Date().toISOString() : null })
+          .eq('id', x.id);
+        if (r.error) { alert('Erro ao atualizar presença: ' + r.error.message); botao.disabled = false; return; }
+        x.presente = novo;
+        renderPresencaCurso();
+      }
+
+      // Adicionar na hora — sócia (busca no cadastro)
+      var cpBuscaTimer = null;
+      function cpAoBuscarSocia() { clearTimeout(cpBuscaTimer); cpBuscaTimer = setTimeout(cpBuscarSocia, 300); }
+      async function cpBuscarSocia() {
+        var sb = window.abenfo.sb;
+        var cont = partEl('cpres-add-resultados');
+        if (!cont) return;
+        var termo = (partEl('cpres-add-busca') || {}).value.trim();
+        if (termo.length < 2) { cont.innerHTML = ''; return; }
+        var like = '%' + termo.replace(/[%,]/g, ' ') + '%';
+        var r = await sb.from('profiles').select('id, nome_completo, nome_social, email')
+          .or('nome_completo.ilike.' + like + ',email.ilike.' + like).limit(15);
+        if (r.error) { cont.innerHTML = '<p style="color:#c53030;font-size:0.85rem;">Erro na busca.</p>'; return; }
+        var enrolled = {}; cpCache.rows.forEach(function (y) { if (y.pid) enrolled[y.pid] = y.presente; });
+        var data = r.data || [];
+        if (!data.length) { cont.innerHTML = '<p style="color:var(--texto-suave);font-size:0.85rem;">Nenhuma sócia encontrada.</p>'; return; }
+        cont.innerHTML = data.map(function (p) {
+          var nome = p.nome_completo || p.nome_social || '(sem nome)';
+          var jaInscrita = Object.prototype.hasOwnProperty.call(enrolled, p.id);
+          return '<div style="display:flex;justify-content:space-between;align-items:center;gap:0.5rem;padding:0.35rem 0;border-bottom:1px solid var(--borda);">' +
+            '<div><strong>' + escapar(nome) + '</strong>' + (p.email ? '<br><span style="color:var(--texto-suave);font-size:0.8rem;">' + escapar(p.email) + '</span>' : '') + '</div>' +
+            (jaInscrita && enrolled[p.id]
+              ? '<span style="font-size:0.8rem;color:var(--verde-escuro);white-space:nowrap;">✓ já presente</span>'
+              : '<button type="button" class="btn btn-ghost" data-cpadd="' + p.id + '" data-cpnome="' + escapar(nome) + '" style="min-height:0;padding:0.3rem 0.7rem;font-size:0.8rem;white-space:nowrap;">' + (jaInscrita ? 'Marcar presente' : '+ Adicionar') + '</button>') +
+          '</div>';
+        }).join('');
+        cont.querySelectorAll('button[data-cpadd]').forEach(function (bt) {
+          bt.addEventListener('click', function () { cpAddSocia(bt.getAttribute('data-cpadd'), bt.getAttribute('data-cpnome')); });
+        });
+      }
+
+      async function cpAddSocia(profileId, nome) {
+        var sb = window.abenfo.sb;
+        var cursoId = cpCache.cursoId;
+        var fb = partEl('cpres-add-feedback');
+        if (!cursoId) { fb.textContent = 'Selecione um curso primeiro.'; return; }
+        var ex = await sb.from('inscricoes_curso').select('id').eq('curso_id', cursoId).eq('profile_id', profileId).maybeSingle();
+        var res = ex.data
+          ? await sb.from('inscricoes_curso').update({ presente: true, presenca_em: new Date().toISOString() }).eq('id', ex.data.id)
+          : await sb.from('inscricoes_curso').insert({ curso_id: cursoId, profile_id: profileId, presente: true, presenca_em: new Date().toISOString() });
+        if (res.error) { fb.textContent = 'Erro: ' + res.error.message; return; }
+        fb.textContent = nome + ' marcada presente neste curso.';
+        partEl('cpres-add-busca').value = '';
+        partEl('cpres-add-resultados').innerHTML = '';
+        await carregarPresencaCurso(cursoId);
+      }
+
+      // Adicionar na hora — não-sócia (novo cadastro de inscrito externo)
+      async function cpAddExterno() {
+        var sb = window.abenfo.sb;
+        var cursoId = cpCache.cursoId;
+        var fb = partEl('cpres-add-feedback');
+        if (!cursoId) { fb.textContent = 'Selecione um curso primeiro.'; return; }
+        var curso = cpCache.cursos[cursoId];
+        if (!curso || !curso.evento_id) { fb.textContent = 'Este curso não está ligado a um evento — não dá para cadastrar não-sócia aqui.'; return; }
+        var nome = (partEl('cpres-ext-nome') || {}).value.trim();
+        var email = (partEl('cpres-ext-email') || {}).value.trim();
+        var doity = (partEl('cpres-ext-doity') || {}).value.trim().toUpperCase();
+        if (!nome) { fb.textContent = 'Informe o nome.'; return; }
+        if (!email) { fb.textContent = 'Informe o e-mail (necessário para o cadastro da não-sócia).'; return; }
+        var evId = curso.evento_id;
+        var ins = await sb.from('inscritos_externos').select('id, doity_id').eq('evento_id', evId).ilike('email', email).maybeSingle();
+        var externoId;
+        if (ins.data) {
+          externoId = ins.data.id;
+          if (doity && !ins.data.doity_id) await sb.from('inscritos_externos').update({ doity_id: doity }).eq('id', externoId);
+        } else {
+          var cr = await sb.from('inscritos_externos').insert({ evento_id: evId, nome: nome, email: email, doity_id: doity || null }).select('id').maybeSingle();
+          if (cr.error) { fb.textContent = 'Erro ao cadastrar: ' + cr.error.message; return; }
+          externoId = cr.data.id;
+        }
+        var ex = await sb.from('inscricoes_curso').select('id').eq('curso_id', cursoId).eq('inscrito_externo_id', externoId).maybeSingle();
+        var res = ex.data
+          ? await sb.from('inscricoes_curso').update({ presente: true, presenca_em: new Date().toISOString() }).eq('id', ex.data.id)
+          : await sb.from('inscricoes_curso').insert({ curso_id: cursoId, inscrito_externo_id: externoId, presente: true, presenca_em: new Date().toISOString() });
+        if (res.error) { fb.textContent = 'Erro: ' + res.error.message; return; }
+        fb.textContent = nome + ' cadastrada e marcada presente. Ela baixa o certificado em certificado-curso.html pelo nº do Doity.';
+        partEl('cpres-ext-nome').value = ''; partEl('cpres-ext-email').value = ''; partEl('cpres-ext-doity').value = '';
+        await carregarPresencaCurso(cursoId);
+      }
+
+      function imprimirPresencaCurso() {
+        var filtrada = cpFiltrada();
+        var c = cpCache.cursos[cpCache.cursoId];
+        var titulo = (c ? c.nome : 'Curso') + ' — Lista de presença';
+        var sub = c && c.turno ? String(c.turno).replace(/\s+/g, ' ').trim() : '';
+        var fsit = (partEl('cpres-filtro-sit') || {}).value || '';
+        if (fsit) sub = (sub ? sub + ' · ' : '') + (fsit === 'presente' ? 'só presentes' : 'só ausentes');
+        var linhas = filtrada.map(function (x, i) {
+          return '<tr><td>' + (i + 1) + '</td><td>' + escapar(x.nome) + '</td><td>' + escapar(x.tipo === 'socia' ? 'Sócia' : 'Não-sócia') +
+            '</td><td>' + escapar(x.doc || '') + '</td><td>' + (x.presente ? 'Presente' : 'Ausente') + '</td><td class="ass"></td></tr>';
+        }).join('');
+        var win = window.open('', '_blank');
+        if (!win) { alert('Permita pop-ups para imprimir.'); return; }
+        win.document.write(
+          '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + escapar(titulo) + '</title>' +
+          '<style>body{font-family:Arial,sans-serif;margin:24px;color:#222;}h1{font-size:16px;margin:0 0 2px;}p.sub{color:#555;font-size:12px;margin:0 0 12px;}' +
+          'table{width:100%;border-collapse:collapse;font-size:12px;}th,td{border:1px solid #bbb;padding:5px 7px;text-align:left;}th{background:#eee;}td.ass{width:160px;}@media print{button{display:none;}}</style></head><body>' +
+          '<h1>' + escapar(titulo) + '</h1>' +
+          '<p class="sub">' + filtrada.length + ' pessoa(s)' + (sub ? ' · ' + escapar(sub) : '') + '</p>' +
+          '<button onclick="window.print()" style="margin-bottom:12px;padding:6px 12px;">Imprimir</button>' +
+          '<table><thead><tr><th>#</th><th>Nome</th><th>Tipo</th><th>CPF / Nº Doity</th><th>Situação</th><th>Assinatura</th></tr></thead><tbody>' +
+          linhas + '</tbody></table></body></html>'
+        );
+        win.document.close();
+      }
+
+      if (partEl('cpres-curso')) {
+        partEl('cpres-curso').addEventListener('change', function () { carregarPresencaCurso(this.value); });
+        partEl('cpres-busca').addEventListener('input', renderPresencaCurso);
+        partEl('cpres-filtro-sit').addEventListener('change', renderPresencaCurso);
+        partEl('cpres-imprimir').addEventListener('click', imprimirPresencaCurso);
+        partEl('cpres-add-busca').addEventListener('input', cpAoBuscarSocia);
+        partEl('cpres-ext-add').addEventListener('click', cpAddExterno);
+        partEl('cpres-add-tipo').addEventListener('change', function () {
+          partEl('cpres-add-socia').style.display = this.value === 'socia' ? '' : 'none';
+          partEl('cpres-add-externo').style.display = this.value === 'externo' ? '' : 'none';
+        });
+        if (partEl('evento-id')) partEl('evento-id').addEventListener('change', carregarCursosPresenca);
+      }
+
       // ── Abas por evento (Geral · IX ENEON · 3º Fórum) ────────────────────────
       // Sub-abas que cada TIPO de evento mostra (fácil de ajustar aqui).
       var TIPOS_EVENTO = {
@@ -6211,6 +6499,7 @@
         carregarAvisosAdmin();
         carregarCertificadosEventos();
         carregarParticipantesEventos();
+        carregarCursosPresenca();
       });
     })();
   </script>
