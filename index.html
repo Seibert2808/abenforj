@@ -189,13 +189,22 @@
     </div>
   </footer>
 
-  <!-- Pop-up: imagem GRUPO COBEON PI. Aparece na 1ª visita (localStorage) e expira após quinta 23/07/2026 — ver js/main.js. -->
-  <div id="modal-boas-vindas" class="modal-overlay" role="dialog" aria-modal="true" aria-label="Aviso Grupo COBEON PI" hidden>
-    <div class="modal modal-imagem">
+  <!-- Pop-up: certificados do IX ENEON liberados. Aparece na 1ª visita (localStorage) e expira após 30/09/2026 — ver js/main.js. -->
+  <div id="modal-boas-vindas" class="modal-overlay" role="dialog" aria-modal="true" aria-label="Certificados do IX ENEON liberados" hidden>
+    <div class="modal">
       <button class="modal-close" type="button" aria-label="Fechar">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
       </button>
-      <img src="assets/grupo-cobeon-pi.jpg" alt="Grupo COBEON PI" class="modal-img">
+      <span class="modal-data">📜 Certificados liberados</span>
+      <h2>Certificados do IX ENEON</h2>
+      <p style="margin-bottom:1rem;"><strong>Sócias:</strong> os certificados já estão na área de membros, no link <strong>Meus Eventos</strong>. É só entrar na sua conta.</p>
+      <p style="margin-bottom:1.25rem;"><strong>Não é sócia?</strong> Baixe pelo número do Doity: a <strong>declaração de participação</strong>, o <strong>certificado do curso</strong> pré-encontro ou o <strong>certificado de trabalho</strong> apresentado.</p>
+      <div style="display:flex;flex-direction:column;gap:0.5rem;">
+        <a href="login.html" class="btn btn-solid">Sou sócia — acessar Meus Eventos</a>
+        <a href="declaracao.html" class="btn btn-ghost">Declaração de participação (Doity)</a>
+        <a href="certificado-curso.html" class="btn btn-ghost">Certificado do curso (Doity)</a>
+        <a href="trabalho-certificado.html" class="btn btn-ghost">Certificado de trabalho (Doity)</a>
+      </div>
     </div>
   </div>
 
