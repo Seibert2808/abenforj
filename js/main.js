@@ -25,14 +25,19 @@
 
   // ============================================================
   // Pop-up — aparece só na primeira visita (por versão de conteúdo).
-  // Conteúdo atual: COBEON — grupo de descontos (formulário de adesão).
+  // Cada página define o SEU popup no HTML, via #modal-boas-vindas +
+  // atributos data-modal-key (chave localStorage) e data-modal-expira
+  // (data ISO em que o aviso some sozinho). Assim páginas diferentes têm
+  // popups independentes, sem uma "engolir" a memória da outra.
+  //   • home        → COBEON, grupo de descontos
+  //   • eventos.html → certificados do IX ENEON
   // Para forçar a reaparição após trocar o conteúdo, incremente o
-  // sufixo da chave (v13 -> v14).
+  // sufixo da chave (…_v14 -> …_v15).
   // ============================================================
   var modal = document.getElementById('modal-boas-vindas');
-  var STORAGE_KEY = 'abenfo_modal_cobeon_grupo_v14';
-  // Aviso do COBEON some sozinho após 31/12/2026 (ajustar à data real do evento).
-  var EXPIRA_MODAL = new Date('2027-01-01T00:00:00-03:00');
+  var STORAGE_KEY = (modal && modal.getAttribute('data-modal-key')) || 'abenfo_modal_cobeon_grupo_v14';
+  var expiraAttr = modal && modal.getAttribute('data-modal-expira');
+  var EXPIRA_MODAL = new Date(expiraAttr || '2027-01-01T00:00:00-03:00');
 
   if (modal) {
     var jaViu = false;
