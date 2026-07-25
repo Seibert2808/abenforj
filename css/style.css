@@ -1751,6 +1751,38 @@ form textarea { min-height: 140px; resize: vertical; }
 .eneon-eixos li:nth-child(3)::before { background: var(--eneon-pessego); }
 .eneon-eixos li:nth-child(4)::before { background: var(--eneon-sage); }
 
+/* Aviso de certificados na página do IX ENEON (paleta do evento) */
+.eneon-cert-aviso {
+  margin-top: 2rem;
+  background: var(--branco);
+  border: 1px solid rgba(122, 135, 148, 0.25);
+  border-radius: 10px;
+  padding: 1.25rem 1.4rem 1.25rem 1.5rem;
+  font-size: 0.95rem;
+  color: var(--eneon-grafite);
+  position: relative;
+  overflow: hidden;
+}
+.eneon-cert-aviso::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+  background: linear-gradient(180deg,
+    var(--eneon-azul) 0%,
+    var(--eneon-lavanda) 33%,
+    var(--eneon-pessego) 66%,
+    var(--eneon-sage) 100%);
+}
+.eneon-cert-aviso strong { color: var(--eneon-grafite); }
+.eneon-cert-aviso a {
+  color: var(--eneon-grafite);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.eneon-cert-aviso a:hover { color: #5c6771; }
+
 /* Bloco "Promoção / Organização / Realização" com fundo grafite */
 .eneon-creditos {
   background: var(--eneon-grafite);
