@@ -189,21 +189,17 @@
     </div>
   </footer>
 
-  <!-- Pop-up: certificados do IX ENEON liberados. Aparece na 1ª visita (localStorage) e expira após 30/09/2026 — ver js/main.js. -->
-  <div id="modal-boas-vindas" class="modal-overlay" role="dialog" aria-modal="true" aria-label="Certificados do IX ENEON liberados" hidden>
-    <div class="modal">
+  <!-- Pop-up: COBEON — grupo de descontos. Aparece na 1ª visita (localStorage) e expira após 31/12/2026 — ver js/main.js. -->
+  <div id="modal-boas-vindas" class="modal-overlay" role="dialog" aria-modal="true" aria-label="COBEON — grupo de descontos" hidden>
+    <div class="modal modal-imagem" style="max-width:460px;">
       <button class="modal-close" type="button" aria-label="Fechar">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
       </button>
-      <span class="modal-data">📜 Certificados liberados</span>
-      <h2>Certificados do IX ENEON</h2>
-      <p style="margin-bottom:1rem;"><strong>Sócias:</strong> os certificados já estão na área de membros, no link <strong>Meus Eventos</strong>. É só entrar na sua conta.</p>
-      <p style="margin-bottom:1.25rem;"><strong>Não é sócia?</strong> Baixe pelo número do Doity: a <strong>declaração de participação</strong>, o <strong>certificado do curso</strong> pré-encontro ou o <strong>certificado de trabalho</strong> apresentado.</p>
-      <div style="display:flex;flex-direction:column;gap:0.5rem;">
-        <a href="login.html" class="btn btn-solid">Sou sócia — acessar Meus Eventos</a>
-        <a href="declaracao.html" class="btn btn-ghost">Declaração de participação (Doity)</a>
-        <a href="certificado-curso.html" class="btn btn-ghost">Certificado do curso (Doity)</a>
-        <a href="trabalho-certificado.html" class="btn btn-ghost">Certificado de trabalho (Doity)</a>
+      <img src="assets/cobeon-grupo.jpg" alt="COBEON — Grupo de descontos" class="modal-img">
+      <div style="padding:1.1rem 0.65rem 0.4rem;text-align:center;">
+        <h2 style="margin-bottom:0.5rem;">Vai ao COBEON?</h2>
+        <p style="font-size:0.95rem;color:var(--texto);margin-bottom:1rem;">Sócias da ABENFO-RJ com interesse em participar do <strong>COBEON</strong> podem aderir ao <strong>grupo de descontos</strong>. Cadastre-se no formulário para participar.</p>
+        <a href="https://forms.gle/tFbwqezkDEkQ7mjf6" target="_blank" rel="noopener" class="btn btn-solid" style="width:100%;">Quero aderir ao grupo de descontos</a>
       </div>
     </div>
   </div>

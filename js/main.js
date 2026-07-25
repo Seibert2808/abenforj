@@ -25,14 +25,14 @@
 
   // ============================================================
   // Pop-up — aparece só na primeira visita (por versão de conteúdo).
-  // Conteúdo atual: certificados do IX ENEON liberados.
+  // Conteúdo atual: COBEON — grupo de descontos (formulário de adesão).
   // Para forçar a reaparição após trocar o conteúdo, incremente o
-  // sufixo da chave (v12 -> v13).
+  // sufixo da chave (v13 -> v14).
   // ============================================================
   var modal = document.getElementById('modal-boas-vindas');
-  var STORAGE_KEY = 'abenfo_modal_certificados_v13';
-  // Aviso de certificados some sozinho após 30/09/2026.
-  var EXPIRA_MODAL = new Date('2026-10-01T00:00:00-03:00');
+  var STORAGE_KEY = 'abenfo_modal_cobeon_grupo_v14';
+  // Aviso do COBEON some sozinho após 31/12/2026 (ajustar à data real do evento).
+  var EXPIRA_MODAL = new Date('2027-01-01T00:00:00-03:00');
 
   if (modal) {
     var jaViu = false;
