@@ -4354,6 +4354,7 @@
         projeto_pesquisa: 'Projeto de pesquisa'
       };
       var trabalhosCache = [];
+      var modeloApresentacaoTrab = null; // modelo do certificado de apresentação (relator)
 
       async function carregarTrabalhosAdmin() {
         var sb = window.abenfo.sb;
@@ -4366,6 +4367,15 @@
           return;
         }
         trabalhosCache = r.data || [];
+        // Modelo do certificado de apresentação (tipo 'apresentacao') do evento dos
+        // trabalhos — usado pra gerar o certificado do relator aqui no admin.
+        modeloApresentacaoTrab = null;
+        var evId = trabalhosCache.length ? trabalhosCache[0].evento_id : null;
+        if (evId) {
+          var rMa = await sb.from('certificado_modelos').select('*')
+            .eq('evento_id', evId).eq('tipo', 'apresentacao').eq('ativo', true).maybeSingle();
+          modeloApresentacaoTrab = (rMa && rMa.data) ? rMa.data : null;
+        }
         renderTrabalhosAdmin();
       }
 
@@ -4425,6 +4435,7 @@
                   + '<button class="btn btn-ghost" data-trab-acao="anexar-apresentacao" data-id="' + t.id + '" style="background:#e6f4ea;color:#1f5d3a;border:1px solid #7fc49b;">Trocar</button>'
                 : '<button class="btn btn-ghost" data-trab-acao="anexar-apresentacao" data-id="' + t.id + '">Anexar apresentação</button>') +
               '<button class="btn ' + (t.apresentado ? 'btn-solid' : 'btn-ghost') + '" data-trab-acao="apresentado" data-id="' + t.id + '"' + (t.apresentado ? ' style="background:#1f5d3a;color:#fff;"' : '') + '>' + (t.apresentado ? '✓ Apresentado' : 'Marcar apresentado') + '</button>' +
+              (t.apresentado ? '<button class="btn btn-ghost" data-trab-acao="baixar-cert" data-id="' + t.id + '" style="background:#eef4ff;color:#2b4a7a;border:1px solid #a9c4ec;">📜 Certificado do relator</button>' : '') +
               '<button class="btn btn-ghost" data-trab-acao="' + (t.bloqueado ? 'desbloquear' : 'bloquear') + '" data-id="' + t.id + '">' + (t.bloqueado ? 'Desbloquear' : 'Bloquear edição') + '</button>' +
               '<span class="sep"></span>' +
               '<button class="btn btn-ghost btn-excluir" data-trab-acao="excluir" data-id="' + t.id + '" data-titulo="' + escapar(t.titulo) + '">Excluir</button>' +
@@ -4764,8 +4775,22 @@
         dl += '</dl>';
 
         var nomeArquivo = (t.relator_nome + ' - ' + t.titulo).replace(/[\\/:"*?<>|]/g, '-');
+        var editarRelator =
+          '<div style="margin-top:1rem;padding:0.85rem 1rem;background:var(--areia);border-radius:8px;">' +
+            '<h4 style="margin:0 0 0.35rem;color:var(--verde-escuro);">Relator(a) — editar</h4>' +
+            '<p style="font-size:0.82rem;color:var(--texto-suave);margin:0 0 0.6rem;">Use se o relator mudou na hora da apresentação. O <strong>certificado de apresentação</strong> sai com este nome.</p>' +
+            '<div style="display:flex;gap:0.5rem;flex-wrap:wrap;">' +
+              '<input id="edit-relator-nome" type="text" value="' + escapar(t.relator_nome || '') + '" placeholder="Nome do relator" style="flex:1 1 220px;padding:0.5rem;border:1px solid var(--borda);border-radius:6px;font:inherit;">' +
+              '<input id="edit-relator-email" type="email" value="' + escapar(t.relator_email || '') + '" placeholder="E-mail do relator" style="flex:1 1 220px;padding:0.5rem;border:1px solid var(--borda);border-radius:6px;font:inherit;">' +
+            '</div>' +
+            '<div style="margin-top:0.6rem;display:flex;gap:0.5rem;flex-wrap:wrap;">' +
+              '<button type="button" class="btn btn-solid" data-trab-acao="salvar-relator" data-id="' + t.id + '" style="min-height:0;padding:0.5rem 0.9rem;font-size:0.875rem;">Salvar relator</button>' +
+              '<button type="button" class="btn btn-ghost" data-trab-acao="baixar-cert" data-id="' + t.id + '" style="min-height:0;padding:0.5rem 0.9rem;font-size:0.875rem;background:#eef4ff;color:#2b4a7a;border:1px solid #a9c4ec;">📜 Baixar certificado do relator</button>' +
+            '</div>' +
+          '</div>';
         return '<button type="button" class="btn-voltar" data-acao-modal="fechar">← Fechar</button>' +
           dl +
+          editarRelator +
           '<h4 style="margin:1.25rem 0 0.4rem;color:var(--verde-escuro);">Autores</h4>' +
           (autoresHtml || '<p style="color:var(--texto-suave);">Sem autores cadastrados.</p>') +
           '<h4 style="margin:1.25rem 0 0.4rem;color:var(--verde-escuro);">Resumo</h4>' +
@@ -4808,6 +4833,21 @@
         var sb = window.abenfo.sb;
 
         if (acao === 'ver') { abrirDetalhesTrabalho(id); return; }
+        if (acao === 'baixar-cert') { await baixarCertApresentacaoTrab(id, btn); return; }
+        if (acao === 'salvar-relator') {
+          var nomeNovo = (document.getElementById('edit-relator-nome').value || '').trim();
+          var emailNovo = (document.getElementById('edit-relator-email').value || '').trim();
+          if (!nomeNovo) { mostrarAviso('O nome do relator não pode ficar vazio.', 'erro'); return; }
+          var rr = await sb.from('trabalhos_cientificos')
+            .update({ relator_nome: nomeNovo, relator_email: emailNovo || null })
+            .eq('id', id);
+          if (rr.error) { mostrarAviso('Erro: ' + rr.error.message, 'erro'); return; }
+          mostrarAviso('Relator(a) atualizado(a).', 'sucesso');
+          await carregarTrabalhosAdmin();
+          var tRel = trabalhosCache.find(function (x) { return x.id === id; });
+          if (tRel) { modalState.trabalho = tRel; renderModal(); }
+          return;
+        }
         if (acao === 'baixar-pdf') {
           await baixarTrabalhoIndividual(btn.getAttribute('data-path'), btn.getAttribute('data-nome'));
           return;
@@ -5720,6 +5760,41 @@
         cont.querySelectorAll('button[data-decl]').forEach(function (b) {
           b.addEventListener('click', function () { baixarDeclaracaoAdmin(b.getAttribute('data-decl'), b); });
         });
+      }
+
+      async function baixarCertApresentacaoTrab(id, botao) {
+        if (!window.abenfoCert) { alert('Motor de PDF indisponível.'); return; }
+        var t = trabalhosCache.find(function (x) { return x.id === id; });
+        if (!t) return;
+        if (!modeloApresentacaoTrab) {
+          alert('Este evento ainda não tem um modelo de certificado de apresentação ATIVO (tipo "apresentacao"). ' +
+            'Rode/ative a migração de certificados de trabalho antes de gerar.');
+          return;
+        }
+        if (!t.relator_nome) { alert('Este trabalho está sem nome de relator. Edite o relator antes de gerar o certificado.'); return; }
+        var sb = window.abenfo.sb;
+        var txt = botao.textContent; botao.disabled = true; botao.textContent = 'Gerando…';
+        try {
+          var base = modeloApresentacaoTrab.base_path
+            ? await window.abenfoCert.baseUrlDeStorage(sb, 'certificados-bases', modeloApresentacaoTrab.base_path)
+            : null;
+          var nomeArq = ('Certificado de apresentacao - ' + t.relator_nome + ' - ' + t.titulo)
+            .replace(/[\\/:"*?<>|]/g, '-');
+          await window.abenfoCert.baixarPDF({
+            baseUrl: base,
+            textoPre: modeloApresentacaoTrab.texto_pre || '',
+            nome: t.relator_nome,
+            textoCorpo: window.abenfoCert.aplicarCampos(modeloApresentacaoTrab.texto_template || '', {
+              nome: t.relator_nome,
+              titulo: t.titulo
+            }),
+            config: modeloApresentacaoTrab.config || {}
+          }, nomeArq + '.pdf');
+        } catch (err) {
+          alert('Erro ao gerar o certificado: ' + (err.message || 'tente novamente'));
+        } finally {
+          botao.disabled = false; botao.textContent = txt;
+        }
       }
 
       var modeloDeclAtual = null;
