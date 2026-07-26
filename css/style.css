@@ -691,9 +691,22 @@ form textarea { min-height: 140px; resize: vertical; }
 
 .site-footer ul { list-style: none; }
 .site-footer ul li { margin-bottom: 0.55rem; font-size: 0.9rem; }
-.site-footer .copyright {
+.site-footer .footer-social {
   border-top: 1px solid rgba(255, 255, 255, 0.12);
   padding-top: 1.25rem;
+  margin-top: 0.5rem;
+  text-align: center;
+  font-size: 0.95rem;
+}
+.site-footer .footer-social a {
+  display: inline-flex;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.85);
+}
+.site-footer .footer-social a:hover { color: var(--branco); }
+.site-footer .footer-social strong { font-weight: 600; }
+.site-footer .copyright {
+  padding-top: 1rem;
   font-size: 0.8rem;
   text-align: center;
   letter-spacing: 0.03em;
