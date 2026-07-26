@@ -19,7 +19,7 @@ where m.evento_id = e.id
   and m.tipo = 'apresentacao';
 
 -- Conferência: veja o texto novo.
-select tipo, texto_template
+select m.tipo, m.texto_template
 from public.certificado_modelos m
 join public.eventos e on e.id = m.evento_id
 where e.nome = 'IX ENEON 2026' and m.tipo = 'apresentacao';
