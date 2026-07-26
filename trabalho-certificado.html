@@ -113,13 +113,14 @@
           var base = mBase.base_path
             ? await window.abenfoCert.baseUrlDeStorage(window.abenfo.sb, 'certificados-bases', mBase.base_path)
             : null;
+          var autoresLinha = window.abenfoCert.formatarAutores(t.autores, t.relator_nome);
           var paginas = entriesTrab(t).map(function (en) {
             var mm = mods[en.tipo] || mBase;
             return {
               baseUrl: base,
               textoPre: dados.texto_pre || '',
               nome: en.nome,
-              textoCorpo: window.abenfoCert.aplicarCampos(mm.texto_template || '', { titulo: t.titulo }),
+              textoCorpo: window.abenfoCert.aplicarCampos(mm.texto_template || '', { titulo: t.titulo, autores: autoresLinha }),
               config: dados.config || {}
             };
           });

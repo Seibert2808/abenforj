@@ -152,6 +152,26 @@
     pdf.save(nomeArquivo || 'certificados.pdf');
   }
 
+  // Monta a linha de autoria do trabalho: relator primeiro e destacado.
+  // Ex.: "Fulana de Tal (relator), Beltrano e Sicrana".
+  // `autores` é o array [{nome, eh_relator, ...}]; `relatorNome` é o relator
+  // atual (pode ter sido editado no admin, então mandamos ele pra frente).
+  function formatarAutores(autores, relatorNome) {
+    var lista = Array.isArray(autores) ? autores : [];
+    var nomes = lista.map(function (a) { return (a && a.nome ? String(a.nome).trim() : ''); })
+      .filter(function (n) { return n; });
+    var rel = (relatorNome || '').trim();
+    var norm = function (s) { return String(s || '').trim().toLowerCase(); };
+    // Tira o relator da lista (se estiver nela) pra recolocá-lo na frente.
+    var outros = nomes.filter(function (n) { return norm(n) !== norm(rel); });
+    var relatorFinal = rel || (nomes.length ? nomes[0] : '');
+    if (!relatorFinal) return '';
+    var ordenados = [relatorFinal + ' (relator)'].concat(outros);
+    if (ordenados.length === 1) return ordenados[0];
+    if (ordenados.length === 2) return ordenados[0] + ' e ' + ordenados[1];
+    return ordenados.slice(0, -1).join(', ') + ' e ' + ordenados[ordenados.length - 1];
+  }
+
   // Baixa a arte do Storage como objectURL (evita "tainted canvas" por CORS).
   async function baseUrlDeStorage(sb, bucket, path) {
     if (!path) return null;
@@ -164,6 +184,7 @@
     LARGURA: LARGURA,
     ALTURA: ALTURA,
     aplicarCampos: aplicarCampos,
+    formatarAutores: formatarAutores,
     montarCanvas: montarCanvas,
     baixarPDF: baixarPDF,
     baixarPDFVarios: baixarPDFVarios,

@@ -823,7 +823,7 @@
               var mA = modeloPorChave[t.evento_id + '|apresentacao'];
               var mC = modeloPorChave[t.evento_id + '|coautoria'];
               if (!mA && !mC) return;
-              itens.push({ trabalho: { titulo: t.titulo, entries: entriesTrabalho(t), eventoId: t.evento_id }, modelos: { apresentacao: mA, coautoria: mC } });
+              itens.push({ trabalho: { titulo: t.titulo, entries: entriesTrabalho(t), autoresLinha: window.abenfoCert.formatarAutores(t.autores, t.relator_nome), eventoId: t.evento_id }, modelos: { apresentacao: mA, coautoria: mC } });
             });
           } catch (e) { /* RPC ainda não aplicada: ignora */ }
 
@@ -885,7 +885,7 @@
               baseUrl: base,
               textoPre: mm.texto_pre || '',
               nome: en.nome,
-              textoCorpo: window.abenfoCert.aplicarCampos(mm.texto_template || '', { titulo: tr.titulo }),
+              textoCorpo: window.abenfoCert.aplicarCampos(mm.texto_template || '', { titulo: tr.titulo, autores: tr.autoresLinha || '' }),
               config: mm.config || {}
             };
           });

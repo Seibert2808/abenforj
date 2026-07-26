@@ -5786,7 +5786,8 @@
             nome: t.relator_nome,
             textoCorpo: window.abenfoCert.aplicarCampos(modeloApresentacaoTrab.texto_template || '', {
               nome: t.relator_nome,
-              titulo: t.titulo
+              titulo: t.titulo,
+              autores: window.abenfoCert.formatarAutores(t.autores, t.relator_nome)
             }),
             config: modeloApresentacaoTrab.config || {}
           }, nomeArq + '.pdf');
