@@ -152,8 +152,27 @@
     pdf.save(nomeArquivo || 'certificados.pdf');
   }
 
+  // Infere o rótulo do relator pelo 1º nome: "relatora" p/ femininos, "relator"
+  // p/ masculinos. Regra do pt-BR (termina em "a" → feminino) + listas de
+  // exceção. Não há campo de gênero nos autores do trabalho, então é heurística;
+  // casos raros podem sair errados (dá pra corrigir manualmente se precisar).
+  function rotuloRelator(nome) {
+    var primeiro = String(nome || '').trim().split(/\s+/)[0] || '';
+    var p = primeiro.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    // Femininos que NÃO terminam em "a":
+    var femSemA = ['beatriz','raquel','rachel','ester','esther','isabel','ines','ingrid',
+      'carmen','miriam','myriam','rute','ruth','abigail','iris','isis','doris','lais','tais',
+      'thais','anais','yasmin','jasmin','karen','karin','sharon','ellen','helen','heloisa',
+      'mercedes','lourdes','dolores','pilar','flor','luz','solange','elis','cris','liz','mel'];
+    // Masculinos que terminam em "a":
+    var mascComA = ['luca','juca','nicola','noa','josua','joshua','ravi','iuri','yuri','aketa','cosma'];
+    if (mascComA.indexOf(p) !== -1) return 'relator';
+    if (femSemA.indexOf(p) !== -1) return 'relatora';
+    return /a$/.test(p) ? 'relatora' : 'relator';
+  }
+
   // Monta a linha de autoria do trabalho: relator primeiro e destacado.
-  // Ex.: "Fulana de Tal (relator), Beltrano e Sicrana".
+  // Ex.: "Fulana de Tal (relatora), Beltrano e Sicrana".
   // `autores` é o array [{nome, eh_relator, ...}]; `relatorNome` é o relator
   // atual (pode ter sido editado no admin, então mandamos ele pra frente).
   function formatarAutores(autores, relatorNome) {
@@ -166,7 +185,7 @@
     var outros = nomes.filter(function (n) { return norm(n) !== norm(rel); });
     var relatorFinal = rel || (nomes.length ? nomes[0] : '');
     if (!relatorFinal) return '';
-    var ordenados = [relatorFinal + ' (relator)'].concat(outros);
+    var ordenados = [relatorFinal + ' (' + rotuloRelator(relatorFinal) + ')'].concat(outros);
     if (ordenados.length === 1) return ordenados[0];
     if (ordenados.length === 2) return ordenados[0] + ' e ' + ordenados[1];
     return ordenados.slice(0, -1).join(', ') + ' e ' + ordenados[ordenados.length - 1];
