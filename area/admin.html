@@ -1172,6 +1172,8 @@
               <option value="palestrante">Palestrante</option>
               <option value="professor">Professor de curso</option>
               <option value="comissao">Comissão / organização</option>
+              <option value="avaliador">Avaliador de trabalhos</option>
+              <option value="assistente">Assistente de curso</option>
             </select>
 
             <label style="margin-top:1rem;">Arte base (PNG 3508×2480)</label>
@@ -1224,9 +1226,9 @@
 
             <hr style="border:0;border-top:1px solid var(--borda);margin:1.5rem 0;">
 
-            <h3 style="font-size:1rem;color:var(--texto-suave);margin:0 0 0.35rem;">Palestrantes e professores (papéis)</h3>
+            <h3 style="font-size:1rem;color:var(--texto-suave);margin:0 0 0.35rem;">Palestrantes, professores, avaliadores e assistentes (papéis)</h3>
             <p style="font-size:0.825rem;color:var(--texto-suave);margin:0 0 0.75rem;">
-              Cadastre quem é <strong>palestrante</strong> ou <strong>professor</strong> e vincule à conta da sócia:
+              Cadastre quem é <strong>palestrante</strong>, <strong>professor</strong>, <strong>avaliador de trabalhos</strong> ou <strong>assistente de curso</strong> e vincule à conta da sócia:
               assim o certificado dele aparece na área logada dela (quando os certificados estiverem liberados).
               O <em>detalhe</em> é o título da palestra ou o nome do curso — vai no texto do certificado.
               Sem conta vinculada, o certificado sai só por fora (PDF/e-mail).
@@ -1236,6 +1238,8 @@
                 <option value="palestrante">Palestrante</option>
                 <option value="professor">Professor de curso</option>
                 <option value="comissao">Comissão / organização</option>
+                <option value="avaliador">Avaliador de trabalhos</option>
+                <option value="assistente">Assistente de curso</option>
               </select>
               <input id="papel-nome" type="text" placeholder="Nome completo" autocomplete="off">
               <input id="papel-detalhe" type="text" placeholder="Título da palestra / nome do curso" autocomplete="off" style="grid-column:1 / -1;">
@@ -5298,6 +5302,14 @@
         comissao: {
           pre: 'Certificamos que',
           corpo: 'integrou a {{comissao}} do IX ENEON – IX Encontro de Enfermagem Obstétrica e Neonatal do Estado do Rio de Janeiro, realizado de 15 a 17 de julho de 2026, na UERJ.'
+        },
+        avaliador: {
+          pre: 'Certificamos que',
+          corpo: 'atuou na avaliação dos trabalhos científicos submetidos ao IX ENEON – IX Encontro de Enfermagem Obstétrica e Neonatal do Estado do Rio de Janeiro, realizado de 15 a 17 de julho de 2026, na UERJ.'
+        },
+        assistente: {
+          pre: 'Certificamos que',
+          corpo: 'atuou como assistente no curso pré-encontro "{{curso}}" do IX ENEON – IX Encontro de Enfermagem Obstétrica e Neonatal do Estado do Rio de Janeiro, realizado em 15 de julho de 2026, na UERJ, com carga horária de 4 horas.'
         }
       };
       var certEventos = [];
@@ -5479,7 +5491,7 @@
         if (r.error) { box.innerHTML = '<p style="color:#b00020;">Erro: ' + escapar(r.error.message) + '</p>'; return; }
         var linhas = r.data || [];
         if (!linhas.length) { box.innerHTML = '<p style="color:var(--texto-suave);font-size:0.9rem;">Nenhum papel cadastrado para este evento.</p>'; return; }
-        var TIPO = { palestrante: 'Palestrante', professor: 'Professor', comissao: 'Comissão' };
+        var TIPO = { palestrante: 'Palestrante', professor: 'Professor', comissao: 'Comissão', avaliador: 'Avaliador de trabalhos', assistente: 'Assistente de curso' };
         box.innerHTML = linhas.map(function (p) {
           var vinc = p.profile_id
             ? '<span style="color:#1f7a4d;">✅ conta: ' + escapar((p.profiles && p.profiles.email) || 'vinculada') + '</span>'

@@ -778,7 +778,7 @@
           var libSet = {}; libIds.forEach(function (id) { libSet[id] = true; });
 
           var rMod = await sb.from('certificado_modelos').select('*')
-            .in('tipo', ['participacao', 'monitoria', 'oficina', 'palestrante', 'professor', 'comissao', 'apresentacao', 'coautoria']).eq('ativo', true)
+            .in('tipo', ['participacao', 'monitoria', 'oficina', 'palestrante', 'professor', 'comissao', 'avaliador', 'assistente', 'apresentacao', 'coautoria']).eq('ativo', true)
             .in('evento_id', libIds);
 
           var ROTULO = {
@@ -787,7 +787,9 @@
             oficina: 'Certificado de curso',
             palestrante: 'Certificado de palestrante',
             professor: 'Certificado de professor',
-            comissao: 'Certificado de organização'
+            comissao: 'Certificado de organização',
+            avaliador: 'Certificado de avaliador de trabalhos',
+            assistente: 'Certificado de assistente de curso'
           };
           var modeloPorChave = {}; // chave "eventoId|tipo" -> modelo
           (rMod.data || []).forEach(function (m) { modeloPorChave[m.evento_id + '|' + m.tipo] = m; });
@@ -804,7 +806,7 @@
           });
           papeis.forEach(function (pap) {
             if (!libSet[pap.evento_id]) return;
-            if (pap.tipo !== 'palestrante' && pap.tipo !== 'professor' && pap.tipo !== 'comissao') return;
+            if (['palestrante', 'professor', 'comissao', 'avaliador', 'assistente'].indexOf(pap.tipo) < 0) return;
             var m = modeloPorChave[pap.evento_id + '|' + pap.tipo];
             // palestrante/professor: usa o nome curado do papel (com título Profª Drª etc.),
             // não o nome da conta. participação/monitoria seguem com o nome do perfil.
@@ -922,7 +924,7 @@
               comissao: det
             }),
             config: modelo.config || {}
-          }, ({ participacao: 'Declaração de participação', monitoria: 'Certificado de monitoria', oficina: 'Certificado de curso', palestrante: 'Certificado de palestrante', professor: 'Certificado de professor', comissao: 'Certificado de organização' }[modelo.tipo] || 'Certificado') + ' - ' + nome + '.pdf');
+          }, ({ participacao: 'Declaração de participação', monitoria: 'Certificado de monitoria', oficina: 'Certificado de curso', palestrante: 'Certificado de palestrante', professor: 'Certificado de professor', comissao: 'Certificado de organização', avaliador: 'Certificado de avaliador de trabalhos', assistente: 'Certificado de assistente de curso' }[modelo.tipo] || 'Certificado') + ' - ' + nome + '.pdf');
         } catch (err) {
           alert('Erro ao gerar o certificado: ' + (err.message || 'tente novamente'));
         } finally {

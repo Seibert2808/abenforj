@@ -12,6 +12,8 @@
 | **professor** | professores dos cursos pré-encontro | papel curado (com título) | `certificado_papeis` |
 | **comissão** | organização | papel curado (com título) | `certificado_papeis` |
 | **monitoria** | monitores | — | (a definir) |
+| **avaliador** | quem avaliou trabalhos científicos | papel curado (sem detalhe) | `certificado_papeis` |
+| **assistente** | quem assistiu o professor num curso pré-encontro | papel curado (detalhe = curso) | `certificado_papeis` |
 
 ## As duas travas
 
@@ -20,8 +22,16 @@
 
 Além disso, cada tipo tem sua **trava própria** (o "por quê" da pessoa receber):
 - participação → precisa de **presença registrada** (não basta estar inscrito);
-- palestrante/professor/comissão → precisa do **papel** cadastrado e vinculado;
+- palestrante/professor/comissão/avaliador/assistente → precisa do **papel** cadastrado e vinculado;
 - monitoria → precisa estar marcada como monitora.
+
+> ⚠️ **Papel não é presença.** Quem tem papel curado (palestrante, professor,
+> comissão, avaliador, assistente) **não aparece** na lista de credenciamento do admin — logo
+> não tem como ser marcado presente por ali e **não recebe a declaração de
+> participação**, mesmo tendo passado o evento inteiro na UERJ. Para liberar,
+> insira a presença em `participacoes_evento` (exemplo na migração
+> `2026-07-31-jose-antonio-participacao-e-coautoria.sql`, seções A2 e D — a D
+> lista todo mundo nessa situação).
 
 Ou seja: com o interruptor ligado e o modelo ativo, **ninguém recebe o que não é seu** — a trava de cada tipo garante isso.
 
@@ -107,3 +117,10 @@ order by cp.tipo, cp.nome;
 - `2026-07-19-declaracao-por-doity.sql` — RPC da declaração pública por número do Doity.
 - `2026-07-21-presenca-e-certificado-curso.sql` — presença por curso (`inscricoes_curso.presente`),
   carga horária do curso, modelo `oficina` e RPC pública `certificados_curso_por_doity`.
+- `2026-07-31-certificados-avaliador-e-assistente.sql` — tipos novos `avaliador` e
+  `assistente` (CHECKs + modelos + papéis do José Antônio e da Adriane); traz no fim
+  a lista de todos os avaliadores de `trabalhos_avaliacao` e um bloco comentado para
+  estender o certificado a todos eles.
+- `2026-07-31-jose-antonio-participacao-e-coautoria.sql` — presença do José Antônio de Sá Neto
+  + grava a chave `email` na entrada dele da lista de autores (é o que a RPC de coautoria
+  procura). Termina listando quem mais tem papel sem presença.
