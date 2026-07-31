@@ -121,6 +121,10 @@ order by cp.tipo, cp.nome;
   `assistente` (CHECKs + modelos + papéis do José Antônio e da Adriane); traz no fim
   a lista de todos os avaliadores de `trabalhos_avaliacao` e um bloco comentado para
   estender o certificado a todos eles.
+- `2026-07-31-avaliadores-todos.sql` — cria o papel de avaliador para todos os nomes de
+  `trabalhos_avaliacao`, casando com o cadastro para usar o **nome completo correto**
+  (os nomes da tabela são curtos e alguns têm erro de digitação). Quem não casa sai
+  listado para cadastrar à mão.
 - `2026-07-31-jose-antonio-participacao-e-coautoria.sql` — presença do José Antônio de Sá Neto
   + grava a chave `email` na entrada dele da lista de autores (é o que a RPC de coautoria
   procura). Termina listando quem mais tem papel sem presença.
