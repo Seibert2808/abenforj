@@ -127,27 +127,8 @@ where cp.evento_id = (select id from public.eventos where nome = 'IX ENEON 2026'
   and cp.tipo in ('avaliador','assistente')
 order by cp.tipo, cp.nome;
 
--- ── 5. OPCIONAL — declaração de participação de quem tem papel ─────────────
--- A consulta de "papel sem presença" devolveu 3 pessoas:
---   Débora Cecília Chaves de Oliveira (comissão)
---   Michele de Lima Janotti Quaresma (comissão, professor)
---   Renata Alves de Lima Nunes Barbosa (palestrante)
--- Nenhuma recebe a DECLARAÇÃO DE PARTICIPAÇÃO, porque papel não é presença.
--- Só rode se as três realmente estiveram no evento (tire da lista quem não foi).
--- Descomente:
---
--- insert into public.participacoes_evento (profile_id, evento_id)
--- select p.id, e.id
--- from public.profiles p
--- cross join public.eventos e
--- where e.nome = 'IX ENEON 2026'
---   and p.email in (
---     'ceciliadeby@gmail.com',
---     'michelleljqrj@hotmail.com',
---     'tinha_18@yahoo.com.br'
---   )
--- on conflict (profile_id, evento_id) do nothing;
---
--- Os avaliadores criados no passo 2 entram na mesma situação (papel, sem
--- presença). Para ver a lista atualizada, rode de novo a consulta D da migração
--- 2026-07-31-jose-antonio-participacao-e-coautoria.sql.
+-- ── 5. próximo passo ───────────────────────────────────────────────────────
+-- Os avaliadores criados aqui têm papel mas NÃO têm presença, então ainda não
+-- recebem a declaração de participação. Rode em seguida
+-- 2026-07-31-participacao-para-quem-tem-papel.sql, que libera a declaração
+-- para todo mundo com papel (decisão da Sabrina em 31/07/2026).

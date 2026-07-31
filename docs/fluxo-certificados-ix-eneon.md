@@ -28,10 +28,12 @@ Além disso, cada tipo tem sua **trava própria** (o "por quê" da pessoa recebe
 > ⚠️ **Papel não é presença.** Quem tem papel curado (palestrante, professor,
 > comissão, avaliador, assistente) **não aparece** na lista de credenciamento do admin — logo
 > não tem como ser marcado presente por ali e **não recebe a declaração de
-> participação**, mesmo tendo passado o evento inteiro na UERJ. Para liberar,
-> insira a presença em `participacoes_evento` (exemplo na migração
-> `2026-07-31-jose-antonio-participacao-e-coautoria.sql`, seções A2 e D — a D
-> lista todo mundo nessa situação).
+> participação**, mesmo tendo passado o evento inteiro na UERJ.
+>
+> **Regra decidida em 31/07/2026: quem tem papel recebe a declaração de
+> participação.** Depois de cadastrar papéis novos, rode
+> `2026-07-31-participacao-para-quem-tem-papel.sql` — ele registra a presença de
+> todo mundo com papel vinculado a uma conta. É idempotente, pode rodar sempre.
 
 Ou seja: com o interruptor ligado e o modelo ativo, **ninguém recebe o que não é seu** — a trava de cada tipo garante isso.
 
@@ -125,6 +127,8 @@ order by cp.tipo, cp.nome;
   `trabalhos_avaliacao`, casando com o cadastro para usar o **nome completo correto**
   (os nomes da tabela são curtos e alguns têm erro de digitação). Quem não casa sai
   listado para cadastrar à mão.
+- `2026-07-31-participacao-para-quem-tem-papel.sql` — declaração de participação para todo
+  mundo com papel curado (rodar por último, e de novo a cada lote de papéis novos).
 - `2026-07-31-jose-antonio-participacao-e-coautoria.sql` — presença do José Antônio de Sá Neto
   + grava a chave `email` na entrada dele da lista de autores (é o que a RPC de coautoria
   procura). Termina listando quem mais tem papel sem presença.
