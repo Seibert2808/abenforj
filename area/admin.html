@@ -1284,7 +1284,7 @@
                 <option value="outro">Tipo: Outro</option>
               </select>
               <input id="part-ext-nome" type="text" placeholder="Nome completo" autocomplete="off" style="grid-column:1 / -1;">
-              <input id="part-ext-email" type="email" placeholder="E-mail (opcional)" autocomplete="off">
+              <input id="part-ext-email" type="email" placeholder="E-mail (obrigatório)" autocomplete="off" required>
               <input id="part-ext-tel" type="tel" placeholder="Telefone (opcional)" autocomplete="off">
               <input id="part-ext-doc" type="text" placeholder="COREN (opcional)" autocomplete="off" style="grid-column:1 / -1;">
             </div>
@@ -5856,8 +5856,13 @@
         var fb = partEl('part-feedback');
         if (!id) { fb.textContent = 'Selecione um evento primeiro.'; return; }
         if (!nome) { fb.textContent = 'Informe o nome.'; return; }
+        // E-mail é obrigatório: é a única chave que permite reconciliar esta pessoa
+        // com a conta dela depois (ex.: sócia credenciada por engano como externa —
+        // sem e-mail, não há como vincular e o certificado nunca aparece na área dela).
+        if (!email) { fb.textContent = 'Informe o e-mail — é o que permite vincular a pessoa à conta dela depois.'; return; }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { fb.textContent = 'E-mail inválido.'; return; }
         var r = await sb.from('participantes_externos')
-          .insert({ evento_id: id, nome: nome, email: email || null, telefone: tel || null, documento: doc || null, observacao: tipo });
+          .insert({ evento_id: id, nome: nome, email: email, telefone: tel || null, documento: doc || null, observacao: tipo });
         if (r.error) { fb.textContent = 'Erro: ' + r.error.message; return; }
         partEl('part-ext-nome').value = '';
         partEl('part-ext-email').value = '';
