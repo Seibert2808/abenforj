@@ -1338,7 +1338,9 @@
             Marque quem <strong>esteve presente</strong> em cada curso pré-encontro. Só quem for marcado
             recebe o <strong>certificado de curso</strong> (sócia na área logada; não-sócia em
             <code>certificado-curso.html</code>, pelo nº do Doity). Dá pra <strong>adicionar na hora</strong>
-            quem apareceu sem estar inscrito.
+            quem apareceu sem estar inscrito. Em cada pessoa marcada presente aparece o botão
+            <strong>📜 Certificado</strong>, que baixa o PDF aqui mesmo, útil para mandar por e-mail
+            a quem não consegue baixar sozinha.
           </p>
 
           <div class="import-card">
@@ -6079,7 +6081,18 @@
 
       // ── Presença por CURSO (marca inscricoes_curso.presente) ─────────────────
       // Só quem é marcado presente recebe o certificado de curso (tipo 'oficina').
-      var cpCache = { rows: [], cursoId: null, cursos: {} };
+      var cpCache = { rows: [], cursoId: null, cursos: {}, modelo: null, modeloEventoId: null };
+
+      // Modelo `oficina` ativo do evento do curso — usado pelo botão "📜 Certificado"
+      // de cada presente. Guarda no cache por evento pra não rebuscar a cada troca de curso.
+      async function carregarModeloOficina(eventoId) {
+        if (!eventoId) { cpCache.modelo = null; cpCache.modeloEventoId = null; return; }
+        if (cpCache.modeloEventoId === eventoId) return;
+        var r = await window.abenfo.sb.from('certificado_modelos').select('*')
+          .eq('evento_id', eventoId).eq('tipo', 'oficina').eq('ativo', true).maybeSingle();
+        cpCache.modelo = (r && r.data) ? r.data : null;
+        cpCache.modeloEventoId = eventoId;
+      }
 
       async function carregarCursosPresenca() {
         var sb = window.abenfo.sb;
@@ -6130,7 +6143,10 @@
             nome: ex.nome || '(sem nome)', email: ex.email || '', doc: ex.doity_id || '', presente: !!x.presente };
         });
         rows.sort(function (a, b) { return normalizarBusca(a.nome).localeCompare(normalizarBusca(b.nome)); });
-        cpCache = { rows: rows, cursoId: cursoId, cursos: cpCache.cursos };
+        cpCache = { rows: rows, cursoId: cursoId, cursos: cpCache.cursos,
+                    modelo: cpCache.modelo, modeloEventoId: cpCache.modeloEventoId };
+        var cursoSel = cpCache.cursos[cursoId] || {};
+        await carregarModeloOficina(cursoSel.evento_id || null);
         renderPresencaCurso();
       }
 
@@ -6153,7 +6169,9 @@
         var presentes = rows.filter(function (x) { return x.presente; }).length;
         if (partEl('cpres-contador-tit')) partEl('cpres-contador-tit').textContent = rows.length ? '(' + presentes + '/' + rows.length + ' presentes)' : '';
         partEl('cpres-contador').innerHTML = rows.length
-          ? '<strong>' + presentes + '</strong> presentes de ' + rows.length + ' inscritos · <strong>' + filtrada.length + '</strong> no filtro'
+          ? '<strong>' + presentes + '</strong> presentes de ' + rows.length + ' inscritos · <strong>' + filtrada.length + '</strong> no filtro' +
+            (cpCache.modelo ? '' : '<br><span style="color:#8a6d1a;">Sem modelo de certificado <code>oficina</code> ativo neste evento, ' +
+              'então o botão de certificado não aparece. Ative na aba Certificados.</span>')
           : '';
         if (!rows.length) { cont.innerHTML = '<p style="color:var(--texto-suave);">Ninguém inscrito neste curso ainda. Use "Adicionar na hora".</p>'; return; }
         if (!filtrada.length) { cont.innerHTML = '<p style="color:var(--texto-suave);">Nada no filtro atual.</p>'; return; }
@@ -6166,12 +6184,20 @@
           return '<div class="part-linha" style="display:flex;justify-content:space-between;align-items:center;gap:0.75rem;padding:0.5rem 0;border-bottom:1px solid var(--borda);">' +
             '<div><strong>' + escapar(x.nome) + '</strong> ' + b +
             (det ? '<br><span style="color:var(--texto-suave);font-size:0.85rem;">' + escapar(det) + '</span>' : '') + '</div>' +
-            '<button type="button" class="btn ' + (x.presente ? 'btn-solid' : 'btn-ghost') + '" data-cpres="' + idx + '" style="min-height:0;padding:0.35rem 0.8rem;font-size:0.85rem;white-space:nowrap;">' +
-              (x.presente ? '✓ Presente' : 'Marcar presente') + '</button>' +
+            '<div style="display:flex;gap:0.4rem;flex-wrap:wrap;justify-content:flex-end;">' +
+              (x.presente && cpCache.modelo
+                ? '<button type="button" class="btn btn-ghost" data-cpcert="' + idx + '" style="min-height:0;padding:0.35rem 0.8rem;font-size:0.85rem;white-space:nowrap;background:#eef4ff;color:#2b4a7a;border:1px solid #a9c4ec;">📜 Certificado</button>'
+                : '') +
+              '<button type="button" class="btn ' + (x.presente ? 'btn-solid' : 'btn-ghost') + '" data-cpres="' + idx + '" style="min-height:0;padding:0.35rem 0.8rem;font-size:0.85rem;white-space:nowrap;">' +
+                (x.presente ? '✓ Presente' : 'Marcar presente') + '</button>' +
+            '</div>' +
           '</div>';
         }).join('');
         cont.querySelectorAll('button[data-cpres]').forEach(function (bt) {
           bt.addEventListener('click', function () { togglePresencaCurso(parseInt(bt.getAttribute('data-cpres'), 10), bt); });
+        });
+        cont.querySelectorAll('button[data-cpcert]').forEach(function (bt) {
+          bt.addEventListener('click', function () { baixarCertCursoAdmin(parseInt(bt.getAttribute('data-cpcert'), 10), bt); });
         });
       }
 
@@ -6187,6 +6213,50 @@
         if (r.error) { alert('Erro ao atualizar presença: ' + r.error.message); botao.disabled = false; return; }
         x.presente = novo;
         renderPresencaCurso();
+      }
+
+      // Certificado do curso (tipo 'oficina') gerado aqui no admin, para entregar por
+      // e-mail. Serve pros três casos que não se resolvem sozinhos: sócia que não
+      // consegue entrar na área, não-sócia sem nº do Doity (certificado-curso.html
+      // não acha) e pedido avulso por e-mail.
+      async function baixarCertCursoAdmin(idx, botao) {
+        if (!window.abenfoCert) { alert('Motor de PDF indisponível.'); return; }
+        var x = cpCache.rows[idx];
+        if (!x) return;
+        if (!x.presente) { alert('Só quem está marcado presente no curso recebe o certificado.'); return; }
+        var modelo = cpCache.modelo;
+        if (!modelo) {
+          alert('Este evento ainda não tem um modelo de certificado de curso ATIVO (tipo "oficina"). ' +
+            'Configure/ative na aba Certificados antes de gerar.');
+          return;
+        }
+        var c = cpCache.cursos[cpCache.cursoId] || {};
+        var nomeCurso = String(c.nome || '').replace(/\s+/g, ' ').trim();
+        var carga = c.carga_horaria || (modelo.config || {}).carga_horaria || '4 horas';
+        var sb = window.abenfo.sb;
+        var txt = botao.textContent; botao.disabled = true; botao.textContent = 'Gerando…';
+        try {
+          var base = modelo.base_path
+            ? await window.abenfoCert.baseUrlDeStorage(sb, 'certificados-bases', modelo.base_path)
+            : null;
+          var nomeArq = ('Certificado de curso - ' + x.nome + ' - ' + nomeCurso).replace(/[\\/:"*?<>|]/g, '-');
+          await window.abenfoCert.baixarPDF({
+            baseUrl: base,
+            textoPre: modelo.texto_pre || '',
+            nome: x.nome,
+            textoCorpo: window.abenfoCert.aplicarCampos(modelo.texto_template || '', {
+              nome: x.nome,
+              curso: nomeCurso,
+              oficina: nomeCurso,
+              carga_horaria: carga
+            }),
+            config: modelo.config || {}
+          }, nomeArq + '.pdf');
+        } catch (err) {
+          alert('Erro ao gerar o certificado: ' + (err.message || 'tente novamente'));
+        } finally {
+          botao.disabled = false; botao.textContent = txt;
+        }
       }
 
       // Adicionar na hora — sócia (busca no cadastro)
