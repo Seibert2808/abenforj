@@ -70,6 +70,9 @@ quem esteve. Clicar de novo desmarca. Grava em `inscricoes_curso.presente`.
   - *Sócia* → busca pelo nome/e-mail no cadastro → "+ Adicionar" (inscreve no curso + marca presente).
   - *Não-sócia* → nome + e-mail + nº Doity (cria o inscrito externo do evento + inscreve + presente).
 - **Imprimir lista deste curso:** botão na própria seção (respeita o filtro presente/ausente).
+- **📜 Certificado:** botão em cada linha marcada presente, gera o PDF do curso ali no admin
+  (mesmo modelo `oficina`, com o nome do curso e a carga horária). Serve para quem não consegue
+  baixar sozinha: sócia sem acesso à conta e não-sócia sem nº do Doity.
 
 **Como cada um recebe:**
 - **Sócia:** área da sócia → aba de certificados → um **"Certificado de curso · «nome»"** por curso
