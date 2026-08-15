@@ -2544,7 +2544,9 @@
         var eventos = r.data || [];
         var html = '<option value="" disabled' + (selecionarId ? '' : ' selected') + '>Selecione um evento…</option>';
         eventos.forEach(function (e) {
-          var rotulo = escapar(e.nome) + (e.data_inicio ? ' (' + fmtDataBR(e.data_inicio) + ')' : '');
+          // data na frente: a lista vem ordenada por data, e assim ela se lê como
+          // uma linha do tempo em vez de um monte de nomes começando igual.
+          var rotulo = (e.data_inicio ? fmtDataBR(e.data_inicio) + ' · ' : '') + escapar(e.nome);
           if (!e.ativo) rotulo += ' — inativo';
           html += '<option value="' + e.id + '"' + (e.id === selecionarId ? ' selected' : '') + '>' + rotulo + '</option>';
         });
@@ -6498,7 +6500,8 @@
         var html = '<option value="">Selecione um evento…</option>';
         r.data.forEach(function (e) {
           eventosNavCache[e.id] = e;
-          var rotulo = escapar(e.nome) + (e.data_inicio ? ' (' + fmtDataBR(e.data_inicio) + ')' : '');
+          // mesma ordem do seletor principal: data primeiro, depois o nome
+          var rotulo = (e.data_inicio ? fmtDataBR(e.data_inicio) + ' · ' : '') + escapar(e.nome);
           html += '<option value="' + e.id + '">' + rotulo + '</option>';
         });
         sel.innerHTML = html;
