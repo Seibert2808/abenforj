@@ -653,6 +653,11 @@
                 Envia um e-mail para <strong id="com-total">as associadas ativas com e-mail</strong>,
                 com o visual da ABENFO-RJ. <strong>Sempre envie um teste para você antes de disparar para todas.</strong>
               </p>
+              <p style="margin:0;color:var(--texto-suave);font-size:0.9rem;background:#f6f4ef;border:1px solid var(--borda);border-radius:8px;padding:0.6rem 0.8rem;">
+                ⏳ O envio é feito em <strong>lotes diários de até 95 e-mails</strong>, que é o limite do plano
+                do Resend. Ao confirmar, o primeiro lote sai na hora e o resto segue sozinho, um lote por dia,
+                até a fila zerar. Você acompanha o andamento no histórico, aqui embaixo.
+              </p>
 
               <label style="display:grid;gap:0.3rem;font-weight:600;font-size:0.9rem;">Assunto do e-mail
                 <input id="com-assunto" type="text" placeholder="Ex.: Participe do grupo COBEON PI"
@@ -690,6 +695,7 @@
                 <button type="button" class="btn btn-ghost" id="com-preview">Pré-visualizar</button>
                 <button type="button" class="btn btn-ghost" id="com-teste">Enviar teste para mim</button>
                 <button type="button" class="btn btn-solid" id="com-enviar">Enviar para todas as ativas</button>
+                <button type="button" class="btn btn-ghost" id="com-lote" title="Adianta o lote do dia sem esperar o horário automático">Enviar o próximo lote agora</button>
               </div>
 
               <iframe id="com-iframe" title="Pré-visualização do e-mail" hidden
@@ -1226,12 +1232,14 @@
 
             <hr style="border:0;border-top:1px solid var(--borda);margin:1.5rem 0;">
 
-            <h3 style="font-size:1rem;color:var(--texto-suave);margin:0 0 0.35rem;">Palestrantes, professores, avaliadores e assistentes (papéis)</h3>
+            <h3 style="font-size:1rem;color:var(--texto-suave);margin:0 0 0.35rem;">Palestrantes, professores, avaliadores, assistentes e monitores (papéis)</h3>
             <p style="font-size:0.825rem;color:var(--texto-suave);margin:0 0 0.75rem;">
-              Cadastre quem é <strong>palestrante</strong>, <strong>professor</strong>, <strong>avaliador de trabalhos</strong> ou <strong>assistente de curso</strong> e vincule à conta da sócia:
+              Cadastre quem é <strong>palestrante</strong>, <strong>professor</strong>, <strong>avaliador de trabalhos</strong>,
+              <strong>assistente de curso</strong> ou <strong>monitor(a)</strong> e vincule à conta da sócia:
               assim o certificado dele aparece na área logada dela (quando os certificados estiverem liberados).
               O <em>detalhe</em> é o título da palestra ou o nome do curso — vai no texto do certificado.
-              Sem conta vinculada, o certificado sai só por fora (PDF/e-mail).
+              Cada pessoa da lista tem o botão <strong>📜 Certificado</strong>, que baixa o PDF aqui mesmo:
+              serve para quem não tem conta, não consegue entrar na área ou pediu por e-mail.
             </p>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;">
               <select id="papel-tipo">
@@ -1240,6 +1248,7 @@
                 <option value="comissao">Comissão / organização</option>
                 <option value="avaliador">Avaliador de trabalhos</option>
                 <option value="assistente">Assistente de curso</option>
+                <option value="monitoria">Monitor(a)</option>
               </select>
               <input id="papel-nome" type="text" placeholder="Nome completo" autocomplete="off">
               <input id="papel-detalhe" type="text" placeholder="Título da palestra / nome do curso" autocomplete="off" style="grid-column:1 / -1;">
@@ -5480,11 +5489,26 @@
         return null;
       }
 
+      // Papéis carregados do evento selecionado + modelos de certificado por tipo
+      // (o botão "📜 Certificado" de cada linha gera o PDF a partir daqui).
+      var papeisCache = { rows: [], modelos: {} };
+      var PAPEL_TIPO = {
+        palestrante: 'Palestrante', professor: 'Professor', comissao: 'Comissão',
+        avaliador: 'Avaliador de trabalhos', assistente: 'Assistente de curso',
+        monitoria: 'Monitor(a)'
+      };
+      var PAPEL_ARQUIVO = {
+        palestrante: 'Certificado de palestrante', professor: 'Certificado de professor',
+        comissao: 'Certificado de organização', avaliador: 'Certificado de avaliador de trabalhos',
+        assistente: 'Certificado de assistente de curso', monitoria: 'Certificado de monitoria'
+      };
+
       async function carregarPapeis() {
         var sb = window.abenfo.sb;
         var box = document.getElementById('lista-papeis');
         if (!box) return;
         var ev = eventoCertSelecionado();
+        papeisCache = { rows: [], modelos: {} };
         if (!ev) { box.innerHTML = '<p style="color:var(--texto-suave);font-size:0.9rem;">Selecione um evento.</p>'; return; }
         box.innerHTML = '<p style="color:var(--texto-suave);font-size:0.9rem;">Carregando…</p>';
         var r = await sb.from('certificado_papeis')
@@ -5493,24 +5517,74 @@
         if (r.error) { box.innerHTML = '<p style="color:#b00020;">Erro: ' + escapar(r.error.message) + '</p>'; return; }
         var linhas = r.data || [];
         if (!linhas.length) { box.innerHTML = '<p style="color:var(--texto-suave);font-size:0.9rem;">Nenhum papel cadastrado para este evento.</p>'; return; }
-        var TIPO = { palestrante: 'Palestrante', professor: 'Professor', comissao: 'Comissão', avaliador: 'Avaliador de trabalhos', assistente: 'Assistente de curso' };
-        box.innerHTML = linhas.map(function (p) {
+        // Modelos do evento (todos, inclusive os desativados): o botão do admin é
+        // manual e serve justamente pra atender caso a caso antes da liberação geral.
+        var rm = await sb.from('certificado_modelos').select('*').eq('evento_id', ev.id);
+        (rm.data || []).forEach(function (m) { papeisCache.modelos[m.tipo] = m; });
+        papeisCache.rows = linhas;
+        box.innerHTML = linhas.map(function (p, i) {
           var vinc = p.profile_id
             ? '<span style="color:#1f7a4d;">✅ conta: ' + escapar((p.profiles && p.profiles.email) || 'vinculada') + '</span>'
             : '<span style="color:#b06a00;">❌ sem conta</span> ' +
               '<input type="email" data-papel-email="' + p.id + '" placeholder="e-mail da sócia" style="min-height:0;padding:0.3rem 0.5rem;font-size:0.8rem;max-width:190px;"> ' +
               '<button type="button" class="btn btn-ghost" data-papel-vincular="' + p.id + '" style="min-height:0;padding:0.3rem 0.6rem;font-size:0.8rem;">Vincular</button>';
+          var mod = papeisCache.modelos[p.tipo];
+          var cert = mod
+            ? '<button type="button" class="btn btn-ghost" data-papel-cert="' + i + '" style="min-height:0;padding:0.3rem 0.6rem;font-size:0.8rem;background:#eef4ff;color:#2b4a7a;border:1px solid #a9c4ec;">📜 Certificado</button>'
+            : '<span style="font-size:0.8rem;color:#b06a00;">sem modelo de "' + escapar(p.tipo) + '" neste evento</span>';
           return '<div style="border:1px solid var(--borda);border-radius:8px;padding:0.55rem 0.7rem;margin-bottom:0.5rem;">' +
             '<div style="display:flex;justify-content:space-between;gap:0.5rem;align-items:baseline;">' +
               '<strong>' + escapar(p.nome) + '</strong>' +
-              '<span style="font-size:0.8rem;color:var(--texto-suave);">' + escapar(TIPO[p.tipo] || p.tipo) + '</span>' +
+              '<span style="font-size:0.8rem;color:var(--texto-suave);">' + escapar(PAPEL_TIPO[p.tipo] || p.tipo) + '</span>' +
             '</div>' +
             (p.detalhe ? '<div style="font-size:0.85rem;color:var(--texto-suave);">' + escapar(p.detalhe) + '</div>' : '') +
-            '<div style="margin-top:0.35rem;font-size:0.85rem;display:flex;flex-wrap:wrap;gap:0.4rem;align-items:center;">' + vinc +
+            '<div style="margin-top:0.35rem;font-size:0.85rem;display:flex;flex-wrap:wrap;gap:0.4rem;align-items:center;">' + vinc + cert +
               '<button type="button" class="btn btn-ghost" data-papel-remover="' + p.id + '" style="min-height:0;padding:0.3rem 0.6rem;font-size:0.8rem;color:#b00020;">Remover</button>' +
             '</div>' +
           '</div>';
         }).join('');
+      }
+
+      // Gera o PDF de um papel aqui no admin, pra mandar por e-mail. Usa o nome
+      // cadastrado no papel (com título, quando houver) e o detalhe como
+      // {{titulo_palestra}}/{{curso}}/{{comissao}}.
+      async function baixarCertPapelAdmin(idx, botao) {
+        if (!window.abenfoCert) { alert('Motor de PDF indisponível.'); return; }
+        var p = papeisCache.rows[idx];
+        if (!p) return;
+        var modelo = papeisCache.modelos[p.tipo];
+        if (!modelo) {
+          alert('Este evento não tem modelo de certificado do tipo "' + p.tipo + '". ' +
+            'Crie/salve o modelo acima, nesta mesma aba, antes de gerar.');
+          return;
+        }
+        var sb = window.abenfo.sb;
+        var det = p.detalhe || '';
+        var txt = botao.textContent; botao.disabled = true; botao.textContent = 'Gerando…';
+        try {
+          var base = modelo.base_path
+            ? await window.abenfoCert.baseUrlDeStorage(sb, 'certificados-bases', modelo.base_path)
+            : null;
+          var nomeArq = ((PAPEL_ARQUIVO[p.tipo] || 'Certificado') + ' - ' + p.nome).replace(/[\\/:"*?<>|]/g, '-');
+          await window.abenfoCert.baixarPDF({
+            baseUrl: base,
+            textoPre: modelo.texto_pre || '',
+            nome: p.nome,
+            textoCorpo: window.abenfoCert.aplicarCampos(modelo.texto_template || '', {
+              nome: p.nome,
+              titulo_palestra: det,
+              curso: det,
+              oficina: det,
+              comissao: det,
+              carga_horaria: (modelo.config && modelo.config.carga_horaria) || ''
+            }),
+            config: modelo.config || {}
+          }, nomeArq + '.pdf');
+        } catch (err) {
+          alert('Erro ao gerar o certificado: ' + (err.message || 'tente novamente'));
+        } finally {
+          botao.disabled = false; botao.textContent = txt;
+        }
       }
 
       async function adicionarPapel() {
@@ -5589,6 +5663,11 @@
             var idV = bV.getAttribute('data-papel-vincular');
             var inp = listaPapeis.querySelector('input[data-papel-email="' + idV + '"]');
             vincularPapel(idV, inp ? inp.value.trim() : '');
+            return;
+          }
+          var bC = e.target.closest('button[data-papel-cert]');
+          if (bC) {
+            baixarCertPapelAdmin(parseInt(bC.getAttribute('data-papel-cert'), 10), bC);
             return;
           }
           var bR = e.target.closest('button[data-papel-remover]');
@@ -6541,8 +6620,8 @@
         f.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
 
-      async function comInvocar(body) {
-        var r = await window.abenfo.sb.functions.invoke('enviar-comunicado', { body: body });
+      async function comInvocar(body, funcao) {
+        var r = await window.abenfo.sb.functions.invoke(funcao || 'enviar-comunicado', { body: body });
         if (r.error) {
           var msg = r.error.message || 'Falha na função';
           try { var j = await r.error.context.json(); if (j && j.erro) msg = j.erro; } catch (e) { /* ok */ }
@@ -6569,19 +6648,47 @@
         var d = comColeta();
         if (!d.assunto) { mostrarAviso('Preencha o assunto.', 'erro'); return; }
         if (!d.corpo || d.corpo.trim().length < 5) { mostrarAviso('Escreva a mensagem do e-mail.', 'erro'); return; }
-        if (!confirm('ATENÇÃO: isto vai enviar o e-mail para TODAS as associadas ativas.\n\nVocê já enviou um teste e conferiu? Confirmar o envio agora?')) return;
+        if (!confirm('ATENÇÃO: isto vai enviar o e-mail para TODAS as associadas ativas.\n\n' +
+          'O primeiro lote (até 95 e-mails) sai agora e o resto segue automaticamente, um lote por dia.\n\n' +
+          'Você já enviou um teste e conferiu? Confirmar o envio agora?')) return;
         var btn = document.getElementById('com-enviar'); var t = btn.textContent;
         btn.disabled = true; btn.textContent = 'Enviando…';
         var r = await comInvocar({ assunto: d.assunto, corpo_html: montarHtmlComunicado(d) });
         btn.disabled = false; btn.textContent = t;
         if (r.ok) {
           var dt = r.data || {};
-          mostrarAviso('Comunicado enviado! ' + (dt.enviados || 0) + ' de ' + (dt.total_destinatarios || 0) +
-            ' e-mails' + (dt.falhas ? ' · ' + dt.falhas + ' falha(s)' : '') + '.', 'sucesso');
+          var msg = 'Comunicado na fila: ' + (dt.enviados || 0) + ' de ' + (dt.enfileirados || 0) + ' e-mails já saíram';
+          if (dt.restantes) {
+            msg += '. Faltam ' + dt.restantes + ', que saem sozinhos ' +
+              (dt.dias_restantes > 1 ? 'nos próximos ' + dt.dias_restantes + ' dias.' : 'amanhã.');
+          } else {
+            msg += '. Fila concluída.';
+          }
+          if (dt.falhas) msg += ' ' + dt.falhas + ' falha(s).';
+          if (dt.aviso) msg += ' (' + dt.aviso + ')';
+          mostrarAviso(msg, 'sucesso');
           carregarHistoricoComunicados();
         } else {
           mostrarAviso('Falha no envio: ' + escapar(r.erro), 'erro');
         }
+      }
+
+      // Adianta o lote do dia, sem esperar o horário do agendador.
+      async function comEnviarLote() {
+        if (!confirm('Enviar agora o próximo lote dos comunicados que ainda estão na fila?')) return;
+        var btn = document.getElementById('com-lote'); var t = btn.textContent;
+        btn.disabled = true; btn.textContent = 'Enviando…';
+        var r = await comInvocar({}, 'processar-fila-comunicados');
+        btn.disabled = false; btn.textContent = t;
+        if (!r.ok) { mostrarAviso('Falha ao processar a fila: ' + escapar(r.erro), 'erro'); return; }
+        var dt = r.data || {};
+        if (dt.aviso && !dt.enviados) { mostrarAviso(dt.aviso, 'sucesso'); }
+        else {
+          mostrarAviso('Lote enviado: ' + (dt.enviados || 0) + ' e-mail(s)' +
+            (dt.falhas ? ' · ' + dt.falhas + ' falha(s)' : '') +
+            '. Ainda cabem ' + (dt.sobra_da_cota || 0) + ' e-mails na cota de hoje.', 'sucesso');
+        }
+        carregarHistoricoComunicados();
       }
 
       async function carregarComunicadoTotais() {
@@ -6599,17 +6706,38 @@
         var alvo = document.getElementById('com-historico');
         if (!alvo) return;
         var r = await window.abenfo.sb.from('comunicados')
-          .select('assunto, enviado_em, total_enviados, total_destinatarios, total_falhas, status')
+          .select('assunto, enviado_em, total_enviados, total_destinatarios, total_falhas, status, ultimo_lote_em')
           .order('enviado_em', { ascending: false }).limit(30);
         if (r.error) { alvo.innerHTML = '<div class="lista-vazia">Erro ao carregar histórico: ' + escapar(r.error.message) + '</div>'; return; }
         if (!r.data || !r.data.length) { alvo.innerHTML = '<div class="lista-vazia">Nenhum comunicado enviado ainda.</div>'; return; }
         alvo.innerHTML = r.data.map(function (c) {
-          var tag = c.status === 'teste' ? ' <span style="color:var(--texto-suave);">(teste)</span>' : '';
+          var total = c.total_destinatarios || 0;
+          var feitos = (c.total_enviados || 0) + (c.total_falhas || 0);
+          var naFila = Math.max(0, total - feitos);
+          var pct = total ? Math.round((feitos / total) * 100) : 0;
+
+          var tag = '';
+          if (c.status === 'teste') tag = ' <span style="color:var(--texto-suave);">(teste)</span>';
+          else if (naFila > 0) tag = ' <span style="color:#8a6d1f;font-weight:600;">· na fila</span>';
+
+          // Barra de andamento, só para quem passou pela fila.
+          var barra = '';
+          if (c.status !== 'teste' && total > 1) {
+            barra = '<div style="margin-top:0.4rem;height:6px;background:var(--borda);border-radius:99px;overflow:hidden;">' +
+              '<div style="height:100%;width:' + pct + '%;background:' + (naFila ? '#c0921f' : '#3f5f4d') + ';"></div></div>';
+          }
+
+          var linha = (c.total_enviados || 0) + '/' + total + ' enviados';
+          if (naFila > 0) {
+            linha += ' · faltam ' + naFila + ', em até ' + Math.ceil(naFila / 95) + ' dia(s)';
+          }
+          if (c.total_falhas) linha += ' · ' + c.total_falhas + ' falha(s)';
+          if (c.ultimo_lote_em) linha += ' · último lote ' + fmtDataHoraBR(c.ultimo_lote_em);
+
           return '<div class="obra-admin-card" style="padding:0.75rem 1rem;">' +
             '<strong>' + escapar(c.assunto) + '</strong>' + tag + '<br>' +
             '<span style="font-size:0.85rem;color:var(--texto-suave);">' + escapar(fmtDataHoraBR(c.enviado_em)) + ' · ' +
-            (c.total_enviados || 0) + '/' + (c.total_destinatarios || 0) + ' enviados' +
-            (c.total_falhas ? ' · ' + c.total_falhas + ' falha(s)' : '') + '</span></div>';
+            escapar(linha) + '</span>' + barra + '</div>';
         }).join('');
       }
 
@@ -6635,6 +6763,7 @@
         var pv = document.getElementById('com-preview'); if (pv) pv.addEventListener('click', comPreview);
         var bt = document.getElementById('com-teste'); if (bt) bt.addEventListener('click', comEnviarTeste);
         var be = document.getElementById('com-enviar'); if (be) be.addEventListener('click', comEnviarTodas);
+        var bl = document.getElementById('com-lote'); if (bl) bl.addEventListener('click', comEnviarLote);
         var dd = document.getElementById('evento-dropdown');
         if (dd) dd.addEventListener('change', function () {
           if (this.value) selecionarEventoNav(this.value); else mostrarGeral();

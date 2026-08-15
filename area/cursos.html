@@ -762,7 +762,14 @@
           });
           (rPart.data || []).forEach(function (x) { ids[x.evento_id] = true; temPresenca[x.evento_id] = true; });
           var papeis = rPap.data || [];
-          papeis.forEach(function (x) { ids[x.evento_id] = true; });
+          // Monitoria tem DUAS fontes: o papel curado (admin → Certificados) e o
+          // caminho antigo (inscrição marcada "Monitora" + presença). Quem tem o
+          // papel sai só por ele, senão o certificado apareceria duplicado.
+          var temPapelMonitoria = {};
+          papeis.forEach(function (x) {
+            ids[x.evento_id] = true;
+            if (x.tipo === 'monitoria') temPapelMonitoria[x.evento_id] = true;
+          });
           var meusCursos = (rCur && rCur.data ? rCur.data : [])
             .filter(function (x) { return x.cursos && x.cursos.evento_id; })
             .map(function (x) { return { nome: x.cursos.nome, carga: x.cursos.carga_horaria || '', eventoId: x.cursos.evento_id }; });
@@ -802,11 +809,11 @@
             if (mp && temPresenca[ev.id]) itens.push({ modelo: mp, detalhe: null });
             var mm = modeloPorChave[ev.id + '|monitoria'];
             // monitoria: precisa ser monitora (inscrição) E ter presença registrada
-            if (mm && ehMonitora[ev.id] && temPresenca[ev.id]) itens.push({ modelo: mm, detalhe: null });
+            if (mm && !temPapelMonitoria[ev.id] && ehMonitora[ev.id] && temPresenca[ev.id]) itens.push({ modelo: mm, detalhe: null });
           });
           papeis.forEach(function (pap) {
             if (!libSet[pap.evento_id]) return;
-            if (['palestrante', 'professor', 'comissao', 'avaliador', 'assistente'].indexOf(pap.tipo) < 0) return;
+            if (['palestrante', 'professor', 'comissao', 'avaliador', 'assistente', 'monitoria'].indexOf(pap.tipo) < 0) return;
             var m = modeloPorChave[pap.evento_id + '|' + pap.tipo];
             // palestrante/professor: usa o nome curado do papel (com título Profª Drª etc.),
             // não o nome da conta. participação/monitoria seguem com o nome do perfil.

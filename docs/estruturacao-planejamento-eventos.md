@@ -135,8 +135,8 @@ Com o interruptor ligado e o modelo ativo, ninguém recebe o que não é seu, a 
 |---|---|---|---|---|
 | `participacao` | quem esteve no evento | presença registrada | nome da conta / do inscrito | sócia: área · não-sócia: `declaracao.html` (por Doity) · admin: botão na lista de presença |
 | `oficina` | quem esteve no curso pré-encontro | `inscricoes_curso.presente` | idem | sócia: área · não-sócia: `certificado-curso.html` (por Doity) · admin: botão na Presença dos cursos |
-| `monitoria` | monitoras presentes | ser monitora (inscrição) + presença | nome da conta | sócia: área |
-| `palestrante` | conferencistas e debatedores | papel curado | nome curado, com título | sócia: área · sem conta: PDF por e-mail |
+| `monitoria` | monitores | papel curado (ou, no caminho antigo, ser monitora na inscrição + presença) | nome curado | sócia: área · admin: botão na lista de papéis |
+| `palestrante` | conferencistas e debatedores | papel curado | nome curado, com título | sócia: área · admin: botão na lista de papéis · sem conta: PDF por e-mail |
 | `professor` | professores dos cursos | papel curado | nome curado | idem |
 | `comissao` | organização | papel curado | nome curado | idem |
 | `avaliador` | quem avaliou trabalhos | papel curado | nome curado | idem |
@@ -205,12 +205,15 @@ Não disparar comunicado em massa a cada correção, decisão da Sabrina em 31/0
   - `certificados_curso_por_doity(doity)`
   - `certificados_trabalho_por_doity(email, doity)`
   - `certificados_trabalho_socio()` (sócio logado, relator ou coautor)
-- **Regra dos nomes:** palestrante/professor/comissão/avaliador/assistente usam o **nome curado
-  do papel**, com título. Participação, curso e monitoria usam o nome da conta ou do inscrito.
+- **Regra dos nomes:** os papéis (palestrante, professor, comissão, avaliador, assistente,
+  monitoria) usam o **nome curado do papel**, com título. Participação e curso usam o nome da
+  conta ou do inscrito. Nome de lista digitada à mão sai torto no PDF, então, ao criar papéis em
+  lote, troque pelo `nome_completo` do cadastro sempre que o vínculo existir.
 - **O que o admin gera na hora** (independe do interruptor do evento): declaração de participação
   na lista de presença, certificado de curso na Presença dos cursos, certificado do relator na
-  lista de trabalhos, teste do modelo na aba Certificados. Palestrantes e mesa de abertura saem
-  por ferramentas locais em `ferramentas/` (não versionadas).
+  lista de trabalhos, **certificado de qualquer papel na aba Certificados** (botão "📜 Certificado"
+  em cada linha da lista de papéis) e teste do modelo. Mesa de abertura sai por ferramenta local em
+  `ferramentas/` (não versionada).
 
 ---
 

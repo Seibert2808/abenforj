@@ -11,7 +11,7 @@
 | **palestrante** | conferencista + debatedores | papel curado (com título) | `certificado_papeis` |
 | **professor** | professores dos cursos pré-encontro | papel curado (com título) | `certificado_papeis` |
 | **comissão** | organização | papel curado (com título) | `certificado_papeis` |
-| **monitoria** | monitores | — | (a definir) |
+| **monitoria** | monitores | papel curado (nome do cadastro) | `certificado_papeis` (ou, antigo: inscrição "Monitora" + presença) |
 | **avaliador** | quem avaliou trabalhos científicos | papel curado (sem detalhe) | `certificado_papeis` |
 | **assistente** | quem assistiu o professor num curso pré-encontro | papel curado (detalhe = curso) | `certificado_papeis` |
 
@@ -23,7 +23,13 @@
 Além disso, cada tipo tem sua **trava própria** (o "por quê" da pessoa receber):
 - participação → precisa de **presença registrada** (não basta estar inscrito);
 - palestrante/professor/comissão/avaliador/assistente → precisa do **papel** cadastrado e vinculado;
-- monitoria → precisa estar marcada como monitora.
+- monitoria → precisa do **papel de monitoria** cadastrado (ou, no caminho antigo, estar marcada
+  como monitora na inscrição e ter presença registrada).
+
+> 📜 **Certificado pelo admin:** na aba **Certificados**, cada linha da lista de papéis
+> (palestrante, professor, comissão, avaliador, assistente, monitoria) tem o botão
+> **"📜 Certificado"**, que baixa o PDF na hora, para mandar por e-mail. Funciona mesmo sem conta
+> vinculada e mesmo com o modelo desativado, é o admin quem decide.
 
 > ⚠️ **Papel não é presença.** Quem tem papel curado (palestrante, professor,
 > comissão, avaliador, assistente) **não aparece** na lista de credenciamento do admin — logo
