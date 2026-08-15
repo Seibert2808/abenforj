@@ -29,7 +29,7 @@
   // atributos data-modal-key (chave localStorage) e data-modal-expira
   // (data ISO em que o aviso some sozinho). Assim páginas diferentes têm
   // popups independentes, sem uma "engolir" a memória da outra.
-  //   • home        → COBEON, grupo de descontos
+  //   • home        → Seminário Agosto Lilás (4ª Reunião do Fórum), até 21/08/2026
   //   • eventos.html → certificados do IX ENEON
   // Para forçar a reaparição após trocar o conteúdo, incremente o
   // sufixo da chave (…_v14 -> …_v15).
