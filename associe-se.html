@@ -99,6 +99,8 @@
             <div class="aviso" style="margin:0.85rem 0 0;">
               <span style="display:block;font-size:0.78rem;letter-spacing:0.08em;text-transform:uppercase;font-weight:600;">Chave PIX (e-mail)</span>
               <strong style="display:block;font-size:1.2rem;line-height:1.35;margin:0.3rem 0 0.6rem;overflow-wrap:anywhere;">abenforio.pagamentos@gmail.com</strong>
+              <button type="button" class="btn btn-ghost" data-copiar-chave="abenforio.pagamentos@gmail.com" style="padding:0.45rem 0.9rem;font-size:0.9rem;min-height:0;margin-bottom:0.75rem;">Copiar chave</button>
+              <span class="copiar-aviso" role="status" aria-live="polite" style="display:block;margin-bottom:0.4rem;font-weight:600;"></span>
               Confira a chave com atenção, ela termina em <strong>.pagamentos@gmail.com</strong>. PIX enviado para qualquer outro e-mail da associação cai em conta errada e não é identificado como pagamento de anuidade.
             </div>
           </li>
@@ -117,7 +119,14 @@
     <section class="section" id="renovacao">
       <div class="container">
         <h2>Já é associada? Renove sua filiação</h2>
-        <p>Se você já é associada e deseja renovar sua anuidade, faça o pagamento via PIX (chave <strong>abenforio.pagamentos@gmail.com</strong>) e <strong>anexe o comprovante na sua aba Perfil</strong>, dentro da <a href="/area/perfil">área de associados</a>. A diretoria confere o pagamento e dá continuidade à sua filiação.</p>
+        <p>Se você já é associada e deseja renovar sua anuidade, faça o pagamento via PIX e <strong>anexe o comprovante na sua aba Perfil</strong>, dentro da <a href="/area/perfil">área de associados</a>. A diretoria confere o pagamento e dá continuidade à sua filiação.</p>
+        <div class="aviso" style="max-width:640px;">
+          <span style="display:block;font-size:0.78rem;letter-spacing:0.08em;text-transform:uppercase;font-weight:600;">Chave PIX (e-mail)</span>
+          <strong style="display:block;font-size:1.2rem;line-height:1.35;margin:0.3rem 0 0.6rem;overflow-wrap:anywhere;">abenforio.pagamentos@gmail.com</strong>
+          <button type="button" class="btn btn-ghost" data-copiar-chave="abenforio.pagamentos@gmail.com" style="padding:0.45rem 0.9rem;font-size:0.9rem;min-height:0;margin-bottom:0.75rem;">Copiar chave</button>
+          <span class="copiar-aviso" role="status" aria-live="polite" style="display:block;margin-bottom:0.4rem;font-weight:600;"></span>
+          Confira a chave com atenção, ela termina em <strong>.pagamentos@gmail.com</strong>. PIX enviado para qualquer outro e-mail da associação cai em conta errada e não é identificado como pagamento de anuidade.
+        </div>
       </div>
     </section>
   </main>
@@ -161,6 +170,47 @@
   </footer>
 
   <script>document.getElementById('ano').textContent = new Date().getFullYear();</script>
+  <script>
+    // Botão "Copiar chave" dos blocos de PIX. Clipboard API quando disponível
+    // (precisa de https), senão cai no textarea + execCommand.
+    (function () {
+      function copiar(texto) {
+        if (navigator.clipboard && window.isSecureContext) {
+          return navigator.clipboard.writeText(texto);
+        }
+        return new Promise(function (ok, falhou) {
+          var campo = document.createElement('textarea');
+          campo.value = texto;
+          campo.setAttribute('readonly', '');
+          campo.style.position = 'fixed';
+          campo.style.opacity = '0';
+          document.body.appendChild(campo);
+          campo.select();
+          var deu = false;
+          try { deu = document.execCommand('copy'); } catch (e) { deu = false; }
+          document.body.removeChild(campo);
+          deu ? ok() : falhou();
+        });
+      }
+
+      document.addEventListener('click', function (ev) {
+        var botao = ev.target.closest('[data-copiar-chave]');
+        if (!botao) return;
+        var bloco = botao.closest('.aviso') || botao.parentNode;
+        var aviso = bloco.querySelector('.copiar-aviso');
+        copiar(botao.getAttribute('data-copiar-chave')).then(function () {
+          if (aviso) aviso.textContent = 'Chave copiada. Cole no seu aplicativo do banco.';
+        }).catch(function () {
+          if (aviso) aviso.textContent = 'Não consegui copiar aqui. Selecione o endereço acima e copie à mão.';
+        }).then(function () {
+          clearTimeout(botao._avisoTimer);
+          botao._avisoTimer = setTimeout(function () {
+            if (aviso) aviso.textContent = '';
+          }, 6000);
+        });
+      });
+    })();
+  </script>
   <script src="js/main.js"></script>
 </body>
 </html>
