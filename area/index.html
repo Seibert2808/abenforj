@@ -258,9 +258,11 @@
 
         document.getElementById('modal-ecos-eneon-sim').addEventListener('click', function () {
           try { localStorage.setItem('abenfo_popup_ecos_eneon_dispensado', '1'); } catch (err) { /* ok */ }
-          // Anuidade em dia -> direto pra autoinscrição no evento.
-          // Anuidade pendente/sem registro -> primeiro precisa renovar.
-          window.location.href = (perfil.status === 'ativo')
+          // Só quem já está com a anuidade de 2027 paga vai direto pra
+          // autoinscrição — anuidade de 2026 (mesmo "ativa") não conta.
+          // Quem ainda não tem 2027 precisa renovar primeiro.
+          var temAnuidade2027 = perfil.status === 'ativo' && perfil.ano_vigencia >= 2027;
+          window.location.href = temAnuidade2027
             ? '/area/cursos#convites-eventos'
             : '../associe-se.html#renovacao';
         });
