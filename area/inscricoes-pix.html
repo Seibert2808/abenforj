@@ -91,7 +91,10 @@
         return ('0' + dt.getDate()).slice(-2) + '/' + ('0' + (dt.getMonth() + 1)).slice(-2) + '/' + dt.getFullYear() +
           ' às ' + ('0' + dt.getHours()).slice(-2) + ':' + ('0' + dt.getMinutes()).slice(-2);
       }
-      var ROTULOS_CATEGORIA = { socia: 'Sócia (R$ 110,00)', nao_socia: 'Não sócia (R$ 300,00)' };
+      var ROTULOS_CATEGORIA = {
+        enfermeiro_obstetriz: 'Enfermeiro(a)/Obstetriz (R$ 110,00)',
+        auxiliar_tecnico_estudante: 'Auxiliar/Técnico/Estudante (R$ 60,00)'
+      };
 
       var sb, inscricoes = [];
 
