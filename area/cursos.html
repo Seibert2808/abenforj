@@ -612,9 +612,12 @@
           if (periodo) info.push('📅 ' + periodo);
           if (e.local) info.push('📍 ' + e.local);
           var linha = info.length > 0 ? '<p>' + escapar(info.join(' · ')) + '</p>' : '';
+          // Eventos com link_externo (Doity etc.) mandam pra inscrição de lá.
+          // Eventos sem link_externo (gestão nossa, ex. Ecos do Eneon) têm
+          // botão de autoinscrição direto aqui — gratuita, sob pedido da sócia.
           var botao = e.link_externo
             ? '<a href="' + escapar(e.link_externo) + '" class="btn btn-solid" target="_blank" rel="noopener">Inscreva-se no ' + escapar(e.nome) + ' →</a>'
-            : '<a href="../eventos.html" class="btn btn-solid">Saiba mais →</a>';
+            : '<button type="button" class="btn btn-solid" data-acao="inscrever-evento" data-evento-id="' + escapar(e.id) + '">Inscrever-se no ' + escapar(e.nome) + '</button>';
           return '<div class="convite-evento">' +
             '<h3>Você ainda não está inscrita no ' + escapar(e.nome) + '</h3>' +
             linha +
@@ -622,6 +625,25 @@
           '</div>';
         }).join('');
       }
+
+      // Autoinscrição gratuita (eventos sem link_externo) — a sócia pede
+      // explicitamente clicando aqui; não acontece sozinho ao renovar anuidade.
+      document.getElementById('convites-eventos').addEventListener('click', async function (e) {
+        var btn = e.target.closest('button[data-acao="inscrever-evento"]');
+        if (!btn) return;
+        btn.disabled = true;
+        var textoOriginal = btn.textContent;
+        btn.textContent = 'Inscrevendo…';
+        var sb = window.abenfo.sb;
+        var r = await sb.rpc('associada_inscrever_evento', { p_evento_id: btn.getAttribute('data-evento-id') });
+        if (r.error || (r.data && !r.data.ok)) {
+          alert('Não foi possível concluir a inscrição: ' + ((r.data && r.data.erro) || (r.error && r.error.message) || 'erro desconhecido'));
+          btn.disabled = false;
+          btn.textContent = textoOriginal;
+          return;
+        }
+        await Promise.all([carregarInscricoes(window.abenfo.perfilAtual), carregarConvitesEventos(window.abenfo.perfilAtual)]);
+      });
 
       // ── Registro de presença (Fórum de Enfermagem Obstétrica e outros eventos abertos) ──
       async function carregarPresenca(perfil) {

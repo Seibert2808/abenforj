@@ -2384,29 +2384,6 @@
           btn.disabled = false;
           return;
         }
-
-        // Aprovação de sócia nova ou renovação/reativação de anuidade também
-        // matricula automaticamente no Ecos do Eneon — a anuidade já cobre a
-        // inscrição no encontro.
-        if (acao === 'aprovar' || acao === 'anuidade-paga') {
-          var rEvtEco = await sb.rpc('evento_ecos_eneon_id');
-          if (!rEvtEco.error && rEvtEco.data) {
-            var authEco = await sb.auth.getUser();
-            var uidEco = authEco && authEco.data && authEco.data.user ? authEco.data.user.id : null;
-            var rInsEco = await sb.from('inscricoes_evento').insert({
-              profile_id: id,
-              evento_id: rEvtEco.data,
-              observacao: 'Matrícula automática ao confirmar anuidade',
-              created_by: uidEco
-            });
-            if (rInsEco.error && rInsEco.error.code !== '23505') {
-              msgOk += ' (atenção: não consegui matricular no Ecos do Eneon — ' + rInsEco.error.message + ')';
-            } else {
-              msgOk += ' Matriculada no Ecos do Eneon.';
-            }
-          }
-        }
-
         mostrarAviso(msgOk, 'sucesso');
         await carregar();
       });
