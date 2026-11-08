@@ -1881,6 +1881,14 @@ form textarea { min-height: 140px; resize: vertical; }
   max-height: 100%;
   object-fit: contain;
 }
+a.logo-chip {
+  text-decoration: none;
+  transition: transform var(--transicao), box-shadow var(--transicao);
+}
+a.logo-chip:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+}
 
 /* Local do evento — painel largo com endereço + mapa incorporado (eventos.html) */
 .local-full {
