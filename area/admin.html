@@ -2024,10 +2024,11 @@
         return (pNs && pNs !== pNc) ? ns : '';
       }
 
-      // Quem se associa (primeira aprovação) a partir de 1º de outubro já tem a
-      // validade da carteirinha estendida para 31/12 do ano SEGUINTE — regra vigente
-      // desde 01/10/2026, mesmo benefício da anuidade automática usado no Ecos do Eneon.
-      function anoVigenciaInicialPadrao() {
+      // A partir de 1º de outubro, tanto a primeira aprovação quanto a renovação
+      // da anuidade já sugerem a validade da carteirinha estendida para 31/12 do
+      // ano SEGUINTE — regra vigente desde 01/10/2026, mesmo benefício da anuidade
+      // automática usado no Ecos do Eneon.
+      function anoVigenciaPadrao() {
         var hoje = new Date();
         return hoje.getMonth() >= 9 ? hoje.getFullYear() + 1 : hoje.getFullYear();
       }
@@ -2080,12 +2081,12 @@
         var acoesSec = '';
         if (tipo === 'pendente') {
           acoesPrim =
-            '<input type="number" min="2020" max="2099" value="' + anoVigenciaInicialPadrao() + '" data-ano="' + p.id + '" aria-label="Ano de vigência">' +
+            '<input type="number" min="2020" max="2099" value="' + anoVigenciaPadrao() + '" data-ano="' + p.id + '" aria-label="Ano de vigência">' +
             '<button class="btn btn-solid" data-acao="aprovar" data-id="' + p.id + '">Aprovar</button>';
           acoesSec = '<button class="btn btn-ghost" data-acao="recusar" data-id="' + p.id + '">Recusar</button>';
         } else if (tipo === 'ativo') {
           acoesPrim =
-            '<input type="number" min="2020" max="2099" value="' + (p.ano_vigencia || anoAtual) + '" data-ano="' + p.id + '" aria-label="Ano de vigência">' +
+            '<input type="number" min="2020" max="2099" value="' + (p.ano_vigencia || anoVigenciaPadrao()) + '" data-ano="' + p.id + '" aria-label="Ano de vigência">' +
             '<button class="btn btn-solid" data-acao="anuidade-paga" data-id="' + p.id + '">Anuidade paga</button>';
           acoesSec =
             '<button class="btn btn-ghost" data-acao="voltar-pendente" data-id="' + p.id + '">Voltar para pendente</button>' +
@@ -2093,7 +2094,7 @@
         } else {
           // inativo: anuidade paga + (se houver email) enviar lembrete via mailto
           acoesPrim =
-            '<input type="number" min="2020" max="2099" value="' + (p.ano_vigencia || anoAtual) + '" data-ano="' + p.id + '" aria-label="Ano de vigência">' +
+            '<input type="number" min="2020" max="2099" value="' + (p.ano_vigencia || anoVigenciaPadrao()) + '" data-ano="' + p.id + '" aria-label="Ano de vigência">' +
             '<button class="btn btn-solid" data-acao="anuidade-paga" data-id="' + p.id + '">Anuidade paga</button>';
           if (p.email) {
             var assunto = encodeURIComponent('Renove sua filiação à ABENFO-RJ');
@@ -3933,7 +3934,7 @@
         var atualizPerfil = {};
         if (ehPendente) {
           atualizPerfil.status = 'ativo';
-          if (!perfil.ano_vigencia) atualizPerfil.ano_vigencia = anoVigenciaInicialPadrao();
+          if (!perfil.ano_vigencia) atualizPerfil.ano_vigencia = anoVigenciaPadrao();
         }
         if (ehEstudanteSemDocs) atualizPerfil.cadastro_completo = true;
         if (Object.keys(atualizPerfil).length) {
