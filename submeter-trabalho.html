@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Submeter trabalho científico — IX ENEON 2026</title>
-  <meta name="description" content="Já se inscreveu no IX ENEON via Doity? Submeta seu trabalho científico aqui.">
+  <title>Submeter trabalho científico — ECOS DO ENEON 2026</title>
+  <meta name="description" content="Já se inscreveu no ECOS DO ENEON via Doity? Submeta seu trabalho científico aqui.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -211,7 +211,7 @@
       <div class="container">
         <h1>Submeter trabalho científico</h1>
         <p>
-          Já se inscreveu no IX ENEON pelo Doity? Use seu e-mail e número de inscrição para submeter seus trabalhos.
+          Já se inscreveu no ECOS DO ENEON pelo Doity? Use seu e-mail e número de inscrição para submeter seus trabalhos.
           <strong>Sócias da ABENFO-RJ</strong> submetem pela <a href="/login">área da associada</a>.
         </p>
       </div>
@@ -240,7 +240,7 @@
 
     <section id="painel-section" hidden>
       <div class="painel-trabalhos">
-        <p class="saudacao">Olá, <strong id="saudacao-nome"></strong>! Submeta seus trabalhos para o IX ENEON 2026.</p>
+        <p class="saudacao">Olá, <strong id="saudacao-nome"></strong>! Submeta seus trabalhos para o ECOS DO ENEON 2026.</p>
 
         <div id="feedback" class="feedback" hidden></div>
 
@@ -287,10 +287,10 @@
                 <label for="eixo_tematico">Eixo Temático <span class="req">*</span></label>
                 <select id="eixo_tematico" required>
                   <option value="" disabled selected>Selecione…</option>
-                  <option value="ensino_formacao_regulacao">Ensino, Formação e Regulação</option>
-                  <option value="cenario_politico">Cenário Político</option>
-                  <option value="protagonismo_social">Protagonismo social</option>
-                  <option value="cuidado_qualificado">Cuidado qualificado</option>
+                  <option value="formacao_atuacao_inovacao">Eixo 1 — Formação, atuação profissional e inovação em Enfermagem Obstétrica</option>
+                  <option value="boas_praticas_qualidade">Eixo 2 — Boas práticas e qualidade da atenção à saúde materna e neonatal</option>
+                  <option value="direitos_mulheres_equidade">Eixo 3 — Direitos das mulheres, equidade e participação social</option>
+                  <option value="politicas_publicas_gestao">Eixo 4 — Políticas públicas, gestão e organização da atenção obstétrica e neonatal</option>
                 </select>
               </div>
             </div>
@@ -333,6 +333,11 @@
             <p class="hint">A primeira pessoa da lista é a relatora principal (você). Adicione coautores se houver.</p>
             <div id="autores-lista"></div>
             <button type="button" id="btn-add-autor" class="btn btn-ghost" style="min-height:0;padding:0.5rem 0.9rem;margin-top:0.3rem;">+ Adicionar coautor</button>
+
+            <label style="margin-top:1.25rem;display:flex;align-items:flex-start;gap:0.6rem;font-weight:500;">
+              <input type="checkbox" id="concorre_premio" style="width:auto;margin-top:0.2rem;">
+              <span>Este trabalho é <strong>Trabalho Concorrente a Prêmio</strong> (ver <a href="premiacao-ecos-eneon.html" target="_blank" rel="noopener">edital de premiação</a>). Exige que todos os autores sejam sócias da ABENFO-RJ com anuidade quitada.</span>
+            </label>
 
             <label>Arquivo PDF do trabalho <span class="req">*</span></label>
             <div id="upload" class="upload-area">
@@ -387,8 +392,8 @@
       // ============================================================
       // Constantes do edital
       // ============================================================
-      var PRAZO_INICIO = new Date('2026-06-01T00:00:00-03:00');
-      var PRAZO_FIM    = new Date('2026-06-23T23:59:59-03:00');
+      var PRAZO_INICIO = new Date('2026-11-01T00:00:00-03:00');
+      var PRAZO_FIM    = new Date('2026-11-20T23:59:59-03:00');
       var LIMITE_TRABALHOS = 2;
       var LIMITE_AUTORES   = 6;
       var TITULO_MAX_LEN   = 150;
@@ -396,7 +401,7 @@
       var RESUMO_MAX_LEN   = 3000;
       var PDF_MAX_BYTES    = 10 * 1024 * 1024;
       var APRES_MAX_BYTES  = 30 * 1024 * 1024;
-      var PRAZO_APRESENTACAO = new Date('2026-07-14T23:59:59-03:00');
+      var PRAZO_APRESENTACAO = new Date('2026-12-03T23:59:59-03:00');
 
       var sb = window.abenfo.sb;
       var emailAtual = '';
@@ -413,10 +418,10 @@
         saude_coletiva: 'Enfermagem em Saúde Coletiva'
       };
       var ROTULOS_EIXO = {
-        ensino_formacao_regulacao: 'Ensino, Formação e Regulação',
-        cenario_politico: 'Cenário Político',
-        protagonismo_social: 'Protagonismo social',
-        cuidado_qualificado: 'Cuidado qualificado'
+        formacao_atuacao_inovacao: 'Eixo 1 — Formação, atuação profissional e inovação',
+        boas_praticas_qualidade: 'Eixo 2 — Boas práticas e qualidade da atenção',
+        direitos_mulheres_equidade: 'Eixo 3 — Direitos das mulheres e equidade',
+        politicas_publicas_gestao: 'Eixo 4 — Políticas públicas e gestão'
       };
       var ROTULOS_TIPO = {
         pesquisa_original: 'Pesquisa original',
@@ -563,6 +568,7 @@
           meta.push('<strong>Área:</strong> ' + escapar(ROTULOS_AREA[t.area] || t.area));
           meta.push('<strong>Eixo:</strong> ' + escapar(ROTULOS_EIXO[t.eixo_tematico] || t.eixo_tematico));
           meta.push('<strong>Tipo:</strong> ' + escapar(ROTULOS_TIPO[t.tipo_trabalho] || t.tipo_trabalho));
+          if (t.concorre_premio) meta.push('<strong style="color:var(--verde-escuro);">🏆 Concorre a prêmio</strong>');
           var podeEditar = !t.bloqueado && new Date() <= PRAZO_FIM;
           var comRessalva = t.status === 'aceito_com_ressalva';
           var acoes = '';
@@ -591,11 +597,11 @@
             : '';
           var apresInfo = '';
           if (aprovado && t.apresentacao_enviada_em) {
-            apresInfo = '<div class="observacao" style="background:#e6f4ea;color:#1f5d3a;"><strong>Apresentação recebida</strong> em ' + fmtDataBR(t.apresentacao_enviada_em) + '.' + (prazoApresAberto ? ' Você pode reenviar até 14/07 às 23h59.' : '') + '</div>';
+            apresInfo = '<div class="observacao" style="background:#e6f4ea;color:#1f5d3a;"><strong>Apresentação recebida</strong> em ' + fmtDataBR(t.apresentacao_enviada_em) + '.' + (prazoApresAberto ? ' Você pode reenviar até 03/12 às 23h59.' : '') + '</div>';
           } else if (aprovado && prazoApresAberto) {
-            apresInfo = '<div class="observacao" style="background:#fdf3ec;color:#7a5c00;">Envie a sua <strong>apresentação em PDF</strong> (máx. 30 MB) até <strong>14/07 às 23h59</strong>.</div>';
+            apresInfo = '<div class="observacao" style="background:#fdf3ec;color:#7a5c00;">Envie a sua <strong>apresentação em PDF</strong> (máx. 30 MB) até <strong>03/12 às 23h59</strong>.</div>';
           } else if (aprovado) {
-            apresInfo = '<div class="observacao" style="background:#fde8e8;color:#742020;">Prazo de envio da apresentação encerrado (14/07 às 23h59).</div>';
+            apresInfo = '<div class="observacao" style="background:#fde8e8;color:#742020;">Prazo de envio da apresentação encerrado (03/12 às 23h59).</div>';
           }
           var emAvaliacao = t.bloqueado && (t.status === 'submetido' || t.status === 'em_avaliacao');
           return '<div class="trabalho-card" data-id="' + t.id + '">' +
@@ -660,6 +666,7 @@
         document.getElementById('ceua').value = '';
         document.getElementById('referencias').value = '';
         document.getElementById('descritores').value = '';
+        document.getElementById('concorre_premio').checked = false;
         setAutoresInForm([]);
         pdfSelecionado = null;
         document.getElementById('upload').classList.remove('tem-arquivo');
@@ -680,6 +687,7 @@
         document.getElementById('ceua').value = trabalho.ceua || '';
         document.getElementById('referencias').value = trabalho.referencias;
         document.getElementById('descritores').value = (trabalho.descritores || []).join(', ');
+        document.getElementById('concorre_premio').checked = !!trabalho.concorre_premio;
         setAutoresInForm(trabalho.autores);
         pdfSelecionado = null;
         document.getElementById('upload').classList.add('tem-arquivo');
@@ -771,7 +779,8 @@
           ceua: document.getElementById('ceua').value.trim() || null,
           referencias: referencias,
           descritores: descritores,
-          autores: autores
+          autores: autores,
+          concorre_premio: document.getElementById('concorre_premio').checked
         };
       }
 

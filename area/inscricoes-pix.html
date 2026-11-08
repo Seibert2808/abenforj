@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inscrições PIX — ECOS DO ENEON · Admin — Abenfo RJ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/area.css">
+  <link rel="icon" type="image/png" href="../assets/logo-abenforj.png">
+  <style>
+    .insc-card {
+      background: var(--branco); border: 1px solid var(--borda); border-radius: 10px;
+      padding: 1.1rem 1.25rem; margin-bottom: 0.85rem;
+      display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between;
+    }
+    .insc-info h3 { margin: 0 0 0.3rem; font-size: 1rem; color: var(--texto); }
+    .insc-info .meta { color: var(--texto-suave); font-size: 0.85rem; }
+    .insc-info .meta strong { color: var(--texto); }
+    .insc-acoes { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+    .badge-status {
+      display: inline-flex; padding: 0.2rem 0.6rem; border-radius: 999px;
+      font-size: 0.72rem; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase;
+    }
+    .badge-status.pendente { background: #fff8e1; color: #856404; }
+    .badge-status.confirmado { background: #e6f4ea; color: #1f5d3a; }
+    .insc-vazio { padding: 1.5rem; text-align: center; color: var(--texto-suave); }
+    .insc-resumo { font-size: 0.9rem; color: var(--texto-suave); margin: 0 0 1rem; }
+  </style>
+</head>
+<body>
+  <a href="#conteudo" class="skip-link">Pular para o conteúdo</a>
+
+  <header class="site-header area-header">
+    <div class="header-inner">
+      <a href="/area" class="logo-link" aria-label="Área da associada — Início">
+        <img src="../assets/logo-abenforj.png" alt="Logo Abenfo RJ">
+        <div class="logo-text">Abenfo RJ<span>Admin</span></div>
+      </a>
+      <button class="nav-toggle" aria-expanded="false" aria-label="Abrir menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+      <nav class="main-nav" aria-label="Principal">
+        <ul>
+          <li><a href="/area">Início</a></li>
+          <li><a href="admin.html">Admin</a></li>
+          <li><span class="user-chip"><span class="mini-foto">A</span><span class="nome">Associada</span></span></li>
+          <li><button type="button" class="btn-sair">Sair</button></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="conteudo">
+    <section class="area-saudacao">
+      <div class="container">
+        <h1>Inscrições PIX — ECOS DO ENEON</h1>
+        <p>Confira o comprovante e confirme o pagamento de cada inscrição.</p>
+      </div>
+    </section>
+
+    <section class="section" style="padding-top:0.5rem;">
+      <div class="container">
+        <p class="insc-resumo" id="resumo">Carregando…</p>
+        <div id="lista-inscricoes"><div class="insc-vazio">Carregando…</div></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container"><div class="copyright">© <span id="ano"></span> ABENFO-RJ.</div></div>
+  </footer>
+
+  <script>document.getElementById('ano').textContent = new Date().getFullYear();</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/supabase-client.js"></script>
+  <script src="../js/area-comum.js"></script>
+  <script>
+    (function () {
+      function escapar(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+          return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+      }
+      function fmtDataHoraBR(d) {
+        if (!d) return '';
+        var dt = new Date(d);
+        return ('0' + dt.getDate()).slice(-2) + '/' + ('0' + (dt.getMonth() + 1)).slice(-2) + '/' + dt.getFullYear() +
+          ' às ' + ('0' + dt.getHours()).slice(-2) + ':' + ('0' + dt.getMinutes()).slice(-2);
+      }
+      var ROTULOS_CATEGORIA = { socia: 'Sócia (R$ 110,00)', nao_socia: 'Não sócia (R$ 300,00)' };
+
+      var sb, inscricoes = [];
+
+      async function abrirComprovante(path) {
+        var r = await sb.storage.from('comprovantes-pix').createSignedUrl(path, 300);
+        if (r.error || !r.data) {
+          alert('Não foi possível abrir o comprovante: ' + (r.error && r.error.message));
+          return;
+        }
+        window.open(r.data.signedUrl, '_blank', 'noopener');
+      }
+
+      async function confirmarPagamento(id, confirmar) {
+        var userRes = await sb.auth.getUser();
+        var uid = userRes.data && userRes.data.user && userRes.data.user.id;
+        var patch = confirmar
+          ? { pago_confirmado: true, pago_confirmado_em: new Date().toISOString(), pago_confirmado_por: uid }
+          : { pago_confirmado: false, pago_confirmado_em: null, pago_confirmado_por: null };
+        var r = await sb.from('inscritos_externos').update(patch).eq('id', id);
+        if (r.error) {
+          alert('Erro ao atualizar: ' + r.error.message);
+          return;
+        }
+        await carregar();
+      }
+
+      function render() {
+        var alvo = document.getElementById('lista-inscricoes');
+        var pendentes = inscricoes.filter(function (i) { return !i.pago_confirmado; }).length;
+        document.getElementById('resumo').textContent =
+          inscricoes.length + ' inscrição' + (inscricoes.length === 1 ? '' : 'ões') +
+          ' · ' + pendentes + ' pendente' + (pendentes === 1 ? '' : 's') + ' de confirmação';
+
+        if (!inscricoes.length) {
+          alvo.innerHTML = '<div class="insc-vazio">Nenhuma inscrição via PIX ainda.</div>';
+          return;
+        }
+
+        alvo.innerHTML = inscricoes.map(function (i) {
+          var status = i.pago_confirmado ? 'confirmado' : 'pendente';
+          var acoes = '';
+          if (i.comprovante_path) {
+            acoes += '<button class="btn btn-ghost" data-acao="ver" data-path="' + escapar(i.comprovante_path) + '">Ver comprovante</button>';
+          }
+          acoes += i.pago_confirmado
+            ? '<button class="btn btn-ghost" data-acao="desfazer" data-id="' + i.id + '">Desfazer confirmação</button>'
+            : '<button class="btn btn-solid" data-acao="confirmar" data-id="' + i.id + '">Confirmar pagamento</button>';
+
+          return '<div class="insc-card">' +
+            '<div class="insc-info">' +
+              '<h3>' + escapar(i.nome) + ' <span class="badge-status ' + status + '">' + status + '</span></h3>' +
+              '<div class="meta"><strong>E-mail:</strong> ' + escapar(i.email) + ' · <strong>Tel:</strong> ' + escapar(i.telefone) + '</div>' +
+              '<div class="meta"><strong>Categoria:</strong> ' + escapar(ROTULOS_CATEGORIA[i.categoria] || i.categoria) + ' · <strong>Código:</strong> ' + escapar(i.doity_id) + '</div>' +
+              '<div class="meta">' + (i.pago_confirmado ? 'Confirmado em ' + fmtDataHoraBR(i.pago_confirmado_em) : 'Enviado em ' + fmtDataHoraBR(i.created_at)) + '</div>' +
+            '</div>' +
+            '<div class="insc-acoes">' + acoes + '</div>' +
+          '</div>';
+        }).join('');
+      }
+
+      async function carregar() {
+        var rEvento = await sb.rpc('evento_ecos_eneon_id');
+        if (rEvento.error || !rEvento.data) {
+          document.getElementById('lista-inscricoes').innerHTML =
+            '<div class="insc-vazio">Evento "ECOS DO ENEON 2026" ainda não foi criado em Eventos.</div>';
+          document.getElementById('resumo').textContent = '';
+          return;
+        }
+        var r = await sb.from('inscritos_externos')
+          .select('id, nome, email, telefone, categoria, comprovante_path, pago_confirmado, pago_confirmado_em, doity_id, created_at')
+          .eq('evento_id', rEvento.data)
+          .not('categoria', 'is', null)
+          .order('pago_confirmado', { ascending: true })
+          .order('created_at', { ascending: false });
+        if (r.error) {
+          document.getElementById('lista-inscricoes').innerHTML = '<div class="insc-vazio">Erro ao carregar: ' + escapar(r.error.message) + '</div>';
+          return;
+        }
+        inscricoes = r.data || [];
+        render();
+      }
+
+      document.getElementById('lista-inscricoes').addEventListener('click', function (e) {
+        var btn = e.target.closest('button[data-acao]');
+        if (!btn) return;
+        var acao = btn.getAttribute('data-acao');
+        if (acao === 'ver') abrirComprovante(btn.getAttribute('data-path'));
+        else if (acao === 'confirmar') confirmarPagamento(btn.getAttribute('data-id'), true);
+        else if (acao === 'desfazer') confirmarPagamento(btn.getAttribute('data-id'), false);
+      });
+
+      document.addEventListener('perfil-pronto', function (e) {
+        if (!e.detail.is_admin) {
+          window.location.href = '../index.html';
+          return;
+        }
+        sb = window.abenfo.sb;
+        carregar();
+      });
+    })();
+  </script>
+</body>
+</html>
