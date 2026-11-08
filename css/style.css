@@ -1839,13 +1839,11 @@ form textarea { min-height: 140px; resize: vertical; }
   display: grid;
   gap: 1.25rem;
   grid-template-columns: 1fr;
-  margin-top: 1.5rem;
+  margin: 1.5rem auto 0;
+  max-width: 760px;
 }
 @media (min-width: 700px) {
-  .eneon-creditos .grid-creditos { grid-template-columns: repeat(2, 1fr); }
-}
-@media (min-width: 1000px) {
-  .eneon-creditos .grid-creditos { grid-template-columns: repeat(4, 1fr); }
+  .eneon-creditos .grid-creditos { grid-template-columns: repeat(3, 1fr); }
 }
 .eneon-creditos .credito {
   background: rgba(255, 255, 255, 0.08);
