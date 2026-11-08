@@ -158,6 +158,28 @@
         </label>
       </div>
     </div>
+    <!-- Pop-up: convite para o ECOS DO ENEON (até a data do evento, 1x por pessoa) -->
+    <div class="modal-overlay" id="modal-ecos-eneon" role="dialog" aria-modal="true" aria-labelledby="modal-ecos-eneon-titulo">
+      <div class="modal">
+        <button type="button" class="modal-close" id="modal-ecos-eneon-fechar" aria-label="Fechar">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+        <span class="modal-data">4 e 5 de dezembro de 2026 · Macaé, RJ</span>
+        <h2 id="modal-ecos-eneon-titulo">Quer participar do ECOS DO ENEON?</h2>
+        <p style="color:var(--texto-suave);margin-bottom:1.25rem;">
+          O ECOS DO ENEON — I Encontro Regional de Atenção ao Parto e Nascimento do Norte Fluminense —
+          será realizado em <strong>Macaé</strong>, nos dias <strong>4 e 5 de dezembro de 2026</strong>. Quer se inscrever?
+        </p>
+        <div style="display:flex;flex-wrap:wrap;gap:0.6rem;">
+          <button type="button" class="btn btn-solid" id="modal-ecos-eneon-sim">Sim, quero me inscrever</button>
+          <button type="button" class="btn btn-ghost" id="modal-ecos-eneon-nao">Agora não</button>
+        </div>
+        <label style="display:flex;align-items:center;gap:0.5rem;margin-top:1.25rem;font-size:0.9rem;color:var(--texto-suave);cursor:pointer;">
+          <input type="checkbox" id="modal-ecos-eneon-naomostrar" style="width:auto;min-height:0;">
+          Não mostrar este aviso novamente
+        </label>
+      </div>
+    </div>
   </main>
 
   <footer class="site-footer" style="margin-top:2rem;">
@@ -214,6 +236,34 @@
         document.getElementById('modal-trabalhos-fechar').addEventListener('click', fechar);
         overlay.addEventListener('click', function (ev) { if (ev.target === overlay) fechar(); });
         document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') fechar(); });
+      }
+
+      // Pop-up: convite para o ECOS DO ENEON — até a data do evento, 1x por
+      // pessoa (salvo se marcar "não mostrar" ou clicar em Sim/Não).
+      var PRAZO_ECOS_FIM = new Date('2026-12-05T23:59:59-03:00');
+      var dispensadoEcos = localStorage.getItem('abenfo_popup_ecos_eneon_dispensado') === '1';
+      if (agora <= PRAZO_ECOS_FIM && !dispensadoEcos) {
+        var overlayEcos = document.getElementById('modal-ecos-eneon');
+        var fecharEcos = function () {
+          if (document.getElementById('modal-ecos-eneon-naomostrar').checked) {
+            localStorage.setItem('abenfo_popup_ecos_eneon_dispensado', '1');
+          }
+          overlayEcos.classList.remove('open');
+        };
+        overlayEcos.classList.add('open');
+        document.getElementById('modal-ecos-eneon-fechar').addEventListener('click', fecharEcos);
+        document.getElementById('modal-ecos-eneon-nao').addEventListener('click', fecharEcos);
+        overlayEcos.addEventListener('click', function (ev) { if (ev.target === overlayEcos) fecharEcos(); });
+        document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && overlayEcos.classList.contains('open')) fecharEcos(); });
+
+        document.getElementById('modal-ecos-eneon-sim').addEventListener('click', function () {
+          try { localStorage.setItem('abenfo_popup_ecos_eneon_dispensado', '1'); } catch (err) { /* ok */ }
+          // Anuidade em dia -> direto pra autoinscrição no evento.
+          // Anuidade pendente/sem registro -> primeiro precisa renovar.
+          window.location.href = (perfil.status === 'ativo')
+            ? '/area/cursos#convites-eventos'
+            : '../associe-se.html#renovacao';
+        });
       }
     });
 
