@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Inscrição — ECOS DO ENEON 2026</title>
-  <meta name="description" content="Inscreva-se no ECOS DO ENEON 2026 via PIX e garanta sua anuidade 2027 automaticamente.">
+  <meta name="description" content="Inscreva-se no ECOS DO ENEON 2026 via PIX, sem associação à ABENFO-RJ.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -31,13 +31,10 @@
     }
     .form-card input:focus { outline: 0; border-color: var(--verde-claro); box-shadow: 0 0 0 3px var(--verde-pastel); }
 
-    .categoria-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 0.5rem; }
-    @media (max-width: 560px) { .categoria-grid { grid-template-columns: 1fr; } }
     .categoria-opcao {
-      border: 1px solid var(--borda); border-radius: 10px; padding: 0.9rem 1rem; cursor: pointer;
-      display: flex; flex-direction: column; gap: 0.2rem;
+      border: 1px solid var(--borda); border-radius: 10px; padding: 0.9rem 1rem;
+      display: flex; flex-direction: column; gap: 0.2rem; margin-top: 0.85rem;
     }
-    .categoria-opcao input { margin-right: 0.5rem; }
     .categoria-opcao.selecionada { border-color: var(--verde-claro); background: var(--verde-pastel); }
     .categoria-opcao .valor { font-size: 1.3rem; font-weight: 700; color: var(--verde-escuro); }
     .categoria-opcao .rotulo { font-size: 0.9rem; color: var(--texto-suave); }
@@ -116,8 +113,9 @@
       <div class="container">
         <h1>Inscrição — ECOS DO ENEON 2026</h1>
         <p>
-          Inscreva-se no encontro e garanta sua anuidade 2027 automaticamente (pelo valor de 2026).
-          <strong>Já é sócia e quer acompanhar pela área da associada?</strong> <a href="/login">Entre aqui</a>.
+          Inscrição para quem quer participar do encontro <strong>sem se associar</strong> à ABENFO-RJ.
+          <strong>É sócia e quer renovar?</strong> Faça isso pela <a href="/login">área da associada</a> (sua inscrição no evento é automática).
+          <strong>Quer se associar agora?</strong> Veja os valores e o passo a passo em <a href="associe-se.html">Associe-se</a>.
         </p>
       </div>
     </section>
@@ -136,18 +134,9 @@
           <label for="telefone">Telefone / WhatsApp <span class="req">*</span></label>
           <input type="tel" id="telefone" required placeholder="(00) 00000-0000">
 
-          <label>Categoria <span class="req">*</span></label>
-          <div class="categoria-grid" id="categoria-grid">
-            <label class="categoria-opcao" data-valor="enfermeiro_obstetriz">
-              <input type="radio" name="categoria" value="enfermeiro_obstetriz" required>
-              <span class="valor">R$ 110,00</span>
-              <span class="rotulo">Enfermeiros, Enfermeiras Obstétricas e Obstetrizes (inclui anuidade 2027)</span>
-            </label>
-            <label class="categoria-opcao" data-valor="auxiliar_tecnico_estudante">
-              <input type="radio" name="categoria" value="auxiliar_tecnico_estudante" required>
-              <span class="valor">R$ 60,00</span>
-              <span class="rotulo">Auxiliar, Técnico de Enfermagem e Estudante de Graduação (inclui anuidade 2027)</span>
-            </label>
+          <div class="categoria-opcao categoria-opcao-unica selecionada">
+            <span class="valor">R$ 300,00</span>
+            <span class="rotulo">Inscrição no evento (sem associação à ABENFO-RJ)</span>
           </div>
 
           <div class="pix-bloco">
@@ -218,13 +207,7 @@
       var sb = window.abenfo.sb;
       var arquivoSelecionado = null;
 
-      document.querySelectorAll('.categoria-opcao').forEach(function (op) {
-        op.addEventListener('click', function () {
-          document.querySelectorAll('.categoria-opcao').forEach(function (o) { o.classList.remove('selecionada'); });
-          op.classList.add('selecionada');
-          op.querySelector('input').checked = true;
-        });
-      });
+      var CATEGORIA_EVENTO = 'nao_socia_evento';
 
       document.getElementById('btn-copiar-pix').addEventListener('click', function () {
         var chave = document.getElementById('pix-chave').textContent;
@@ -304,14 +287,9 @@
         var nome = document.getElementById('nome').value.trim();
         var email = document.getElementById('email').value.trim().toLowerCase();
         var telefone = document.getElementById('telefone').value.trim();
-        var categoriaInput = document.querySelector('input[name="categoria"]:checked');
 
         if (!nome || !email || !telefone) {
           mostrarFeedback('Preencha nome, e-mail e telefone.', 'erro');
-          return;
-        }
-        if (!categoriaInput) {
-          mostrarFeedback('Selecione sua categoria (sócia ou não sócia).', 'erro');
           return;
         }
         if (!arquivoSelecionado) {
@@ -334,7 +312,7 @@
             p_nome: nome,
             p_email: email,
             p_telefone: telefone,
-            p_categoria: categoriaInput.value,
+            p_categoria: CATEGORIA_EVENTO,
             p_extensao: ext
           });
           if (r.error) throw new Error(r.error.message);
