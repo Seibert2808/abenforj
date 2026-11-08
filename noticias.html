@@ -12,11 +12,14 @@
   <link rel="icon" type="image/png" href="assets/logo-abenforj.png">
 
   <!--
-    Widget Behold.so — feed do Instagram da Abenfo RJ.
-    Carregado uma única vez aqui no <head> (módulo).
-    Para conectar o feed real, ver instruções no <main> abaixo.
+    Página temporariamente fora do ar (retirada a pedido em 2026-11-08) —
+    o widget Behold.so estava conectado à conta errada do Instagram
+    (@abenforio em vez de @abenforj) e mostrando um feed vazio.
+    Para reativar: desfazer este bloco e o de baixo (ver git log), e
+    atualizar o feed-id do <behold-widget> depois de reconectar o Behold.so
+    à conta certa.
+    <script src="https://w.behold.so/widget.js" type="module"></script>
   -->
-  <script src="https://w.behold.so/widget.js" type="module"></script>
 </head>
 <body>
   <a href="#conteudo" class="skip-link">Pular para o conteúdo</a>
@@ -38,7 +41,6 @@
           <li><a href="eventos-passados.html">Cursos e Eventos</a></li>
           <li><a href="eventos.html">ECOS DO ENEON</a></li>
           <li><a href="lai.html">Transparência</a></li>
-          <li><a href="noticias.html">Notícias</a></li>
           <li><a href="contato.html">Contato</a></li>
           <li><a href="/login" class="btn btn-entrar" style="padding:0.5rem 1rem;font-size:0.9rem;min-height:0;">Entrar</a></li>
           <li><a href="associe-se.html" class="btn btn-solid" style="padding:0.5rem 1rem;font-size:0.9rem;min-height:0;">Associe-se</a></li>
@@ -56,19 +58,17 @@
     </section>
 
     <section class="section">
-      <div class="container">
-        <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;max-width:none;">
-          <div>
-            <span class="eyebrow">Instagram @abenforj</span>
-            <h2 style="margin-bottom:0.25rem;">Últimas postagens</h2>
-            <p style="margin:0;">Atualizado automaticamente a partir do Instagram oficial.</p>
-          </div>
-          <a href="https://www.instagram.com/abenforj/" target="_blank" rel="noopener" class="btn btn-ghost">
-            Seguir no Instagram
-          </a>
+      <div class="container" style="max-width:760px;">
+        <div class="section-header">
+          <span class="eyebrow">Instagram @abenforj</span>
+          <h2 style="margin-bottom:0.25rem;">Últimas postagens</h2>
         </div>
-
-        <behold-widget feed-id="y1LpGGWagnhGsIuoAoMh"></behold-widget>
+        <div class="aviso">
+          <strong>Em breve.</strong> Estamos reconectando o feed do Instagram. Enquanto isso, acompanhe as novidades direto por lá:
+        </div>
+        <p style="margin-top:1rem;">
+          <a href="https://www.instagram.com/abenforj/" target="_blank" rel="noopener" class="btn btn-ghost">Seguir no Instagram</a>
+        </p>
       </div>
     </section>
 
@@ -104,7 +104,6 @@
           <ul>
             <li><a href="lai.html">Transparência</a></li>
             <li><a href="associe-se.html">Associe-se</a></li>
-            <li><a href="noticias.html">Notícias</a></li>
           </ul>
         </div>
         <div>
