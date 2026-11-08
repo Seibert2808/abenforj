@@ -2024,6 +2024,14 @@
         return (pNs && pNs !== pNc) ? ns : '';
       }
 
+      // Quem se associa (primeira aprovação) a partir de 1º de outubro já tem a
+      // validade da carteirinha estendida para 31/12 do ano SEGUINTE — regra vigente
+      // desde 01/10/2026, mesmo benefício da anuidade automática usado no Ecos do Eneon.
+      function anoVigenciaInicialPadrao() {
+        var hoje = new Date();
+        return hoje.getMonth() >= 9 ? hoje.getFullYear() + 1 : hoje.getFullYear();
+      }
+
       function renderCard(p, tipo) {
         var anoAtual = new Date().getFullYear();
 
@@ -2072,7 +2080,7 @@
         var acoesSec = '';
         if (tipo === 'pendente') {
           acoesPrim =
-            '<input type="number" min="2020" max="2099" value="' + anoAtual + '" data-ano="' + p.id + '" aria-label="Ano de vigência">' +
+            '<input type="number" min="2020" max="2099" value="' + anoVigenciaInicialPadrao() + '" data-ano="' + p.id + '" aria-label="Ano de vigência">' +
             '<button class="btn btn-solid" data-acao="aprovar" data-id="' + p.id + '">Aprovar</button>';
           acoesSec = '<button class="btn btn-ghost" data-acao="recusar" data-id="' + p.id + '">Recusar</button>';
         } else if (tipo === 'ativo') {
@@ -3925,7 +3933,7 @@
         var atualizPerfil = {};
         if (ehPendente) {
           atualizPerfil.status = 'ativo';
-          if (!perfil.ano_vigencia) atualizPerfil.ano_vigencia = new Date().getFullYear();
+          if (!perfil.ano_vigencia) atualizPerfil.ano_vigencia = anoVigenciaInicialPadrao();
         }
         if (ehEstudanteSemDocs) atualizPerfil.cadastro_completo = true;
         if (Object.keys(atualizPerfil).length) {
