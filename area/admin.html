@@ -2385,10 +2385,10 @@
           return;
         }
 
-        // Renovação de anuidade (sócia já cadastrada, ativa ou inativa) também
+        // Aprovação de sócia nova ou renovação/reativação de anuidade também
         // matricula automaticamente no Ecos do Eneon — a anuidade já cobre a
         // inscrição no encontro.
-        if (acao === 'anuidade-paga') {
+        if (acao === 'aprovar' || acao === 'anuidade-paga') {
           var rEvtEco = await sb.rpc('evento_ecos_eneon_id');
           if (!rEvtEco.error && rEvtEco.data) {
             var authEco = await sb.auth.getUser();
