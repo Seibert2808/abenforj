@@ -28,6 +28,35 @@
     .badge-status.confirmado { background: #e6f4ea; color: #1f5d3a; }
     .insc-vazio { padding: 1.5rem; text-align: center; color: var(--texto-suave); }
     .insc-resumo { font-size: 0.9rem; color: var(--texto-suave); margin: 0 0 1rem; }
+    .emails-log {
+      flex-basis: 100%;
+      margin-top: 0.5rem;
+      padding-top: 0.6rem;
+      border-top: 1px dashed var(--borda);
+    }
+    .emails-log strong {
+      display: block;
+      font-weight: 500;
+      margin-bottom: 0.4rem;
+      color: var(--texto-suave);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .emails-log ul { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .emails-log li {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      background: #e6f4ea; color: #1f5d3a;
+      padding: 0.25rem 0.35rem 0.25rem 0.65rem; border-radius: 999px;
+      font-size: 0.78rem; font-weight: 500;
+    }
+    .emails-log .btn-rm-email {
+      background: transparent; border: 0; color: #1f5d3a; cursor: pointer;
+      padding: 0; font-size: 0.9rem; line-height: 1; width: 20px; height: 20px;
+      border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+      opacity: 0.55; transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease;
+    }
+    .emails-log .btn-rm-email:hover { background: #fdecef; color: #b00020; opacity: 1; }
   </style>
 </head>
 <body>
@@ -97,6 +126,30 @@
 
       var sb, inscricoes = [];
 
+      function corpoEmailCodigo(i) {
+        return (
+          'Olá, ' + (i.nome || '') + '!\n\n' +
+          'Recebemos sua inscrição no ECOS DO ENEON 2026 (não-sócia). Seu código de inscrição é:\n\n' +
+          '    ' + i.doity_id + '\n\n' +
+          'Guarde este código com cuidado — junto com o e-mail ' + i.email + ', ele é usado para acessar ' +
+          'o sistema e submeter trabalhos científicos em https://abenforj.org.br/submeter-trabalho.html.\n\n' +
+          (i.pago_confirmado
+            ? 'Seu pagamento já foi confirmado.\n\n'
+            : 'Ainda estamos conferindo o comprovante de pagamento e confirmaremos em breve.\n\n') +
+          'Em caso de dúvidas, escreva para abenforio@gmail.com.\n\n' +
+          'Atenciosamente,\n' +
+          'Comissão Executiva — ECOS DO ENEON 2026\n' +
+          'ABENFO-RJ'
+        );
+      }
+
+      function gmailHref(i) {
+        var assunto = encodeURIComponent('ECOS DO ENEON 2026 — seu código de inscrição');
+        var corpo = encodeURIComponent(corpoEmailCodigo(i));
+        return 'https://mail.google.com/mail/?view=cm&fs=1&to=' + encodeURIComponent(i.email) +
+          '&su=' + assunto + '&body=' + corpo;
+      }
+
       async function abrirComprovante(path) {
         var r = await sb.storage.from('comprovantes-pix').createSignedUrl(path, 300);
         if (r.error || !r.data) {
@@ -142,12 +195,32 @@
             ? '<button class="btn btn-ghost" data-acao="desfazer" data-id="' + i.id + '">Desfazer confirmação</button>'
             : '<button class="btn btn-solid" data-acao="confirmar" data-id="' + i.id + '">Confirmar pagamento</button>';
 
+          var jaNotificou = i._emails_enviados && i._emails_enviados.length > 0;
+          acoes += '<a class="btn btn-ghost" href="' + gmailHref(i) + '" target="_blank" rel="noopener" ' +
+            'data-log-codigo data-inscrito-id="' + i.id + '">' +
+            (jaNotificou ? 'Notificar novamente' : 'Notificar código por e-mail') + '</a>';
+
+          var historicoEmails = '';
+          if (jaNotificou) {
+            historicoEmails =
+              '<div class="emails-log">' +
+                '<strong>Notificações enviadas:</strong>' +
+                '<ul>' +
+                  i._emails_enviados.map(function (em) {
+                    return '<li>' + escapar(fmtDataHoraBR(em.enviado_em)) +
+                      ' <button class="btn-rm-email" data-acao="excluir-email" data-id="' + em.id + '" title="Excluir registro">✕</button></li>';
+                  }).join('') +
+                '</ul>' +
+              '</div>';
+          }
+
           return '<div class="insc-card">' +
             '<div class="insc-info">' +
               '<h3>' + escapar(i.nome) + ' <span class="badge-status ' + status + '">' + status + '</span></h3>' +
               '<div class="meta"><strong>E-mail:</strong> ' + escapar(i.email) + ' · <strong>Tel:</strong> ' + escapar(i.telefone) + '</div>' +
               '<div class="meta"><strong>Categoria:</strong> ' + escapar(ROTULOS_CATEGORIA[i.categoria] || i.categoria) + ' · <strong>Código:</strong> ' + escapar(i.doity_id) + '</div>' +
               '<div class="meta">' + (i.pago_confirmado ? 'Confirmado em ' + fmtDataHoraBR(i.pago_confirmado_em) : 'Enviado em ' + fmtDataHoraBR(i.created_at)) + '</div>' +
+              historicoEmails +
             '</div>' +
             '<div class="insc-acoes">' + acoes + '</div>' +
           '</div>';
@@ -173,6 +246,20 @@
           return;
         }
         inscricoes = r.data || [];
+
+        if (inscricoes.length > 0) {
+          var ids = inscricoes.map(function (i) { return i.id; });
+          var rEm = await sb.from('emails_enviados')
+            .select('id, inscrito_externo_id, enviado_em')
+            .in('inscrito_externo_id', ids)
+            .order('enviado_em', { ascending: false });
+          var porInscrito = {};
+          (rEm.data || []).forEach(function (em) {
+            (porInscrito[em.inscrito_externo_id] = porInscrito[em.inscrito_externo_id] || []).push(em);
+          });
+          inscricoes.forEach(function (i) { i._emails_enviados = porInscrito[i.id] || []; });
+        }
+
         render();
       }
 
@@ -183,6 +270,30 @@
         if (acao === 'ver') abrirComprovante(btn.getAttribute('data-path'));
         else if (acao === 'confirmar') confirmarPagamento(btn.getAttribute('data-id'), true);
         else if (acao === 'desfazer') confirmarPagamento(btn.getAttribute('data-id'), false);
+        else if (acao === 'excluir-email') {
+          if (!confirm('Excluir esse registro de envio?')) return;
+          sb.from('emails_enviados').delete().eq('id', btn.getAttribute('data-id')).then(function (r) {
+            if (r.error) { alert('Erro ao excluir: ' + r.error.message); return; }
+            carregar();
+          });
+        }
+      });
+
+      // Não previne o clique do link "Notificar código por e-mail" — ele abre o
+      // Gmail normalmente em aba nova. Em paralelo, registra o envio no histórico.
+      document.getElementById('lista-inscricoes').addEventListener('click', async function (e) {
+        var el = e.target.closest('a[data-log-codigo]');
+        if (!el) return;
+        var inscritoId = el.getAttribute('data-inscrito-id');
+        if (!inscritoId) return;
+        try {
+          var auth = await sb.auth.getUser();
+          var uid = auth && auth.data && auth.data.user ? auth.data.user.id : null;
+          await sb.from('emails_enviados').insert({ inscrito_externo_id: inscritoId, enviado_por: uid });
+          await carregar();
+        } catch (err) {
+          // silencioso — não bloqueia o usuário se o registro falhar
+        }
       });
 
       document.addEventListener('perfil-pronto', function (e) {

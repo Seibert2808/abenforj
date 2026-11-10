@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Submeter trabalho científico — ECOS DO ENEON 2026</title>
-  <meta name="description" content="Já se inscreveu no ECOS DO ENEON via Doity? Submeta seu trabalho científico aqui.">
+  <meta name="description" content="Já se inscreveu no ECOS DO ENEON? Submeta seu trabalho científico aqui usando seu e-mail e código da inscrição.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -211,7 +211,7 @@
       <div class="container">
         <h1>Submeter trabalho científico</h1>
         <p>
-          Já se inscreveu no ECOS DO ENEON pelo Doity? Use seu e-mail e número de inscrição para submeter seus trabalhos.
+          Já se inscreveu no ECOS DO ENEON? Use seu e-mail e o código da inscrição para submeter seus trabalhos.
           <strong>Sócias da ABENFO-RJ</strong> submetem pela <a href="/login">área da associada</a>.
         </p>
       </div>
@@ -220,13 +220,13 @@
     <section id="form-section">
       <div class="container">
         <form id="form-acesso" class="formulario-acesso" autocomplete="off">
-          <label for="email">E-mail usado no Doity</label>
+          <label for="email">E-mail usado na inscrição</label>
           <input id="email" type="email" required placeholder="seuemail@exemplo.com">
 
-          <label for="doity-id">Número da inscrição Doity</label>
-          <input id="doity-id" type="text" required placeholder="DOI-XXXXXXXXX">
+          <label for="doity-id">Código da inscrição</label>
+          <input id="doity-id" type="text" required placeholder="Código da inscrição">
           <p style="font-size:0.825rem;color:var(--texto-suave);margin:0.35rem 0 0;">
-            Está no e-mail de confirmação do Doity ou no comprovante de inscrição.
+            Foi mostrado na tela ao final da sua inscrição. Se perdeu, escreva para abenforio@gmail.com.
           </p>
 
           <div style="margin-top:1.25rem;">
@@ -482,7 +482,7 @@
         var email = document.getElementById('email').value.trim().toLowerCase();
         var doityId = document.getElementById('doity-id').value.trim().toUpperCase();
         if (!email || !doityId) {
-          erro.textContent = 'Preencha e-mail e número Doity.';
+          erro.textContent = 'Preencha e-mail e código da inscrição.';
           erro.hidden = false;
           return;
         }
@@ -493,10 +493,9 @@
             erro.textContent = msgTecnica;
           } else {
             erro.innerHTML =
-              'Não encontramos sua inscrição. Se você se inscreveu pelo Doity há pouco tempo, ' +
+              'Não encontramos sua inscrição. Se você se inscreveu há pouco tempo, ' +
               'ela pode levar <strong>algumas horas</strong> para aparecer aqui — aguarde um pouco e tente novamente. ' +
-              'Confira também se o e-mail e o número da inscrição (formato <strong>DOI-XXXXXXXXX</strong>) ' +
-              'estão exatamente como no seu comprovante do Doity. ' +
+              'Confira também se o e-mail e o código da inscrição estão exatamente como foram exibidos ao final do seu cadastro. ' +
               'Se o problema continuar, escreva para <a href="mailto:abenforio@gmail.com">abenforio@gmail.com</a>.';
           }
           erro.hidden = false;
