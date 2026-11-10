@@ -359,7 +359,7 @@ p { margin-bottom: 1rem; color: var(--texto-suave); }
   color: var(--texto);
   margin: 0;
   max-width: 720px;
-  font-size: 1.05rem;
+  font-size: 0.92rem;
 }
 @media (min-width: 768px) {
   .faixa-lai .container {
