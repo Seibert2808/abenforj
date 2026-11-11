@@ -1,6 +1,11 @@
 // ============================================================
 // Edge Function: enviar-comunicado
-// Envia um e-mail em massa aos associados ativos via Resend.
+// Enfileira um e-mail em massa para os associados ativos e já dispara
+// o primeiro lote do dia. O restante sai nos dias seguintes, pelo
+// processar-fila-comunicados (agendado no Cron do Supabase).
+//
+// Por que fila: o plano gratuito do Resend entrega ~100 e-mails por dia.
+// Com 263 associadas, um disparo único seria recusado no meio do caminho.
 //
 // Segurança: só executa se o chamador for admin (profiles.is_admin).
 // O JWT do admin chega no header Authorization (o cliente Supabase
@@ -12,74 +17,42 @@
 //   COMUNICADOS_REPLY_TO  ex: "abenforio@gmail.com"
 //   UNSUB_SECRET          segredo p/ assinar o link de descadastro
 //   SITE_URL              ex: "https://abenforj.org.br"
+//   LIMITE_DIARIO         opcional, padrão 95 (cota diária do Resend)
 // (SUPABASE_URL, SUPABASE_ANON_KEY e SUPABASE_SERVICE_ROLE_KEY são injetadas automaticamente.)
 // ============================================================
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
-
-const TAMANHO_LOTE = 100;        // Resend: máx. 100 e-mails por chamada batch
-const PAUSA_ENTRE_LOTES_MS = 600; // respeita o limite de ~2 req/s
-
-const enc = new TextEncoder();
-
-function b64url(bytes: ArrayBuffer): string {
-  const b = btoa(String.fromCharCode(...new Uint8Array(bytes)));
-  return b.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
-
-async function assinarEmail(email: string, secret: string): Promise<string> {
-  const key = await crypto.subtle.importKey(
-    "raw", enc.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"],
-  );
-  const sig = await crypto.subtle.sign("HMAC", key, enc.encode(email.toLowerCase()));
-  return b64url(sig);
-}
-
-function emailValido(e: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
-}
-
-// Injeta o rodapé de descadastro (obrigatório p/ LGPD/anti-spam) antes de </body>.
-function comRodapeDescadastro(html: string, unsubUrl: string): string {
-  const rodape = `
-  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top:8px;">
-    <tr><td align="center" style="padding:16px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;color:#8a8f8b;line-height:1.5;">
-      Você recebe este e-mail por ser associada da ABENFO-RJ.<br>
-      <a href="${unsubUrl}" style="color:#8a8f8b;text-decoration:underline;">Não quero mais receber comunicados</a>
-    </td></tr>
-  </table>`;
-  if (html.includes("</body>")) return html.replace("</body>", rodape + "\n</body>");
-  return html + rodape;
-}
+import {
+  assinarEmail,
+  comRodapeDescadastro,
+  cotaDiaria,
+  emailValido,
+  enviadosHoje,
+  lerEnv,
+  processarComunicado,
+} from "../_shared/envio.ts";
 
 Deno.serve(async (req) => {
   const origin = req.headers.get("Origin");
   const cors = corsHeaders(origin);
 
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
-  if (req.method !== "POST") {
-    return new Response(JSON.stringify({ erro: "Método não permitido" }), {
-      status: 405, headers: { ...cors, "Content-Type": "application/json" },
-    });
-  }
 
   const json = (body: unknown, status = 200) =>
     new Response(JSON.stringify(body), {
       status, headers: { ...cors, "Content-Type": "application/json" },
     });
 
+  if (req.method !== "POST") return json({ erro: "Método não permitido" }, 405);
+
   try {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
     const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-    const FROM = Deno.env.get("COMUNICADOS_FROM") ?? "ABENFO-RJ <onboarding@resend.dev>";
-    const REPLY_TO = Deno.env.get("COMUNICADOS_REPLY_TO") ?? "abenforio@gmail.com";
-    const UNSUB_SECRET = Deno.env.get("UNSUB_SECRET") ?? "troque-este-segredo";
-    const SITE_URL = Deno.env.get("SITE_URL") ?? "https://abenforj.org.br";
+    const env = lerEnv();
 
-    if (!RESEND_API_KEY) return json({ erro: "RESEND_API_KEY não configurada no servidor." }, 500);
+    if (!env.RESEND_API_KEY) return json({ erro: "RESEND_API_KEY não configurada no servidor." }, 500);
 
     // ---- 1) Autenticação: quem está chamando? ----
     const authHeader = req.headers.get("Authorization");
@@ -109,98 +82,107 @@ Deno.serve(async (req) => {
     if (!assunto) return json({ erro: "Informe o assunto." }, 400);
     if (!corpoHtml || corpoHtml.length < 20) return json({ erro: "Corpo do e-mail vazio." }, 400);
 
-    // ---- 4) Monta a lista de destinatários ----
-    let destinatarios: { email: string; nome: string }[] = [];
-
+    // ---- 4) Teste: sai na hora, sem passar pela fila ----
     if (teste) {
       if (!emailValido(teste)) return json({ erro: "E-mail de teste inválido." }, 400);
-      destinatarios = [{ email: teste, nome: "Teste" }];
-    } else {
-      const { data: socias, error: socErr } = await admin
-        .from("profiles")
-        .select("email, nome_completo, nome_social")
-        .eq("status", "ativo")
-        .not("email", "is", null);
-      if (socErr) return json({ erro: "Erro ao carregar associadas: " + socErr.message }, 500);
 
-      const { data: optOut } = await admin.from("descadastros").select("email");
-      const bloqueados = new Set((optOut ?? []).map((d) => (d.email || "").toLowerCase()));
+      const sig = await assinarEmail(teste, env.UNSUB_SECRET);
+      const unsubUrl = `${env.SITE_URL}/descadastrar.html?email=${encodeURIComponent(teste)}&sig=${sig}`;
+      const resp = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${env.RESEND_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: env.FROM,
+          to: [teste],
+          reply_to: env.REPLY_TO,
+          subject: assunto,
+          html: comRodapeDescadastro(corpoHtml, unsubUrl),
+        }),
+      });
 
-      const vistos = new Set<string>();
-      for (const s of socias ?? []) {
-        const email = (s.email || "").trim().toLowerCase();
-        if (!emailValido(email) || bloqueados.has(email) || vistos.has(email)) continue;
-        vistos.add(email);
-        destinatarios.push({ email, nome: (s.nome_social || s.nome_completo || "").trim() });
+      if (!resp.ok) {
+        const txt = (await resp.text().catch(() => resp.statusText)).slice(0, 300);
+        return json({ erro: `O Resend recusou o teste. HTTP ${resp.status}: ${txt}` }, 502);
       }
+
+      await admin.from("comunicados").insert({
+        assunto, corpo_html: corpoHtml, enviado_por: uid,
+        total_destinatarios: 1, total_enviados: 1, total_falhas: 0,
+        falhas: [], status: "teste",
+      });
+      return json({ ok: true, teste: true, enviados: 1 });
+    }
+
+    // ---- 5) Monta a lista de destinatárias ----
+    const { data: socias, error: socErr } = await admin
+      .from("profiles")
+      .select("email, nome_completo, nome_social")
+      .eq("status", "ativo")
+      .not("email", "is", null);
+    if (socErr) return json({ erro: "Erro ao carregar associadas: " + socErr.message }, 500);
+
+    const { data: optOut } = await admin.from("descadastros").select("email");
+    const bloqueados = new Set((optOut ?? []).map((d: any) => (d.email || "").toLowerCase()));
+
+    const vistos = new Set<string>();
+    const destinatarios: { email: string; nome: string }[] = [];
+    for (const s of socias ?? []) {
+      const email = (s.email || "").trim().toLowerCase();
+      if (!emailValido(email) || bloqueados.has(email) || vistos.has(email)) continue;
+      vistos.add(email);
+      destinatarios.push({ email, nome: (s.nome_social || s.nome_completo || "").trim() });
     }
 
     if (destinatarios.length === 0) return json({ erro: "Nenhum destinatário válido." }, 400);
 
-    // ---- 5) Envio em lotes via Resend (batch) ----
-    let enviados = 0;
-    const falhas: { email: string; erro: string }[] = [];
+    // ---- 6) Cria o comunicado e enfileira todo mundo ----
+    const { data: novo, error: insErr } = await admin
+      .from("comunicados")
+      .insert({
+        assunto, corpo_html: corpoHtml, enviado_por: uid,
+        total_destinatarios: destinatarios.length,
+        total_enviados: 0, total_falhas: 0, falhas: [],
+        status: "na_fila",
+      })
+      .select("id")
+      .single();
+    if (insErr || !novo) return json({ erro: "Erro ao criar o comunicado: " + (insErr?.message ?? "") }, 500);
 
-    for (let i = 0; i < destinatarios.length; i += TAMANHO_LOTE) {
-      const lote = destinatarios.slice(i, i + TAMANHO_LOTE);
-
-      const payload = await Promise.all(lote.map(async (d) => {
-        const sig = await assinarEmail(d.email, UNSUB_SECRET);
-        const unsubUrl = `${SITE_URL}/descadastrar.html?email=${encodeURIComponent(d.email)}&sig=${sig}`;
-        return {
-          from: FROM,
-          to: [d.email],
-          reply_to: REPLY_TO,
-          subject: assunto,
-          html: comRodapeDescadastro(corpoHtml, unsubUrl),
-          headers: {
-            "List-Unsubscribe": `<${unsubUrl}>, <mailto:${REPLY_TO}?subject=Descadastrar>`,
-          },
-        };
-      }));
-
-      const resp = await fetch("https://api.resend.com/emails/batch", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${RESEND_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (resp.ok) {
-        const r = await resp.json().catch(() => ({}));
-        const qtd = Array.isArray(r?.data) ? r.data.length : lote.length;
-        enviados += qtd;
-      } else {
-        const txt = await resp.text().catch(() => resp.statusText);
-        lote.forEach((d) => falhas.push({ email: d.email, erro: `HTTP ${resp.status}: ${txt.slice(0, 200)}` }));
-      }
-
-      if (i + TAMANHO_LOTE < destinatarios.length) {
-        await new Promise((r) => setTimeout(r, PAUSA_ENTRE_LOTES_MS));
-      }
+    const linhas = destinatarios.map((d) => ({
+      comunicado_id: novo.id, email: d.email, nome: d.nome || null,
+    }));
+    for (let i = 0; i < linhas.length; i += 500) {
+      const { error: filaErr } = await admin
+        .from("comunicado_destinatarios").insert(linhas.slice(i, i + 500));
+      if (filaErr) return json({ erro: "Erro ao montar a fila: " + filaErr.message }, 500);
     }
 
-    // ---- 6) Registra no histórico ----
-    await admin.from("comunicados").insert({
-      assunto,
-      corpo_html: corpoHtml,
-      enviado_por: uid,
-      total_destinatarios: destinatarios.length,
-      total_enviados: enviados,
-      total_falhas: falhas.length,
-      falhas,
-      status: teste ? "teste" : (falhas.length && !enviados ? "erro" : "enviado"),
-    });
+    // ---- 7) Manda o primeiro lote, respeitando o que já saiu hoje ----
+    const jaHoje = await enviadosHoje(admin);
+    const orcamento = Math.max(0, cotaDiaria() - jaHoje);
 
+    if (orcamento === 0) {
+      return json({
+        ok: true, enfileirados: destinatarios.length, enviados: 0,
+        restantes: destinatarios.length, concluido: false,
+        aviso: "A cota de hoje já foi usada. O primeiro lote sai automaticamente amanhã.",
+      });
+    }
+
+    const r = await processarComunicado(admin, novo.id, orcamento);
     return json({
       ok: true,
-      teste: !!teste,
-      total_destinatarios: destinatarios.length,
-      enviados,
-      falhas: falhas.length,
-      detalhe_falhas: falhas.slice(0, 20),
+      comunicado_id: novo.id,
+      enfileirados: destinatarios.length,
+      enviados: r.enviados,
+      falhas: r.falhas,
+      restantes: r.restantes,
+      concluido: r.concluido,
+      dias_restantes: Math.ceil(r.restantes / cotaDiaria()),
+      aviso: r.motivo,
     });
   } catch (e) {
     return json({ erro: "Erro inesperado: " + (e?.message ?? String(e)) }, 500);

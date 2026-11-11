@@ -7,3 +7,4 @@ Thumbs.db
 .env.local
 node_modules/
 ferramentas/
+supabase/.temp/
