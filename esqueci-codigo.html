@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Esqueci meu código — ECOS DO ENEON 2026</title>
+  <meta name="description" content="Perdeu o código da sua inscrição no ECOS DO ENEON? Informe o e-mail usado e receba o código de novo.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/png" href="assets/logo-abenforj.png">
+  <style>
+    .hero-trab { background: var(--verde-pastel); padding: 3rem 1rem 2rem; text-align: center; }
+    .hero-trab h1 { color: var(--verde-escuro); margin: 0 0 0.5rem; }
+    .hero-trab p { color: var(--texto); margin: 0 auto; max-width: 620px; line-height: 1.55; }
+
+    .form-card {
+      max-width: 480px; margin: 2rem auto; background: var(--branco);
+      border: 1px solid var(--borda); border-radius: 12px; padding: 1.5rem;
+    }
+    .form-card label { display: block; font-weight: 500; margin: 0 0 0.35rem; color: var(--texto); }
+    .form-card input[type="email"] {
+      width: 100%; padding: 0.6rem 0.75rem;
+      border: 1px solid var(--borda); border-radius: 6px;
+      font: inherit; background: var(--branco);
+    }
+    .form-card input:focus { outline: 0; border-color: var(--verde-claro); box-shadow: 0 0 0 3px var(--verde-pastel); }
+
+    .acoes-form { margin-top: 1.25rem; }
+
+    .feedback {
+      margin: 1rem 0 0; padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.92rem;
+    }
+    .feedback.ok    { background: #e6f4ea; color: #1f5d3a; border-left: 4px solid #2e7d4f; }
+    .feedback.erro  { background: #fde8e8; color: #742020; border-left: 4px solid #c53030; }
+  </style>
+</head>
+<body>
+  <a href="#conteudo" class="skip-link">Pular para o conteúdo</a>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="index.html" class="logo-link" aria-label="Abenfo RJ — Página inicial">
+        <img src="assets/logo-abenforj.png" alt="Logo Abenfo RJ">
+        <div class="logo-text">Abenfo RJ<span>Inscrição</span></div>
+      </a>
+      <button class="nav-toggle" aria-expanded="false" aria-label="Abrir menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+      <nav class="main-nav" aria-label="Principal">
+        <ul>
+          <li><a href="index.html">Início</a></li>
+          <li><a href="eventos.html">ECOS DO ENEON</a></li>
+          <li><a href="contato.html">Contato</a></li>
+          <li><a href="/login" class="btn btn-entrar" style="padding:0.5rem 1rem;font-size:0.9rem;min-height:0;">Entrar</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="conteudo">
+    <section class="hero-trab">
+      <div class="container">
+        <h1>Esqueci meu código de inscrição</h1>
+        <p>
+          Informe o e-mail que você usou para se inscrever no ECOS DO ENEON 2026.
+          Se encontrarmos uma inscrição, reenviamos o código agora.
+        </p>
+      </div>
+    </section>
+
+    <section id="form-section">
+      <div class="container">
+        <form id="form-esqueci" class="form-card" autocomplete="off">
+          <label for="email">E-mail usado na inscrição</label>
+          <input type="email" id="email" required placeholder="seuemail@exemplo.com">
+
+          <div id="feedback" class="feedback" hidden></div>
+
+          <div class="acoes-form">
+            <button type="submit" id="btn-enviar" class="btn btn-solid" style="width:100%;">Reenviar código</button>
+          </div>
+        </form>
+
+        <p style="text-align:center;color:var(--texto-suave);font-size:0.9rem;max-width:480px;margin:1rem auto 2rem;">
+          Ainda não recebeu depois de alguns minutos? Confira a caixa de spam ou escreva para
+          <a href="mailto:abenforio@gmail.com">abenforio@gmail.com</a>.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="copyright">© <span id="ano"></span> ABENFO-RJ.</div>
+    </div>
+  </footer>
+
+  <script>document.getElementById('ano').textContent = new Date().getFullYear();</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    (function () {
+      if (!window.SUPABASE_PRONTO) {
+        document.getElementById('form-section').innerHTML =
+          '<div class="container" style="padding:3rem 1.5rem;"><div class="feedback erro" style="margin:0 auto;max-width:480px;display:block;">' +
+          '<strong>Em configuração:</strong> a página está sendo finalizada. Volte em breve.</div></div>';
+        return;
+      }
+
+      var sb = window.abenfo.sb;
+
+      function mostrarFeedback(texto, tipo) {
+        var fb = document.getElementById('feedback');
+        fb.hidden = false;
+        fb.className = 'feedback ' + tipo;
+        fb.textContent = texto;
+      }
+
+      document.getElementById('form-esqueci').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        var email = document.getElementById('email').value.trim();
+        if (!email) {
+          mostrarFeedback('Informe o e-mail usado na inscrição.', 'erro');
+          return;
+        }
+
+        var btn = document.getElementById('btn-enviar');
+        btn.disabled = true;
+        btn.textContent = 'Enviando…';
+
+        try {
+          var r = await sb.functions.invoke('esqueci-codigo-ecos-eneon', { body: { email: email } });
+          if (r.error) throw new Error(r.error.message);
+          var msg = (r.data && r.data.mensagem) ||
+            'Se encontrarmos uma inscrição com esse e-mail, vamos reenviar o código agora.';
+          mostrarFeedback(msg, 'ok');
+        } catch (err) {
+          mostrarFeedback('Não foi possível processar o pedido agora. Tente de novo em alguns minutos ou escreva para abenforio@gmail.com.', 'erro');
+        } finally {
+          btn.disabled = false;
+          btn.textContent = 'Reenviar código';
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

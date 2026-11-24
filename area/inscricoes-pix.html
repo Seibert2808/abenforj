@@ -126,28 +126,21 @@
 
       var sb, inscricoes = [];
 
-      function corpoEmailCodigo(i) {
-        return (
-          'Olá, ' + (i.nome || '') + '!\n\n' +
-          'Recebemos sua inscrição no ECOS DO ENEON 2026 (não-sócia). Seu código de inscrição é:\n\n' +
-          '    ' + i.doity_id + '\n\n' +
-          'Guarde este código com cuidado — junto com o e-mail ' + i.email + ', ele é usado para acessar ' +
-          'o sistema e submeter trabalhos científicos em https://abenforj.org.br/submeter-trabalho.html.\n\n' +
-          (i.pago_confirmado
-            ? 'Seu pagamento já foi confirmado.\n\n'
-            : 'Ainda estamos conferindo o comprovante de pagamento e confirmaremos em breve.\n\n') +
-          'Em caso de dúvidas, escreva para abenforio@gmail.com.\n\n' +
-          'Atenciosamente,\n' +
-          'Comissão Executiva — ECOS DO ENEON 2026\n' +
-          'ABENFO-RJ'
-        );
-      }
-
-      function gmailHref(i) {
-        var assunto = encodeURIComponent('ECOS DO ENEON 2026 — seu código de inscrição');
-        var corpo = encodeURIComponent(corpoEmailCodigo(i));
-        return 'https://mail.google.com/mail/?view=cm&fs=1&to=' + encodeURIComponent(i.email) +
-          '&su=' + assunto + '&body=' + corpo;
+      async function reenviarCodigo(id, btn) {
+        var textoOriginal = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = 'Enviando…';
+        try {
+          var r = await sb.functions.invoke('enviar-codigo-ecos-eneon', { body: { inscrito_id: id } });
+          if (r.error || (r.data && r.data.erro)) {
+            throw new Error((r.data && r.data.erro) || r.error.message);
+          }
+          await carregar();
+        } catch (err) {
+          alert('Erro ao enviar: ' + (err.message || String(err)));
+          btn.disabled = false;
+          btn.textContent = textoOriginal;
+        }
       }
 
       async function abrirComprovante(path) {
@@ -196,9 +189,8 @@
             : '<button class="btn btn-solid" data-acao="confirmar" data-id="' + i.id + '">Confirmar pagamento</button>';
 
           var jaNotificou = i._emails_enviados && i._emails_enviados.length > 0;
-          acoes += '<a class="btn btn-ghost" href="' + gmailHref(i) + '" target="_blank" rel="noopener" ' +
-            'data-log-codigo data-inscrito-id="' + i.id + '">' +
-            (jaNotificou ? 'Notificar novamente' : 'Notificar código por e-mail') + '</a>';
+          acoes += '<button type="button" class="btn btn-ghost" data-acao="notificar" data-id="' + i.id + '">' +
+            (jaNotificou ? 'Reenviar código por e-mail' : 'Enviar código por e-mail') + '</button>';
 
           var historicoEmails = '';
           if (jaNotificou) {
@@ -270,29 +262,13 @@
         if (acao === 'ver') abrirComprovante(btn.getAttribute('data-path'));
         else if (acao === 'confirmar') confirmarPagamento(btn.getAttribute('data-id'), true);
         else if (acao === 'desfazer') confirmarPagamento(btn.getAttribute('data-id'), false);
+        else if (acao === 'notificar') reenviarCodigo(btn.getAttribute('data-id'), btn);
         else if (acao === 'excluir-email') {
           if (!confirm('Excluir esse registro de envio?')) return;
           sb.from('emails_enviados').delete().eq('id', btn.getAttribute('data-id')).then(function (r) {
             if (r.error) { alert('Erro ao excluir: ' + r.error.message); return; }
             carregar();
           });
-        }
-      });
-
-      // Não previne o clique do link "Notificar código por e-mail" — ele abre o
-      // Gmail normalmente em aba nova. Em paralelo, registra o envio no histórico.
-      document.getElementById('lista-inscricoes').addEventListener('click', async function (e) {
-        var el = e.target.closest('a[data-log-codigo]');
-        if (!el) return;
-        var inscritoId = el.getAttribute('data-inscrito-id');
-        if (!inscritoId) return;
-        try {
-          var auth = await sb.auth.getUser();
-          var uid = auth && auth.data && auth.data.user ? auth.data.user.id : null;
-          await sb.from('emails_enviados').insert({ inscrito_externo_id: inscritoId, enviado_por: uid });
-          await carregar();
-        } catch (err) {
-          // silencioso — não bloqueia o usuário se o registro falhar
         }
       });
 
