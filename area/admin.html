@@ -992,7 +992,7 @@
         <details class="secao" data-grupo="eneon" data-sub="trabalhos">
           <summary><h2>Trabalhos científicos <span id="contador-trabalhos-admin" style="font-weight:400;color:var(--texto-suave);font-size:0.9rem;"></span></h2></summary>
           <p class="descricao-secao">
-            Trabalhos submetidos para o IX ENEON 2026. Use os filtros para localizar,
+            Trabalhos submetidos para o evento selecionado acima. Use os filtros para localizar,
             baixe PDFs individualmente ou em lote (ZIP), mude o status e bloqueie a edição
             quando a comissão científica iniciar a avaliação.
           </p>
@@ -3501,6 +3501,7 @@
       (function () {
         var selEv = document.getElementById('evento-id');
         if (selEv) selEv.addEventListener('change', function () { carregarInscritos(this.value); });
+        if (selEv) selEv.addEventListener('change', function () { carregarTrabalhosAdmin(this.value); });
         var bi = document.getElementById('btn-imprimir-inscritos');
         if (bi) bi.addEventListener('click', imprimirInscritos);
         var be = document.getElementById('btn-excel-inscritos');
@@ -4385,10 +4386,23 @@
       var trabalhosCache = [];
       var modeloApresentacaoTrab = null; // modelo do certificado de apresentação (relator)
 
-      async function carregarTrabalhosAdmin() {
+      async function carregarTrabalhosAdmin(eventoId) {
         var sb = window.abenfo.sb;
+        if (typeof eventoId === 'undefined') {
+          var selAtual = document.getElementById('evento-id');
+          eventoId = selAtual ? selAtual.value : '';
+        }
+        if (!eventoId) {
+          trabalhosCache = [];
+          modeloApresentacaoTrab = null;
+          renderTrabalhosAdmin();
+          document.getElementById('lista-trabalhos-admin').innerHTML =
+            '<div class="lista-vazia">Selecione um evento no seletor acima.</div>';
+          return;
+        }
         var r = await sb.from('trabalhos_cientificos')
           .select('*')
+          .eq('evento_id', eventoId)
           .order('submetido_em', { ascending: false });
         if (r.error) {
           document.getElementById('lista-trabalhos-admin').innerHTML =
@@ -4399,12 +4413,9 @@
         // Modelo do certificado de apresentação (tipo 'apresentacao') do evento dos
         // trabalhos — usado pra gerar o certificado do relator aqui no admin.
         modeloApresentacaoTrab = null;
-        var evId = trabalhosCache.length ? trabalhosCache[0].evento_id : null;
-        if (evId) {
-          var rMa = await sb.from('certificado_modelos').select('*')
-            .eq('evento_id', evId).eq('tipo', 'apresentacao').eq('ativo', true).maybeSingle();
-          modeloApresentacaoTrab = (rMa && rMa.data) ? rMa.data : null;
-        }
+        var rMa = await sb.from('certificado_modelos').select('*')
+          .eq('evento_id', eventoId).eq('tipo', 'apresentacao').eq('ativo', true).maybeSingle();
+        modeloApresentacaoTrab = (rMa && rMa.data) ? rMa.data : null;
         renderTrabalhosAdmin();
       }
 
