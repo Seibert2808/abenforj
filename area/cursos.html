@@ -287,7 +287,10 @@
           }
 
           var linkPrograma = '';
-          if (/ENEON/i.test(nome)) {
+          if (/ECOS/i.test(nome)) {
+            linkPrograma = '<a href="../programacao-ecos-eneon.html" class="btn btn-cores-eneon" target="_blank" rel="noopener" ' +
+              'style="min-height:0;padding:0.55rem 1rem;font-size:0.9rem;">Ver programação completa →</a>';
+          } else if (/ENEON/i.test(nome)) {
             linkPrograma = '<a href="../programacao-ix-eneon.html" class="btn btn-cores-eneon" target="_blank" rel="noopener" ' +
               'style="min-height:0;padding:0.55rem 1rem;font-size:0.9rem;">Ver programação completa →</a>';
           }
